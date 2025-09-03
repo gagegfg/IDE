@@ -2,96 +2,132 @@
 <html>
 <head>
     <meta charset="UTF-8">
-    <title>Dashboard de Producción</title>
-    <!-- Librerías para gráficos y para leer CSV -->
+    <title>Dashboard Profesional de Producción</title>
+    <!-- Librerías para gráficos, CSV e iconos -->
     <script src="https://cdn.plot.ly/plotly-latest.min.js"></script>
     <script src="https://cdnjs.cloudflare.com/ajax/libs/PapaParse/5.4.1/papaparse.min.js"></script>
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.2/css/all.min.css">
     <style>
+        :root {
+            --primary-color: #0056b3;
+            --secondary-color: #28a745;
+            --light-gray: #f4f4f9;
+            --text-color: #333;
+            --card-bg: #fff;
+            --border-radius: 8px;
+        }
         body { 
             font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif; 
             margin: 0; 
-            background-color: #f4f4f9; 
-            color: #333;
+            background-color: var(--light-gray); 
+            color: var(--text-color);
         }
         .main-container {
             padding: 20px;
         }
-        .header, .controls, .info-box { 
-            background-color: #fff; 
+        .header, .controls, .info-box, .tab-content { 
+            background-color: var(--card-bg); 
             padding: 20px; 
-            border-radius: 8px; 
-            box-shadow: 0 2px 4px rgba(0,0,0,0.1); 
+            border-radius: var(--border-radius); 
+            box-shadow: 0 4px 8px rgba(0,0,0,0.05); 
             margin-bottom: 20px;
         }
-        .info-box {
-            border-left: 5px solid #17a2b8;
+        h1, h2 { 
+            color: var(--primary-color); 
+            text-align: center; 
+            margin-top: 0;
         }
-        .info-box code {
+        /* Pestañas de Navegación */
+        .tabs {
+            display: flex;
+            justify-content: center;
+            margin-bottom: 20px;
+            gap: 10px;
+        }
+        .tab-button {
+            padding: 10px 20px;
+            font-size: 1.1em;
+            cursor: pointer;
+            border: none;
             background-color: #e9ecef;
-            padding: 2px 6px;
-            border-radius: 4px;
-            font-family: 'Courier New', Courier, monospace;
+            border-radius: var(--border-radius);
+            transition: all 0.3s ease;
         }
+        .tab-button.active, .tab-button:hover {
+            background-color: var(--primary-color);
+            color: white;
+        }
+        .tab-content {
+            display: none; /* Oculto por defecto */
+        }
+        .tab-content.active {
+            display: block; /* Visible cuando está activo */
+        }
+        /* Controles y Filtros */
+        .controls-container {
+            display: flex;
+            justify-content: center;
+            align-items: center;
+            gap: 15px;
+            flex-wrap: wrap;
+        }
+        .controls-container label {
+            font-weight: bold;
+        }
+        .controls-container input[type="date"] {
+            padding: 8px;
+            border-radius: 5px;
+            border: 1px solid #ccc;
+        }
+        .btn {
+            color: white;
+            border: none;
+            padding: 10px 20px;
+            border-radius: 5px;
+            cursor: pointer;
+            font-size: 1em;
+            font-weight: bold;
+            transition: background-color 0.3s;
+        }
+        #applyFilterBtn { background-color: var(--primary-color); }
+        #applyFilterBtn:hover { background-color: #004494; }
+        #refreshBtn { background-color: var(--secondary-color); }
+        #refreshBtn:hover { background-color: #218838; }
+        
+        /* KPIs */
         .kpi-container { 
             display: flex; 
             flex-wrap: wrap;
             gap: 15px;
             justify-content: space-around; 
             text-align: center; 
-            margin-top: 20px;
         }
         .kpi-box { 
             background-color: #eaf2f8; 
             padding: 20px; 
-            border-radius: 8px; 
+            border-radius: var(--border-radius); 
             flex-grow: 1;
             min-width: 250px;
-            border-left: 5px solid #0056b3; 
+            border-left: 5px solid var(--primary-color); 
         }
         .kpi-value { 
             font-size: 2.5em; 
             font-weight: bold; 
-            color: #0056b3; 
+            color: var(--primary-color); 
         }
-        .kpi-label { 
-            font-size: 1.1em; 
-            color: #555; 
-            margin-top: 5px;
-        }
+        /* Gráficos */
         .charts-grid { 
             display: grid; 
             grid-template-columns: repeat(auto-fit, minmax(450px, 1fr)); 
             gap: 20px; 
         }
         .chart-box { 
-            background-color: #fff; 
+            background-color: var(--card-bg); 
             padding: 20px; 
-            border-radius: 8px; 
-            box-shadow: 0 2px 4px rgba(0,0,0,0.1); 
+            border-radius: var(--border-radius); 
+            box-shadow: 0 4px 8px rgba(0,0,0,0.05); 
         }
-        h1 { 
-            color: #0056b3; 
-            text-align: center; 
-        }
-        .full-width { 
-            grid-column: 1 / -1; 
-        }
-        #refreshBtn {
-            background-color: #28a745;
-            color: white;
-            border: none;
-            padding: 12px 25px;
-            border-radius: 5px;
-            cursor: pointer;
-            font-size: 1.1em;
-            font-weight: bold;
-            display: block;
-            margin: 0 auto;
-            transition: background-color 0.3s;
-        }
-        #refreshBtn:hover {
-            background-color: #218838;
-        }
+        .full-width { grid-column: 1 / -1; }
         #status {
              margin-top: 15px; text-align: center; font-weight: bold;
         }
@@ -100,88 +136,109 @@
 <body>
 
     <div class="main-container">
-
-        <!-- Sección de controles con el botón de refrescar -->
-        <div class="controls">
-             <button id="refreshBtn">Refrescar Dashboard</button>
-             <div id="status">Cargando datos...</div>
-        </div>
-
-        <div class="info-box">
-             <p><strong>Nota Importante:</strong> Para que este dashboard funcione, el archivo <code>index.html</code> y <code>exportProduccionyEventos.csv</code> deben estar en la misma carpeta, y debes verlos a través de un servidor local (ej: con el comando <code>python -m http.server</code>).</p>
-        </div>
-
-        <!-- Cabecera con título y KPIs -->
         <div class="header">
-            <h1>Dashboard de Producción y Paradas</h1>
+             <h1><i class="fas fa-chart-line"></i> Dashboard Profesional de Producción</h1>
+        </div>
+        
+        <div class="controls">
+            <div class="controls-container">
+                <label for="startDate">Desde:</label>
+                <input type="date" id="startDate">
+                <label for="endDate">Hasta:</label>
+                <input type="date" id="endDate">
+                <button id="applyFilterBtn" class="btn"><i class="fas fa-filter"></i> Aplicar Filtros</button>
+                <button id="refreshBtn" class="btn"><i class="fas fa-sync-alt"></i> Limpiar y Recargar</button>
+            </div>
+            <div id="status">Cargando datos iniciales...</div>
+        </div>
+
+        <div class="tabs">
+            <button class="tab-button active" onclick="openTab('resumen')"><i class="fas fa-tachometer-alt"></i> Resumen General</button>
+            <button class="tab-button" onclick="openTab('causas')"><i class="fas fa-search"></i> Análisis de Causas</button>
+            <button class="tab-button" onclick="openTab('produccion')"><i class="fas fa-cogs"></i> Análisis de Producción</button>
+        </div>
+
+        <!-- Contenido de la Pestaña 1: Resumen General -->
+        <div id="resumen" class="tab-content active">
+            <h2><i class="fas fa-tachometer-alt"></i> Resumen General</h2>
             <div class="kpi-container">
-                <div class="kpi-box">
-                    <div id="kpi-produccion" class="kpi-value">-</div>
-                    <div class="kpi-label">Producción Total</div>
-                </div>
-                <div class="kpi-box">
-                    <div id="kpi-paradas" class="kpi-value">-</div>
-                    <div class="kpi-label">Minutos Totales de Parada</div>
-                </div>
-                <div class="kpi-box">
-                    <div id="kpi-incidencias" class="kpi-value">-</div>
-                    <div class="kpi-label">Total de Incidencias</div>
-                </div>
+                <div class="kpi-box"><div id="kpi-produccion" class="kpi-value">-</div><div class="kpi-label">Producción Total</div></div>
+                <div class="kpi-box"><div id="kpi-paradas" class="kpi-value">-</div><div class="kpi-label">Minutos Totales de Parada</div></div>
+                <div class="kpi-box"><div id="kpi-incidencias" class="kpi-value">-</div><div class="kpi-label">Total de Incidencias</div></div>
+            </div>
+            <div class="charts-grid" style="margin-top: 20px;">
+                <div class="chart-box full-width" id="chart_dia"></div>
             </div>
         </div>
 
-        <!-- Grilla para mostrar los gráficos -->
-        <div class="charts-grid">
-            <div class="chart-box full-width" id="chart_dia"></div>
-            <div class="chart-box" id="chart_maquina"></div>
-            <div class="chart-box" id="chart_prod_maquina"></div>
-            <div class="chart-box" id="chart_incidencia"></div>
-            <div class="chart-box" id="chart_operario"></div>
+        <!-- Contenido de la Pestaña 2: Análisis de Causas -->
+        <div id="causas" class="tab-content">
+            <h2><i class="fas fa-search"></i> Análisis Detallado de Causas de Parada</h2>
+            <div class="charts-grid">
+                <div class="chart-box" id="chart_maquina"></div>
+                <div class="chart-box" id="chart_incidencia"></div>
+                <div class="chart-box" id="chart_operario"></div>
+                <div class="chart-box" id="chart_turno"></div>
+            </div>
+        </div>
+        
+        <!-- Contenido de la Pestaña 3: Análisis de Producción -->
+        <div id="produccion" class="tab-content">
+            <h2><i class="fas fa-cogs"></i> Análisis de Rendimiento de Producción</h2>
+            <div class="charts-grid">
+                <div class="chart-box full-width" id="chart_prod_maquina"></div>
+            </div>
         </div>
     </div>
 
     <script>
-        // Variable global para almacenar los datos cargados del CSV
         let cachedData = [];
         const statusDiv = document.getElementById('status');
+        const applyFilterBtn = document.getElementById('applyFilterBtn');
         const refreshBtn = document.getElementById('refreshBtn');
-        
-        // El nombre del archivo CSV que se buscará en la misma carpeta.
+        const startDateInput = document.getElementById('startDate');
+        const endDateInput = document.getElementById('endDate');
         const localCsvFile = 'exportProduccionyEventos.csv';
 
-        /**
-         * Función principal que se ejecuta cuando la página se carga.
-         */
         document.addEventListener('DOMContentLoaded', () => {
             loadAndProcessData();
         });
-
-        /**
-         * Maneja el evento de clic del botón de refrescar.
-         */
-        refreshBtn.addEventListener('click', () => {
-            if (cachedData.length > 0) {
-                statusDiv.textContent = 'Refrescando vistas...';
-                statusDiv.style.color = '#0056b3';
+        
+        applyFilterBtn.addEventListener('click', () => {
+             if (cachedData.length > 0) {
+                statusDiv.textContent = 'Aplicando filtros...';
                 updateDashboard(cachedData);
-                setTimeout(() => { statusDiv.textContent = 'Dashboard actualizado.'; }, 500);
+                statusDiv.textContent = 'Filtros aplicados.';
+             } else {
+                statusDiv.textContent = 'No hay datos cargados para filtrar.';
+             }
+        });
+
+        refreshBtn.addEventListener('click', () => {
+            startDateInput.value = '';
+            endDateInput.value = '';
+            if (cachedData.length > 0) {
+                statusDiv.textContent = 'Limpiando filtros y recargando...';
+                updateDashboard(cachedData);
+                statusDiv.textContent = 'Dashboard restaurado.';
             } else {
-                statusDiv.textContent = 'No hay datos cargados para refrescar. Intentando cargar de nuevo...';
                 loadAndProcessData();
             }
         });
 
-        /**
-         * Carga el archivo CSV local usando fetch y lo procesa.
-         */
+        function openTab(tabName) {
+            document.querySelectorAll('.tab-content').forEach(tab => tab.classList.remove('active'));
+            document.querySelectorAll('.tab-button').forEach(btn => btn.classList.remove('active'));
+            document.getElementById(tabName).classList.add('active');
+            event.currentTarget.classList.add('active');
+        }
+
         async function loadAndProcessData() {
             statusDiv.textContent = `Cargando archivo '${localCsvFile}'...`;
             statusDiv.style.color = '#0056b3';
             try {
                 const response = await fetch(localCsvFile);
-                if (!response.ok) {
-                    throw new Error(`Error HTTP ${response.status} - ${response.statusText}`);
-                }
+                if (!response.ok) throw new Error(`Error HTTP ${response.status}`);
                 const csvText = await response.text();
                 
                 Papa.parse(csvText, {
@@ -189,60 +246,68 @@
                     skipEmptyLines: true,
                     delimiter: ";",
                     complete: (results) => {
-                        cachedData = results.data; 
+                        cachedData = results.data.map(row => ({
+                            ...row,
+                            // Pre-procesar fecha para facilitar el filtrado
+                            fechaObj: new Date(row.Fecha.split('/').reverse().join('-'))
+                        }));
                         updateDashboard(cachedData);
-                        statusDiv.textContent = `Datos cargados. Se encontraron ${cachedData.length} registros.`;
+                        statusDiv.textContent = `Datos cargados. ${cachedData.length} registros encontrados.`;
                         statusDiv.style.color = 'green';
                     },
-                    error: (err) => {
-                        throw new Error(`Error al parsear el CSV: ${err.message}`);
-                    }
+                    error: (err) => { throw new Error(err.message); }
                 });
             } catch (error) {
                 console.error('Error detallado:', error);
-                statusDiv.textContent = `Error: No se pudo cargar '${localCsvFile}'. Verifica que el archivo exista en la misma carpeta y que estés usando un servidor local.`;
+                statusDiv.textContent = `Error: No se pudo cargar '${localCsvFile}'. Verifica que exista en la misma carpeta y que uses un servidor local.`;
                 statusDiv.style.color = 'red';
             }
         }
-
-        /**
-         * Parsea un número en formato "1.234,56" a un float estándar.
-         */
+        
         function parseCustomFloat(value) {
             if (typeof value !== 'string' || value.trim() === '') return 0;
             return parseFloat(value.replace(/\./g, '').replace(',', '.')) || 0;
         }
         
-        /**
-         * Toma los datos procesados y actualiza todos los elementos del dashboard.
-         */
-        function updateDashboard(data) {
-            // --- 1. Limpieza y preparación de datos ---
-            const cleanData = data.map(row => ({
+        function updateDashboard(sourceData) {
+            // --- 0. Aplicar Filtros ---
+            const startDate = startDateInput.value ? new Date(startDateInput.value) : null;
+            const endDate = endDateInput.value ? new Date(endDateInput.value) : null;
+            
+            const filteredData = sourceData.filter(row => {
+                if (!startDate || !endDate) return true; // Si no hay filtro, pasar todo
+                // Ajustamos la hora para incluir todo el día en la comparación
+                const rowDate = row.fechaObj;
+                const endOfDayEndDate = new Date(endDate);
+                endOfDayEndDate.setHours(23, 59, 59, 999);
+                return rowDate >= startDate && rowDate <= endOfDayEndDate;
+            });
+
+            // --- 1. Limpieza y preparación ---
+            const cleanData = filteredData.map(row => ({
                 Fecha: row.Fecha,
                 Minutos: parseInt(row.Minutos, 10) || 0,
                 Cantidad: parseCustomFloat(row.Cantidad),
                 IdProduccion: row.IdProduccion,
                 Descrip_Maquina: row['Descrip_Maquina'] || 'Sin Nombre',
                 NroIncidencia: row.NroIncidencia || 'N/A',
-                Apellido: row.Apellido || 'Desconocido'
+                Apellido: row.Apellido || 'Desconocido',
+                Turno: row.Turno || 'N/A'
             }));
 
-            // --- 2. Cálculo de KPIs ---
-            const totalMinutosParada = cleanData.reduce((sum, row) => sum + row.Minutos, 0);
+            // --- 2. KPIs ---
+            const totalMinutosParada = cleanData.reduce((sum, r) => sum + r.Minutos, 0);
             const totalIncidencias = cleanData.length;
             const produccionUnica = [...new Map(cleanData.map(item => [item.IdProduccion, item])).values()];
-            const totalProduccion = produccionUnica.reduce((sum, row) => sum + row.Cantidad, 0);
+            const totalProduccion = produccionUnica.reduce((sum, r) => sum + r.Cantidad, 0);
 
             document.getElementById('kpi-produccion').textContent = totalProduccion.toLocaleString('es-AR', {maximumFractionDigits:0});
             document.getElementById('kpi-paradas').textContent = totalMinutosParada.toLocaleString('es-AR');
             document.getElementById('kpi-incidencias').textContent = totalIncidencias.toLocaleString('es-AR');
 
-            // --- 3. Agregación de datos para gráficos ---
-            const groupBy = (arr, key, valueKey) => arr.reduce((acc, row) => {
-                const group = row[key];
-                acc[group] = (acc[group] || 0) + row[valueKey];
-                return acc;
+            // --- 3. Agregación de datos ---
+            const groupBy = (arr, key, valKey) => arr.reduce((acc, r) => {
+                acc[r[key]] = (acc[r[key]] || 0) + r[valKey]; return acc;
             }, {});
 
             const paradasPorDia = groupBy(cleanData, 'Fecha', 'Minutos');
@@ -250,37 +315,33 @@
             const produccionPorMaquina = groupBy(produccionUnica, 'Descrip_Maquina', 'Cantidad');
             const paradasPorIncidencia = groupBy(cleanData, 'NroIncidencia', 'Minutos');
             const paradasPorOperario = groupBy(cleanData, 'Apellido', 'Minutos');
+            const paradasPorTurno = groupBy(cleanData, 'Turno', 'Minutos');
             
-            // --- 4. Ordenamiento y preparación para Plotly ---
-            const sortAndPrepare = (groupedData, limit = null) => {
-                let sorted = Object.entries(groupedData).sort(([,a],[,b]) => b - a);
-                if (limit) sorted = sorted.slice(0, limit);
-                return {
-                    labels: sorted.map(item => item[0]),
-                    values: sorted.map(item => item[1])
-                };
+            // --- 4. Ordenamiento y preparación ---
+            const sortAndPrepare = (groupedData, limit=null) => {
+                let sorted = Object.entries(groupedData).sort(([,a],[,b]) => b-a);
+                if(limit) sorted = sorted.slice(0, limit);
+                return { labels: sorted.map(i => i[0]), values: sorted.map(i => i[1]) };
             };
             
-            const sortedFechas = Object.keys(paradasPorDia).sort((a, b) => new Date(a.split('/').reverse().join('-')) - new Date(b.split('/').reverse().join('-')));
-            const dataDia = {
-                labels: sortedFechas,
-                values: sortedFechas.map(fecha => paradasPorDia[fecha])
-            };
-
+            const sortedFechas = Object.keys(paradasPorDia).sort((a,b) => new Date(a.split('/').reverse().join('-')) - new Date(b.split('/').reverse().join('-')));
+            const dataDia = { labels: sortedFechas, values: sortedFechas.map(f => paradasPorDia[f]) };
             const dataMaquina = sortAndPrepare(paradasPorMaquina);
             const dataProdMaquina = sortAndPrepare(produccionPorMaquina);
             const dataIncidencia = sortAndPrepare(paradasPorIncidencia, 10);
             const dataOperario = sortAndPrepare(paradasPorOperario, 10);
+            const dataTurno = sortAndPrepare(paradasPorTurno);
 
-            // --- 5. Actualización de Gráficos con Plotly.react ---
+            // --- 5. Actualización de Gráficos ---
             const plotlyConfig = {responsive: true, displaylogo: false};
-            const layoutTemplate = (title) => ({ title: title, xaxis: { categoryorder: 'total descending' } });
+            const layout = (title) => ({ title: title, xaxis: { categoryorder: 'total descending' } });
 
-            Plotly.react('chart_dia', [{ x: dataDia.labels, y: dataDia.values, type: 'scatter', mode: 'lines+markers', line: {color: '#0056b3'} }], { title: 'Minutos de Parada por Día' }, plotlyConfig);
-            Plotly.react('chart_maquina', [{ x: dataMaquina.labels, y: dataMaquina.values, type: 'bar', marker: { color: '#0056b3' } }], layoutTemplate('Total Minutos de Parada por Máquina'), plotlyConfig);
-            Plotly.react('chart_prod_maquina', [{ x: dataProdMaquina.labels, y: dataProdMaquina.values, type: 'bar', marker: { color: '#ff7f0e' } }], layoutTemplate('Producción Total por Máquina'), plotlyConfig);
-            Plotly.react('chart_incidencia', [{ x: dataIncidencia.labels, y: dataIncidencia.values, type: 'bar', marker: { color: '#2ca02c' } }], layoutTemplate('Top 10 Causas de Parada (Por Nro. Incidencia)'), plotlyConfig);
-            Plotly.react('chart_operario', [{ x: dataOperario.labels, y: dataOperario.values, type: 'bar', marker: { color: '#d62728' } }], layoutTemplate('Top 10 Minutos de Parada por Operario'), plotlyConfig);
+            Plotly.react('chart_dia', [{ x: dataDia.labels, y: dataDia.values, type: 'scatter', mode: 'lines+markers', line: {color: '#0056b3'}}], {title: 'Minutos de Parada por Día'}, plotlyConfig);
+            Plotly.react('chart_maquina', [{ x: dataMaquina.labels, y: dataMaquina.values, type: 'bar', marker: {color: '#0056b3'}}], layout('Total Minutos de Parada por Máquina'), plotlyConfig);
+            Plotly.react('chart_prod_maquina', [{ x: dataProdMaquina.labels, y: dataProdMaquina.values, type: 'bar', marker: {color: '#ff7f0e'}}], layout('Producción Total por Máquina'), plotlyConfig);
+            Plotly.react('chart_incidencia', [{ x: dataIncidencia.labels, y: dataIncidencia.values, type: 'bar', marker: {color: '#2ca02c'}}], layout('Top 10 Causas de Parada (Nro. Incidencia)'), plotlyConfig);
+            Plotly.react('chart_operario', [{ x: dataOperario.labels, y: dataOperario.values, type: 'bar', marker: {color: '#d62728'}}], layout('Top 10 Operarios por Minutos de Parada'), plotlyConfig);
+            Plotly.react('chart_turno', [{ x: dataTurno.labels, y: dataTurno.values, type: 'bar', marker: {color: '#9467bd'}}], layout('Total Minutos de Parada por Turno'), plotlyConfig);
         }
     </script>
 </body>
