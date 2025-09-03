@@ -1,0 +1,275 @@
+<!DOCTYPE html>
+<html>
+<head>
+    <meta charset="UTF-8">
+    <title>Dashboard Dinámico de Producción</title>
+    <!-- Librerías para gráficos y para leer CSV -->
+    <script src="https://cdn.plot.ly/plotly-latest.min.js"></script>
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/PapaParse/5.4.1/papaparse.min.js"></script>
+    <style>
+        body { 
+            font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif; 
+            margin: 0; 
+            background-color: #f4f4f9; 
+            color: #333;
+        }
+        .main-container {
+            padding: 20px;
+        }
+        .header, .controls { 
+            background-color: #fff; 
+            padding: 20px; 
+            border-radius: 8px; 
+            box-shadow: 0 2px 4px rgba(0,0,0,0.1); 
+            margin-bottom: 20px;
+        }
+        .kpi-container { 
+            display: flex; 
+            flex-wrap: wrap;
+            gap: 15px;
+            justify-content: space-around; 
+            text-align: center; 
+            margin-top: 20px;
+        }
+        .kpi-box { 
+            background-color: #eaf2f8; 
+            padding: 20px; 
+            border-radius: 8px; 
+            flex-grow: 1;
+            min-width: 250px;
+            border-left: 5px solid #0056b3; 
+        }
+        .kpi-value { 
+            font-size: 2.5em; 
+            font-weight: bold; 
+            color: #0056b3; 
+        }
+        .kpi-label { 
+            font-size: 1.1em; 
+            color: #555; 
+            margin-top: 5px;
+        }
+        .charts-grid { 
+            display: grid; 
+            grid-template-columns: repeat(auto-fit, minmax(450px, 1fr)); 
+            gap: 20px; 
+        }
+        .chart-box { 
+            background-color: #fff; 
+            padding: 20px; 
+            border-radius: 8px; 
+            box-shadow: 0 2px 4px rgba(0,0,0,0.1); 
+        }
+        h1 { 
+            color: #0056b3; 
+            text-align: center; 
+        }
+        .full-width { 
+            grid-column: 1 / -1; 
+        }
+        #refreshBtn {
+            background-color: #28a745;
+            color: white;
+            border: none;
+            padding: 12px 25px;
+            border-radius: 5px;
+            cursor: pointer;
+            font-size: 1.1em;
+            font-weight: bold;
+            display: block;
+            margin: 0 auto;
+            transition: background-color 0.3s;
+        }
+        #refreshBtn:hover {
+            background-color: #218838;
+        }
+        #status {
+             margin-top: 15px; text-align: center; font-weight: bold;
+        }
+    </style>
+</head>
+<body>
+
+    <div class="main-container">
+
+        <!-- Sección de controles con el botón de refrescar -->
+        <div class="controls">
+             <button id="refreshBtn">Refrescar Dashboard</button>
+             <div id="status">Cargando datos...</div>
+        </div>
+
+        <!-- Cabecera con título y KPIs -->
+        <div class="header">
+            <h1>Dashboard de Producción y Paradas</h1>
+            <div class="kpi-container">
+                <div class="kpi-box">
+                    <div id="kpi-produccion" class="kpi-value">-</div>
+                    <div class="kpi-label">Producción Total</div>
+                </div>
+                <div class="kpi-box">
+                    <div id="kpi-paradas" class="kpi-value">-</div>
+                    <div class="kpi-label">Minutos Totales de Parada</div>
+                </div>
+                <div class="kpi-box">
+                    <div id="kpi-incidencias" class="kpi-value">-</div>
+                    <div class="kpi-label">Total de Incidencias</div>
+                </div>
+            </div>
+        </div>
+
+        <!-- Grilla para mostrar los gráficos -->
+        <div class="charts-grid">
+            <div class="chart-box full-width" id="chart_dia"></div>
+            <div class="chart-box" id="chart_maquina"></div>
+            <div class="chart-box" id="chart_prod_maquina"></div>
+            <div class="chart-box" id="chart_incidencia"></div>
+            <div class="chart-box" id="chart_operario"></div>
+        </div>
+    </div>
+
+    <script>
+        // Variable global para almacenar los datos cargados del CSV
+        let cachedData = [];
+        const statusDiv = document.getElementById('status');
+        const refreshBtn = document.getElementById('refreshBtn');
+
+        /**
+         * Función principal que se ejecuta cuando la página se carga.
+         * Intenta cargar el archivo CSV desde la misma carpeta.
+         */
+        document.addEventListener('DOMContentLoaded', () => {
+            loadAndProcessData();
+        });
+
+        /**
+         * Maneja el evento de clic del botón de refrescar.
+         * Usa los datos ya cargados en 'cachedData' para regenerar los gráficos.
+         */
+        refreshBtn.addEventListener('click', () => {
+            if (cachedData.length > 0) {
+                statusDiv.textContent = 'Refrescando vistas...';
+                statusDiv.style.color = '#0056b3';
+                updateDashboard(cachedData);
+                setTimeout(() => { statusDiv.textContent = 'Dashboard actualizado.'; }, 500);
+            } else {
+                statusDiv.textContent = 'No hay datos cargados para refrescar. Intentando cargar de nuevo...';
+                loadAndProcessData();
+            }
+        });
+
+        /**
+         * Carga el archivo CSV usando fetch y lo procesa con PapaParse.
+         */
+        async function loadAndProcessData() {
+            try {
+                // La URL relativa busca el archivo en la misma carpeta que el HTML
+                const response = await fetch('exportProduccionyEventos.csv');
+                if (!response.ok) {
+                    throw new Error(`Error al cargar el archivo: ${response.statusText} (Código: ${response.status})`);
+                }
+                const csvText = await response.text();
+                
+                // Usamos PapaParse para convertir el texto CSV a un array de objetos
+                Papa.parse(csvText, {
+                    header: true,
+                    skipEmptyLines: true,
+                    delimiter: ";",
+                    complete: (results) => {
+                        cachedData = results.data; // Guardamos los datos en la caché
+                        updateDashboard(cachedData); // Actualizamos el dashboard
+                        statusDiv.textContent = `Datos cargados correctamente. Se encontraron ${cachedData.length} registros.`;
+                        statusDiv.style.color = 'green';
+                    },
+                    error: (err) => {
+                        throw new Error(`Error al parsear el CSV: ${err.message}`);
+                    }
+                });
+            } catch (error) {
+                console.error('Error detallado:', error);
+                statusDiv.textContent = `Error: No se pudo cargar o procesar "exportProduccionyEventos.csv". Asegúrate de que el archivo esté en la misma carpeta que este HTML.`;
+                statusDiv.style.color = 'red';
+            }
+        }
+
+        /**
+         * Parsea un número en formato "1.234,56" a un float estándar.
+         */
+        function parseCustomFloat(value) {
+            if (typeof value !== 'string' || value.trim() === '') return 0;
+            return parseFloat(value.replace(/\./g, '').replace(',', '.')) || 0;
+        }
+        
+        /**
+         * Toma los datos procesados y actualiza todos los elementos del dashboard.
+         */
+        function updateDashboard(data) {
+            // --- 1. Limpieza y preparación de datos ---
+            const cleanData = data.map(row => ({
+                Fecha: row.Fecha,
+                Minutos: parseInt(row.Minutos, 10) || 0,
+                Cantidad: parseCustomFloat(row.Cantidad),
+                IdProduccion: row.IdProduccion,
+                Descrip_Maquina: row['Descrip_Maquina'] || 'Sin Nombre',
+                NroIncidencia: row.NroIncidencia || 'N/A',
+                Apellido: row.Apellido || 'Desconocido'
+            }));
+
+            // --- 2. Cálculo de KPIs ---
+            const totalMinutosParada = cleanData.reduce((sum, row) => sum + row.Minutos, 0);
+            const totalIncidencias = cleanData.length;
+            const produccionUnica = [...new Map(cleanData.map(item => [item.IdProduccion, item])).values()];
+            const totalProduccion = produccionUnica.reduce((sum, row) => sum + row.Cantidad, 0);
+
+            document.getElementById('kpi-produccion').textContent = totalProduccion.toLocaleString('es-AR', {maximumFractionDigits:0});
+            document.getElementById('kpi-paradas').textContent = totalMinutosParada.toLocaleString('es-AR');
+            document.getElementById('kpi-incidencias').textContent = totalIncidencias.toLocaleString('es-AR');
+
+            // --- 3. Agregación de datos para gráficos ---
+            const groupBy = (arr, key, valueKey) => arr.reduce((acc, row) => {
+                const group = row[key];
+                acc[group] = (acc[group] || 0) + row[valueKey];
+                return acc;
+            }, {});
+
+            // Agrupamos los datos
+            const paradasPorDia = groupBy(cleanData, 'Fecha', 'Minutos');
+            const paradasPorMaquina = groupBy(cleanData, 'Descrip_Maquina', 'Minutos');
+            const produccionPorMaquina = groupBy(produccionUnica, 'Descrip_Maquina', 'Cantidad');
+            const paradasPorIncidencia = groupBy(cleanData, 'NroIncidencia', 'Minutos');
+            const paradasPorOperario = groupBy(cleanData, 'Apellido', 'Minutos');
+            
+            // --- 4. Ordenamiento y preparación para Plotly ---
+            const sortAndPrepare = (groupedData, limit = null) => {
+                let sorted = Object.entries(groupedData).sort(([,a],[,b]) => b - a);
+                if (limit) sorted = sorted.slice(0, limit);
+                return {
+                    labels: sorted.map(item => item[0]),
+                    values: sorted.map(item => item[1])
+                };
+            };
+            
+            // Datos para el gráfico de línea de tiempo (se ordena por fecha)
+            const sortedFechas = Object.keys(paradasPorDia).sort((a, b) => new Date(a.split('/').reverse().join('-')) - new Date(b.split('/').reverse().join('-')));
+            const dataDia = {
+                labels: sortedFechas,
+                values: sortedFechas.map(fecha => paradasPorDia[fecha])
+            };
+
+            const dataMaquina = sortAndPrepare(paradasPorMaquina);
+            const dataProdMaquina = sortAndPrepare(produccionPorMaquina);
+            const dataIncidencia = sortAndPrepare(paradasPorIncidencia, 10);
+            const dataOperario = sortAndPrepare(paradasPorOperario, 10);
+
+            // --- 5. Actualización de Gráficos con Plotly.react ---
+            const plotlyConfig = {responsive: true, displaylogo: false};
+            const layoutTemplate = (title) => ({ title: title, xaxis: { categoryorder: 'total descending' } });
+
+            Plotly.react('chart_dia', [{ x: dataDia.labels, y: dataDia.values, type: 'scatter', mode: 'lines+markers', line: {color: '#0056b3'} }], { title: 'Minutos de Parada por Día' }, plotlyConfig);
+            Plotly.react('chart_maquina', [{ x: dataMaquina.labels, y: dataMaquina.values, type: 'bar', marker: { color: '#0056b3' } }], layoutTemplate('Total Minutos de Parada por Máquina'), plotlyConfig);
+            Plotly.react('chart_prod_maquina', [{ x: dataProdMaquina.labels, y: dataProdMaquina.values, type: 'bar', marker: { color: '#ff7f0e' } }], layoutTemplate('Producción Total por Máquina'), plotlyConfig);
+            Plotly.react('chart_incidencia', [{ x: dataIncidencia.labels, y: dataIncidencia.values, type: 'bar', marker: { color: '#2ca02c' } }], layoutTemplate('Top 10 Causas de Parada (Por Nro. Incidencia)'), plotlyConfig);
+            Plotly.react('chart_operario', [{ x: dataOperario.labels, y: dataOperario.values, type: 'bar', marker: { color: '#d62728' } }], layoutTemplate('Top 10 Minutos de Parada por Operario'), plotlyConfig);
+        }
+    </script>
+</body>
+</html>
