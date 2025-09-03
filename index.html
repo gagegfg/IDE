@@ -2,7 +2,7 @@
 <html>
 <head>
     <meta charset="UTF-8">
-    <title>Dashboard Dinámico de Producción</title>
+    <title>Dashboard de Producción</title>
     <!-- Librerías para gráficos y para leer CSV -->
     <script src="https://cdn.plot.ly/plotly-latest.min.js"></script>
     <script src="https://cdnjs.cloudflare.com/ajax/libs/PapaParse/5.4.1/papaparse.min.js"></script>
@@ -16,12 +16,21 @@
         .main-container {
             padding: 20px;
         }
-        .header, .controls { 
+        .header, .controls, .info-box { 
             background-color: #fff; 
             padding: 20px; 
             border-radius: 8px; 
             box-shadow: 0 2px 4px rgba(0,0,0,0.1); 
             margin-bottom: 20px;
+        }
+        .info-box {
+            border-left: 5px solid #17a2b8;
+        }
+        .info-box code {
+            background-color: #e9ecef;
+            padding: 2px 6px;
+            border-radius: 4px;
+            font-family: 'Courier New', Courier, monospace;
         }
         .kpi-container { 
             display: flex; 
@@ -98,6 +107,10 @@
              <div id="status">Cargando datos...</div>
         </div>
 
+        <div class="info-box">
+             <p><strong>Nota Importante:</strong> Para que este dashboard funcione, el archivo <code>index.html</code> y <code>exportProduccionyEventos.csv</code> deben estar en la misma carpeta, y debes verlos a través de un servidor local (ej: con el comando <code>python -m http.server</code>).</p>
+        </div>
+
         <!-- Cabecera con título y KPIs -->
         <div class="header">
             <h1>Dashboard de Producción y Paradas</h1>
@@ -132,10 +145,12 @@
         let cachedData = [];
         const statusDiv = document.getElementById('status');
         const refreshBtn = document.getElementById('refreshBtn');
+        
+        // El nombre del archivo CSV que se buscará en la misma carpeta.
+        const localCsvFile = 'exportProduccionyEventos.csv';
 
         /**
          * Función principal que se ejecuta cuando la página se carga.
-         * Intenta cargar el archivo CSV desde la misma carpeta.
          */
         document.addEventListener('DOMContentLoaded', () => {
             loadAndProcessData();
@@ -143,7 +158,6 @@
 
         /**
          * Maneja el evento de clic del botón de refrescar.
-         * Usa los datos ya cargados en 'cachedData' para regenerar los gráficos.
          */
         refreshBtn.addEventListener('click', () => {
             if (cachedData.length > 0) {
@@ -158,26 +172,26 @@
         });
 
         /**
-         * Carga el archivo CSV usando fetch y lo procesa con PapaParse.
+         * Carga el archivo CSV local usando fetch y lo procesa.
          */
         async function loadAndProcessData() {
+            statusDiv.textContent = `Cargando archivo '${localCsvFile}'...`;
+            statusDiv.style.color = '#0056b3';
             try {
-                // La URL relativa busca el archivo en la misma carpeta que el HTML
-                const response = await fetch('exportProduccionyEventos.csv');
+                const response = await fetch(localCsvFile);
                 if (!response.ok) {
-                    throw new Error(`Error al cargar el archivo: ${response.statusText} (Código: ${response.status})`);
+                    throw new Error(`Error HTTP ${response.status} - ${response.statusText}`);
                 }
                 const csvText = await response.text();
                 
-                // Usamos PapaParse para convertir el texto CSV a un array de objetos
                 Papa.parse(csvText, {
                     header: true,
                     skipEmptyLines: true,
                     delimiter: ";",
                     complete: (results) => {
-                        cachedData = results.data; // Guardamos los datos en la caché
-                        updateDashboard(cachedData); // Actualizamos el dashboard
-                        statusDiv.textContent = `Datos cargados correctamente. Se encontraron ${cachedData.length} registros.`;
+                        cachedData = results.data; 
+                        updateDashboard(cachedData);
+                        statusDiv.textContent = `Datos cargados. Se encontraron ${cachedData.length} registros.`;
                         statusDiv.style.color = 'green';
                     },
                     error: (err) => {
@@ -186,7 +200,7 @@
                 });
             } catch (error) {
                 console.error('Error detallado:', error);
-                statusDiv.textContent = `Error: No se pudo cargar o procesar "exportProduccionyEventos.csv". Asegúrate de que el archivo esté en la misma carpeta que este HTML.`;
+                statusDiv.textContent = `Error: No se pudo cargar '${localCsvFile}'. Verifica que el archivo exista en la misma carpeta y que estés usando un servidor local.`;
                 statusDiv.style.color = 'red';
             }
         }
@@ -231,7 +245,6 @@
                 return acc;
             }, {});
 
-            // Agrupamos los datos
             const paradasPorDia = groupBy(cleanData, 'Fecha', 'Minutos');
             const paradasPorMaquina = groupBy(cleanData, 'Descrip_Maquina', 'Minutos');
             const produccionPorMaquina = groupBy(produccionUnica, 'Descrip_Maquina', 'Cantidad');
@@ -248,7 +261,6 @@
                 };
             };
             
-            // Datos para el gráfico de línea de tiempo (se ordena por fecha)
             const sortedFechas = Object.keys(paradasPorDia).sort((a, b) => new Date(a.split('/').reverse().join('-')) - new Date(b.split('/').reverse().join('-')));
             const dataDia = {
                 labels: sortedFechas,
