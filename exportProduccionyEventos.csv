@@ -1,4 +1,4 @@
-﻿IdProduccion;Fecha;Turno;Objetivo;Encargado;Máquina_Prod;Descrip_Maquina;Operario;Apellido;Cantidad;Hs Trab;Hs Descanso;Observaciones;IdIncidencia;NroIncidencia;descrip_incidencia;Frecuencia;Minutos;SinOperario
+IdProduccion;Fecha;Turno;Objetivo;Encargado;Máquina_Prod;Descrip_Maquina;Operario;Apellido;Cantidad;Hs Trab;Hs Descanso;Observaciones;IdIncidencia;NroIncidencia;descrip_incidencia;Frecuencia;Minutos;SinOperario
 189796;1/8/2025;06-14;4000;18;9;Pan Dulcera 9;189;Avendaño;41.000,00;400;;;298720;10;;2;20;FALSO
 189796;1/8/2025;06-14;4000;18;9;Pan Dulcera 9;189;Avendaño;41.000,00;400;;;298721;14;;2;20;FALSO
 189796;1/8/2025;06-14;4000;18;9;Pan Dulcera 9;189;Avendaño;41.000,00;400;;;298722;2;;2;40;FALSO
