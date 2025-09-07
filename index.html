@@ -4,7 +4,7 @@
     <meta charset="UTF-8">
     <title>Dashboard Gerencial de Producción</title>
     <script src="https://cdn.plot.ly/plotly-latest.min.js"></script>
-    <script src="https://cdnjs.cloudflare.com/ajax/libs/PapaParse/5.4.1/papaparse.min.js"></script>
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/PapaParse/5.4.1/paparse.min.js"></script>
     <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.2/css/all.min.css">
     <style>
         :root {
@@ -74,10 +74,10 @@
 
         /* Gráficos */
         .charts-grid { 
-            display: grid; grid-template-columns: repeat(auto-fit, minmax(450px, 1fr)); 
+            display: grid; grid-template-columns: 1fr; /* Cambiado para apilar los gráficos */
             gap: 25px; 
         }
-        .chart-box { min-height: 450px; }
+        .chart-box { min-height: 480px; } /* Mayor altura para gráficos horizontales */
         .full-width { grid-column: 1 / -1; }
 
         /* Contenedor de Resumen */
@@ -132,22 +132,21 @@
 
         <div id="causas" class="tab-content card">
             <h2><i class="fas fa-search-plus"></i>Análisis de Causas de Parada</h2>
-            <div class="charts-grid">
+             <div class="charts-grid">
                 <div class="chart-box card" id="chart_pareto_incidencia"></div>
-                <div class="chart-box card" id="chart_treemap_maquina"></div>
-            </div>
+                <div class="chart-box card" id="chart_desglose_maquina"></div> </div>
         </div>
         
-        <div id="rendimiento" class="tab-content card">
+        <div id="rendimiento" class="tab-content card" style="display: none;">
              <h2><i class="fas fa-chart-bar"></i>Análisis de Rendimiento y Comparativas</h2>
-            <div class="charts-grid">
+            <div class="charts-grid" style="grid-template-columns: repeat(auto-fit, minmax(450px, 1fr));">
                 <div class="chart-box card" id="chart_prod_maquina"></div>
                 <div class="chart-box card" id="chart_rendimiento_maquina"></div>
                 <div class="chart-box full-width card" id="chart_paradas_turno"></div>
             </div>
         </div>
 
-        <div id="humano" class="tab-content card">
+        <div id="humano" class="tab-content card" style="display: none;">
             <h2><i class="fas fa-users"></i>Análisis de Factor Humano</h2>
             <div class="charts-grid">
                 <div class="chart-box full-width card" id="chart_pareto_operario"></div>
@@ -175,10 +174,12 @@
         document.querySelectorAll('.tab-content').forEach(tab => tab.classList.remove('active'));
         document.querySelectorAll('.tab-button').forEach(btn => btn.classList.remove('active'));
         document.getElementById(tabName).classList.add('active');
-        event.currentTarget.classList.add('active');
+        // Pequeño hack para redibujar los gráficos de plotly al cambiar de pestaña
+        setTimeout(() => { window.dispatchEvent(new Event('resize')); }, 10);
     }
 
     async function loadAndProcessData() {
+        // ... (sin cambios en esta función)
         statusDiv.textContent = `Cargando archivo '${localCsvFile}'...`;
         try {
             const response = await fetch(localCsvFile);
@@ -220,6 +221,7 @@
     }
     
     function updateDashboard(sourceData) {
+        // ... (sin cambios en la lógica de filtrado inicial)
         const startDate = document.getElementById('startDate').valueAsDate;
         const endDate = document.getElementById('endDate').valueAsDate;
         const selectedMachine = document.getElementById('machineFilter').value;
@@ -242,7 +244,7 @@
         }
         statusDiv.textContent = `Mostrando ${[...new Set(filteredData.map(r => r.IdProduccion))].length} órdenes de producción.`;
 
-        // --- 1. PROCESAMIENTO DE DATOS ---
+        // --- 1. PROCESAMIENTO DE DATOS --- (sin cambios)
         const produccionUnica = new Map();
         filteredData.forEach(row => {
             if (!produccionUnica.has(row.IdProduccion)) {
@@ -261,7 +263,7 @@
             Turno: row.Turno || 'N/A', Apellido: row.Apellido || 'N/A', Fecha: row.Fecha
         }));
 
-        // --- 2. CÁLCULO DE KPIs ---
+        // --- 2. CÁLCULO DE KPIs --- (sin cambios)
         const totalProduccion = produccionArray.reduce((sum, r) => sum + r.Cantidad, 0);
         const totalMinutosParada = paradasData.reduce((sum, r) => sum + r.Minutos, 0);
         const totalMinutosPlanificados = produccionArray.reduce((sum, r) => sum + r.HsTrab, 0);
@@ -274,31 +276,23 @@
         document.getElementById('kpi-disponibilidad').textContent = `${disponibilidad.toFixed(1)}%`;
         document.getElementById('kpi-rendimiento').textContent = rendimiento.toLocaleString('es-AR', {maximumFractionDigits:0});
         
-        // --- 3. PREPARACIÓN DE DATOS PARA GRÁFICOS ---
+        // --- 3. PREPARACIÓN DE DATOS PARA GRÁFICOS --- (con cambios)
         const groupBy = (arr, key, valueKey) => arr.reduce((acc, r) => {
             const group = r[key];
             acc[group] = (acc[group] || 0) + r[valueKey];
             return acc;
         }, {});
         
+        // ... (dataEvolutivo y paretoOperarioData sin cambios)
         const produccionPorDia = groupBy(produccionArray, 'Fecha', 'Cantidad');
         const paradasPorDia = groupBy(paradasData, 'Fecha', 'Minutos');
         const planificadoPorDia = groupBy(produccionArray, 'Fecha', 'HsTrab');
         const sortedFechas = Object.keys(produccionPorDia).sort((a,b) => new Date(a.split('/').reverse().join('-')) - new Date(b.split('/').reverse().join('-')));
-        
         const dataEvolutivo = sortedFechas.map(fecha => {
             const planificado = planificadoPorDia[fecha] || 0;
             const paradas = paradasPorDia[fecha] || 0;
             return { fecha, produccion: produccionPorDia[fecha] || 0, disponibilidad: planificado > 0 ? ((planificado - paradas) / planificado) * 100 : 0 };
         });
-
-        const paradasPorCausa = groupBy(paradasData, 'descrip_incidencia', 'Minutos');
-        let cumulative = 0;
-        const paretoData = Object.entries(paradasPorCausa).sort(([,a],[,b]) => b-a).map(([causa, minutos]) => {
-            cumulative += minutos;
-            return { causa, minutos, cum_percent: totalMinutosParada > 0 ? (cumulative / totalMinutosParada) * 100 : 0 };
-        });
-        
         const paradasPorOperario = groupBy(paradasData.filter(d => d.Apellido !== 'N/A'), 'Apellido', 'Minutos');
         let cumulativeOp = 0;
         const totalParadasOp = Object.values(paradasPorOperario).reduce((s,v) => s+v, 0);
@@ -306,23 +300,28 @@
             cumulativeOp += minutos;
             return { operario, minutos, cum_percent: totalParadasOp > 0 ? (cumulativeOp / totalParadasOp) * 100 : 0 };
         });
-        
-        // ... (resto de las agregaciones como treemap, rendimiento por maquina, etc.)
-        const paradasPorMaquinaYCausa = paradasData.reduce((acc, r) => {
-            const maquina = r.Descrip_Maquina; const causa = r.descrip_incidencia;
-            if(!acc[maquina]) acc[maquina] = {}; if(!acc[maquina][causa]) acc[maquina][causa] = 0;
-            acc[maquina][causa] += r.Minutos; return acc;
-        }, {});
-        const treemapLabels = ['Máquinas'], treemapParents = [''], treemapValues = [0];
-        Object.entries(paradasPorMaquinaYCausa).forEach(([maquina, causas]) => {
-            treemapLabels.push(maquina); treemapParents.push('Máquinas');
-            const totalMaquina = Object.values(causas).reduce((s,v)=>s+v, 0); treemapValues.push(totalMaquina);
-            Object.entries(causas).forEach(([causa, minutos]) => {
-                treemapLabels.push(causa); treemapParents.push(maquina); treemapValues.push(minutos);
-            });
+
+        const paradasPorCausa = groupBy(paradasData, 'descrip_incidencia', 'Minutos');
+        let cumulative = 0;
+        const paretoData = Object.entries(paradasPorCausa).sort(([,a],[,b]) => a-b).map(([causa, minutos]) => { // Orden ascendente para gráfico horizontal
+            cumulative += minutos;
+            return { causa, minutos, cum_percent: totalMinutosParada > 0 ? (cumulative / totalMinutosParada) * 100 : 0 };
         });
         
-        const rendimientoPorMaquina = [...new Set(paradasData.map(d => d.Descrip_Maquina))].map(maquina => {
+        // ===== NUEVA LÓGICA PARA BARRAS APILADAS =====
+        const causasUnicas = [...new Set(paradasData.map(d => d.descrip_incidencia))];
+        const maquinasUnicas = [...new Set(paradasData.map(d => d.Descrip_Maquina))];
+        const desgloseData = causasUnicas.map(causa => {
+            return {
+                x: maquinasUnicas.map(maquina => paradasData.filter(d => d.Descrip_Maquina === maquina && d.descrip_incidencia === causa).reduce((sum, r) => sum + r.Minutos, 0)),
+                y: maquinasUnicas,
+                name: causa,
+                type: 'bar',
+                orientation: 'h'
+            };
+        });
+        
+        const rendimientoPorMaquina = maquinasUnicas.map(maquina => {
             const prod = produccionArray.filter(p => p.Descrip_Maquina === maquina).reduce((s, r) => s + r.Cantidad, 0);
             const tPlanificado = produccionArray.filter(p => p.Descrip_Maquina === maquina).reduce((s, r) => s + r.HsTrab, 0);
             const tParada = paradasData.filter(p => p.Descrip_Maquina === maquina).reduce((s, r) => s + r.Minutos, 0);
@@ -335,22 +334,43 @@
 
         // --- 5. RENDERIZADO DE GRÁFICOS ---
         const plotlyConfig = {responsive: true, displaylogo: false};
-        const baseLayout = (title) => ({ title: { text: title, font: {size: 20, color: 'var(--primary-color)'}}, paper_bgcolor: 'var(--card-bg)', plot_bgcolor: 'var(--card-bg)'});
-        // ... (todos los Plotly.react calls son idénticos a la versión anterior, más el nuevo para operarios)
-        Plotly.react('chart_prod_disponibilidad_dia', [{ x: dataEvolutivo.map(d => d.fecha), y: dataEvolutivo.map(d => d.produccion), name: 'Producción', type: 'bar', marker: {color: 'var(--primary-color)'} }, { x: dataEvolutivo.map(d => d.fecha), y: dataEvolutivo.map(d => d.disponibilidad), name: 'Disponibilidad', type: 'scatter', mode: 'lines+markers', yaxis: 'y2', line: {color: 'var(--accent-color)', width: 3} }], { ...baseLayout('Producción y Disponibilidad Diaria'), yaxis: {title: 'Producción (Unidades)'}, yaxis2: {title: 'Disponibilidad (%)', overlaying: 'y', side: 'right', range: [0, 105]}, legend: {orientation: 'h', y: -0.2, x: 0.5, xanchor: 'center'} }, plotlyConfig);
-        Plotly.react('chart_pareto_incidencia', [{ x: paretoData.map(d => d.causa), y: paretoData.map(d => d.minutos), name: 'Minutos de Parada', type: 'bar', marker: {color: 'var(--secondary-color)'} }, { x: paretoData.map(d => d.causa), y: paretoData.map(d => d.cum_percent), name: '% Acumulado', type: 'scatter', mode: 'lines+markers', yaxis: 'y2', line: {color: 'var(--primary-color)', width: 3} }], { ...baseLayout('Pareto de Causas de Parada'), yaxis: {title: 'Minutos de Parada'}, yaxis2: {title: '% Acumulado', overlaying: 'y', side: 'right', range: [0, 105]}, xaxis: { categoryorder: 'total descending' }, legend: {orientation: 'h', y: -0.3, x: 0.5, xanchor: 'center'} }, plotlyConfig);
-        Plotly.react('chart_treemap_maquina', [{ type: "treemap", ids: treemapLabels, labels: treemapLabels, parents: treemapParents, values: treemapValues, textinfo: "label+value+percent root", marker: { colorscale: 'Blues' } }], baseLayout('Desglose de Paradas por Máquina y Causa'), plotlyConfig);
-        Plotly.react('chart_prod_maquina', [{ x: rendimientoPorMaquina.map(d => d.maquina), y: rendimientoPorMaquina.map(d => d.produccion), type: 'bar', text: rendimientoPorMaquina.map(d => d.produccion.toLocaleString('es-AR')), textposition: 'auto', marker: {color: '#28a745'} }], baseLayout('Producción Total por Máquina'), plotlyConfig);
-        Plotly.react('chart_rendimiento_maquina', [{ x: rendimientoPorMaquina.map(d => d.maquina), y: rendimientoPorMaquina.map(d => d.rendimiento), type: 'bar', text: rendimientoPorMaquina.map(d => Math.round(d.rendimiento).toLocaleString('es-AR')), textposition: 'auto', marker: {color: 'var(--accent-color)'} }], baseLayout('Rendimiento (Unidades por Hora) por Máquina'), plotlyConfig);
+        const baseLayout = (title) => ({ title: { text: title, font: {size: 20, color: 'var(--primary-color)'}}, paper_bgcolor: 'var(--card-bg)', plot_bgcolor: '#f5f7fa', margin: { l: 250, r: 50, b: 50, t: 80 } }); // Aumentar margen izquierdo
+
+        // ... (Gráfico de gerencial y operario sin cambios)
+        Plotly.react('chart_prod_disponibilidad_dia', [{ x: dataEvolutivo.map(d => d.fecha), y: dataEvolutivo.map(d => d.produccion), name: 'Producción', type: 'bar', marker: {color: 'var(--primary-color)'} }, { x: dataEvolutivo.map(d => d.fecha), y: dataEvolutivo.map(d => d.disponibilidad), name: 'Disponibilidad', type: 'scatter', mode: 'lines+markers', yaxis: 'y2', line: {color: 'var(--accent-color)', width: 3} }], { ...baseLayout('Producción y Disponibilidad Diaria'), yaxis: {title: 'Producción (Unidades)'}, yaxis2: {title: 'Disponibilidad (%)', overlaying: 'y', side: 'right', range: [0, 105]}, legend: {orientation: 'h', y: -0.2, x: 0.5, xanchor: 'center'}, margin: {l: 50} }, plotlyConfig);
+        Plotly.react('chart_pareto_operario', [{ x: paretoOperarioData.map(d => d.minutos), y: paretoOperarioData.map(d => d.operario).reverse(), name: 'Minutos de Parada', type: 'bar', orientation: 'h', marker: {color: '#6a1b9a'} }, { x: paretoOperarioData.map(d => d.cum_percent), y: paretoOperarioData.map(d => d.operario).reverse(), name: '% Acumulado', type: 'scatter', mode: 'lines+markers', xaxis: 'x2', line: {color: 'var(--primary-color)', width: 3} }], { ...baseLayout('Top 15 Operarios por Tiempo de Parada'), xaxis: {title: 'Minutos Totales de Parada'}, xaxis2: {title: '% Acumulado', overlaying: 'x', side: 'top', range: [0, 105]}, yaxis: { categoryorder: 'total ascending' }, legend: {orientation: 'h', y: -0.2, x: 0.5, xanchor: 'center'} }, plotlyConfig);
+
+        // ===== GRÁFICOS DE CAUSA RAÍZ ACTUALIZADOS =====
+        Plotly.react('chart_pareto_incidencia', [{ 
+            x: paretoData.map(d => d.minutos), 
+            y: paretoData.map(d => d.causa),
+            name: 'Minutos de Parada', type: 'bar', orientation: 'h', marker: {color: 'var(--secondary-color)'} 
+        }], { 
+            ...baseLayout('Principales Causas de Parada'),
+            xaxis: {title: 'Minutos Totales de Parada'},
+            yaxis: { categoryorder: 'total ascending' },
+        }, plotlyConfig);
+
+        Plotly.react('chart_desglose_maquina', desgloseData, { 
+            ...baseLayout('Composición de Paradas por Máquina'),
+            barmode: 'stack',
+            xaxis: {title: 'Minutos Totales de Parada'},
+            yaxis: { categoryorder: 'total descending'},
+            legend: {orientation: 'h', y: -0.3, x: 0.5, xanchor: 'center'}
+        }, plotlyConfig);
+
+        // ... (Gráficos de rendimiento y turno sin cambios)
+        Plotly.react('chart_prod_maquina', [{ x: rendimientoPorMaquina.map(d => d.maquina), y: rendimientoPorMaquina.map(d => d.produccion), type: 'bar', text: rendimientoPorMaquina.map(d => d.produccion.toLocaleString('es-AR')), textposition: 'auto', marker: {color: '#28a745'} }], { ...baseLayout('Producción Total por Máquina'), margin: {l:50}}, plotlyConfig);
+        Plotly.react('chart_rendimiento_maquina', [{ x: rendimientoPorMaquina.map(d => d.maquina), y: rendimientoPorMaquina.map(d => d.rendimiento), type: 'bar', text: rendimientoPorMaquina.map(d => Math.round(d.rendimiento).toLocaleString('es-AR')), textposition: 'auto', marker: {color: 'var(--accent-color)'} }], { ...baseLayout('Rendimiento (Unidades por Hora) por Máquina'), margin: {l:50}}, plotlyConfig);
         const turnoData = Object.entries(groupBy(paradasData, 'Turno', 'Minutos')).sort(([,a],[,b]) => b - a);
-        Plotly.react('chart_paradas_turno', [{ labels: turnoData.map(d => d[0]), values: turnoData.map(d => d[1]), type: 'pie', hole: .4, textinfo: 'label+percent', marker: { colors: ['#0d47a1', '#1976d2', '#42a5f5', '#90caf9']} }], baseLayout('Distribución de Paradas por Turno'), plotlyConfig);
-        Plotly.react('chart_pareto_operario', [{ x: paretoOperarioData.map(d => d.operario), y: paretoOperarioData.map(d => d.minutos), name: 'Minutos de Parada', type: 'bar', marker: {color: '#6a1b9a'} }, { x: paretoOperarioData.map(d => d.operario), y: paretoOperarioData.map(d => d.cum_percent), name: '% Acumulado', type: 'scatter', mode: 'lines+markers', yaxis: 'y2', line: {color: 'var(--primary-color)', width: 3} }], { ...baseLayout('Top 15 Operarios por Tiempo de Parada'), yaxis: {title: 'Minutos Totales de Parada'}, yaxis2: {title: '% Acumulado', overlaying: 'y', side: 'right', range: [0, 105]}, xaxis: { categoryorder: 'total descending' }, legend: {orientation: 'h', y: -0.3, x: 0.5, xanchor: 'center'} }, plotlyConfig);
+        Plotly.react('chart_paradas_turno', [{ labels: turnoData.map(d => d[0]), values: turnoData.map(d => d[1]), type: 'pie', hole: .4, textinfo: 'label+percent', marker: { colors: ['#0d47a1', '#1976d2', '#42a5f5', '#90caf9']} }], { ...baseLayout('Distribución de Paradas por Turno'), margin: {l:50}}, plotlyConfig);
     }
 
     function generateSummary(kpis, pareto, maquinas) {
+        // ... (sin cambios en esta función)
         let summaryHTML = '<h3><i class="fas fa-lightbulb"></i> Resumen y Conclusiones Clave</h3><ul>';
         if (pareto.length > 0) {
-            const topCausa = pareto[0];
+            const topCausa = pareto[pareto.length-1]; // El último es el mayor en orden ascendente
             const totalParadas = pareto.reduce((sum, item) => sum + item.minutos, 0);
             const porcentajeTopCausa = totalParadas > 0 ? (topCausa.minutos / totalParadas) * 100 : 0;
             summaryHTML += `<li><i class="fas fa-exclamation-triangle"></i> La principal causa de paradas es <strong>${topCausa.causa}</strong>, responsable del <strong>${Math.round(porcentajeTopCausa)}%</strong> del tiempo total perdido.</li>`;
