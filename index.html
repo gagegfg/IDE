@@ -2,347 +2,427 @@
 <html>
 <head>
     <meta charset="UTF-8">
-    <title>Dashboard Profesional de Producción</title>
-    <!-- Librerías para gráficos, CSV e iconos -->
+    <title>Dashboard Gerencial de Producción</title>
     <script src="https://cdn.plot.ly/plotly-latest.min.js"></script>
     <script src="https://cdnjs.cloudflare.com/ajax/libs/PapaParse/5.4.1/papaparse.min.js"></script>
     <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.2/css/all.min.css">
     <style>
         :root {
-            --primary-color: #0056b3;
-            --secondary-color: #28a745;
-            --light-gray: #f4f4f9;
+            --primary-color: #0d47a1; /* Azul corporativo más oscuro */
+            --secondary-color: #d32f2f; /* Rojo para alertas o paradas */
+            --accent-color: #ffc107; /* Amarillo para rendimiento */
+            --bg-color: #f5f7fa; /* Gris muy claro para el fondo */
+            --card-bg: #ffffff;
             --text-color: #333;
-            --card-bg: #fff;
-            --border-radius: 8px;
+            --text-muted: #6c757d;
+            --border-radius: 10px;
+            --box-shadow: 0 5px 15px rgba(0,0,0,0.08);
         }
         body { 
-            font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif; 
+            font-family: 'Segoe UI', -apple-system, BlinkMacSystemFont, 'Roboto', 'Oxygen', 'Ubuntu', 'Cantarell', 'Fira Sans', 'Droid Sans', 'Helvetica Neue', sans-serif;
             margin: 0; 
-            background-color: var(--light-gray); 
+            background-color: var(--bg-color); 
             color: var(--text-color);
         }
         .main-container {
-            padding: 20px;
+            padding: 25px;
         }
-        .header, .controls, .info-box, .tab-content { 
+        .header, .controls, .card { 
             background-color: var(--card-bg); 
-            padding: 20px; 
+            padding: 25px; 
             border-radius: var(--border-radius); 
-            box-shadow: 0 4px 8px rgba(0,0,0,0.05); 
-            margin-bottom: 20px;
+            box-shadow: var(--box-shadow); 
+            margin-bottom: 25px;
         }
         h1, h2 { 
             color: var(--primary-color); 
             text-align: center; 
             margin-top: 0;
+            border-bottom: 2px solid var(--primary-color);
+            padding-bottom: 10px;
         }
-        /* Pestañas de Navegación */
-        .tabs {
-            display: flex;
-            justify-content: center;
-            margin-bottom: 20px;
-            gap: 10px;
-        }
+        h2 .fas { margin-right: 10px; }
+
+        /* Pestañas */
+        .tabs { display: flex; justify-content: center; margin-bottom: 25px; gap: 15px; }
         .tab-button {
-            padding: 10px 20px;
-            font-size: 1.1em;
-            cursor: pointer;
-            border: none;
-            background-color: #e9ecef;
-            border-radius: var(--border-radius);
-            transition: all 0.3s ease;
+            padding: 12px 25px; font-size: 1.1em; cursor: pointer; border: 2px solid transparent;
+            background-color: var(--card-bg); color: var(--primary-color); border-radius: 50px;
+            transition: all 0.3s ease; font-weight: 600;
         }
         .tab-button.active, .tab-button:hover {
-            background-color: var(--primary-color);
-            color: white;
+            background-color: var(--primary-color); color: white; border-color: var(--primary-color);
         }
-        .tab-content {
-            display: none; /* Oculto por defecto */
-        }
-        .tab-content.active {
-            display: block; /* Visible cuando está activo */
-        }
+        .tab-content { display: none; }
+        .tab-content.active { display: block; }
+
         /* Controles y Filtros */
         .controls-container {
-            display: flex;
-            justify-content: center;
-            align-items: center;
-            gap: 15px;
-            flex-wrap: wrap;
+            display: flex; justify-content: center; align-items: center; gap: 20px; flex-wrap: wrap;
         }
-        .controls-container label {
-            font-weight: bold;
-        }
+        .controls-container label { font-weight: 600; color: var(--text-muted); }
         .controls-container input[type="date"] {
-            padding: 8px;
-            border-radius: 5px;
-            border: 1px solid #ccc;
+            padding: 10px; border-radius: 5px; border: 1px solid #ccc; font-size: 1em;
         }
         .btn {
-            color: white;
-            border: none;
-            padding: 10px 20px;
-            border-radius: 5px;
-            cursor: pointer;
-            font-size: 1em;
-            font-weight: bold;
-            transition: background-color 0.3s;
+            color: white; border: none; padding: 12px 25px; border-radius: 50px; cursor: pointer;
+            font-size: 1em; font-weight: bold; transition: transform 0.2s, box-shadow 0.2s;
         }
-        #applyFilterBtn { background-color: var(--primary-color); }
-        #applyFilterBtn:hover { background-color: #004494; }
-        #refreshBtn { background-color: var(--secondary-color); }
-        #refreshBtn:hover { background-color: #218838; }
+        .btn:hover { transform: translateY(-2px); box-shadow: 0 4px 10px rgba(0,0,0,0.2); }
+        #applyFilterBtn { background: linear-gradient(45deg, #1976d2, #0d47a1); }
+        #refreshBtn { background: linear-gradient(45deg, #6c757d, #343a40); }
         
         /* KPIs */
         .kpi-container { 
-            display: flex; 
-            flex-wrap: wrap;
-            gap: 15px;
-            justify-content: space-around; 
-            text-align: center; 
+            display: grid; grid-template-columns: repeat(auto-fit, minmax(220px, 1fr));
+            gap: 20px; text-align: center; 
         }
         .kpi-box { 
-            background-color: #eaf2f8; 
-            padding: 20px; 
-            border-radius: var(--border-radius); 
-            flex-grow: 1;
-            min-width: 250px;
-            border-left: 5px solid var(--primary-color); 
+            background-color: var(--card-bg); padding: 25px; border-radius: var(--border-radius); 
+            box-shadow: var(--box-shadow); border-top: 5px solid;
         }
-        .kpi-value { 
-            font-size: 2.5em; 
-            font-weight: bold; 
-            color: var(--primary-color); 
-        }
+        .kpi-box.availability { border-color: var(--primary-color); }
+        .kpi-box.performance { border-color: var(--accent-color); }
+        .kpi-box.downtime { border-color: var(--secondary-color); }
+        .kpi-box.production { border-color: #28a745; }
+
+        .kpi-value { font-size: 2.8em; font-weight: 700; }
+        .kpi-label { font-size: 1.1em; color: var(--text-muted); font-weight: 500; margin-top: 10px; }
+
         /* Gráficos */
         .charts-grid { 
-            display: grid; 
-            grid-template-columns: repeat(auto-fit, minmax(450px, 1fr)); 
-            gap: 20px; 
+            display: grid; grid-template-columns: repeat(auto-fit, minmax(450px, 1fr)); 
+            gap: 25px; 
         }
-        .chart-box { 
-            background-color: var(--card-bg); 
-            padding: 20px; 
-            border-radius: var(--border-radius); 
-            box-shadow: 0 4px 8px rgba(0,0,0,0.05); 
-        }
+        .chart-box { min-height: 450px; }
         .full-width { grid-column: 1 / -1; }
-        #status {
-             margin-top: 15px; text-align: center; font-weight: bold;
-        }
+
+        #status { margin-top: 20px; text-align: center; font-weight: bold; font-size: 1.1em; }
     </style>
 </head>
 <body>
 
     <div class="main-container">
         <div class="header">
-             <h1><i class="fas fa-chart-line"></i> Dashboard Profesional de Producción</h1>
+             <h1><i class="fas fa-chart-line"></i> Dashboard Gerencial de Producción</h1>
         </div>
         
         <div class="controls">
             <div class="controls-container">
-                <label for="startDate">Desde:</label>
+                <label for="startDate"><i class="fas fa-calendar-alt"></i> Desde:</label>
                 <input type="date" id="startDate">
-                <label for="endDate">Hasta:</label>
+                <label for="endDate"><i class="fas fa-calendar-alt"></i> Hasta:</label>
                 <input type="date" id="endDate">
                 <button id="applyFilterBtn" class="btn"><i class="fas fa-filter"></i> Aplicar Filtros</button>
-                <button id="refreshBtn" class="btn"><i class="fas fa-sync-alt"></i> Limpiar y Recargar</button>
+                <button id="refreshBtn" class="btn"><i class="fas fa-sync-alt"></i> Limpiar</button>
             </div>
-            <div id="status">Cargando datos iniciales...</div>
+            <div id="status">Cargando datos...</div>
         </div>
 
         <div class="tabs">
-            <button class="tab-button active" onclick="openTab('resumen')"><i class="fas fa-tachometer-alt"></i> Resumen General</button>
-            <button class="tab-button" onclick="openTab('causas')"><i class="fas fa-search"></i> Análisis de Causas</button>
-            <button class="tab-button" onclick="openTab('produccion')"><i class="fas fa-cogs"></i> Análisis de Producción</button>
+            <button class="tab-button active" onclick="openTab('gerencial')"><i class="fas fa-tachometer-alt"></i> Dashboard Gerencial</button>
+            <button class="tab-button" onclick="openTab('causas')"><i class="fas fa-search-plus"></i> Análisis de Causa Raíz</button>
+            <button class="tab-button" onclick="openTab('rendimiento')"><i class="fas fa-cogs"></i> Análisis de Rendimiento</button>
         </div>
 
-        <!-- Contenido de la Pestaña 1: Resumen General -->
-        <div id="resumen" class="tab-content active">
-            <h2><i class="fas fa-tachometer-alt"></i> Resumen General</h2>
-            <div class="kpi-container">
-                <div class="kpi-box"><div id="kpi-produccion" class="kpi-value">-</div><div class="kpi-label">Producción Total</div></div>
-                <div class="kpi-box"><div id="kpi-paradas" class="kpi-value">-</div><div class="kpi-label">Minutos Totales de Parada</div></div>
-                <div class="kpi-box"><div id="kpi-incidencias" class="kpi-value">-</div><div class="kpi-label">Total de Incidencias</div></div>
+        <div id="gerencial" class="tab-content active card">
+            <h2><i class="fas fa-tachometer-alt"></i>Resumen Ejecutivo</h2>
+            <div class="kpi-container" style="margin-bottom: 30px;">
+                <div class="kpi-box availability"><div id="kpi-disponibilidad" class="kpi-value">-</div><div class="kpi-label">Disponibilidad Promedio</div></div>
+                <div class="kpi-box performance"><div id="kpi-rendimiento" class="kpi-value">-</div><div class="kpi-label">Rendimiento Promedio (Uds/Hr)</div></div>
+                <div class="kpi-box downtime"><div id="kpi-paradas" class="kpi-value">-</div><div class="kpi-label">Horas Totales de Parada</div></div>
+                <div class="kpi-box production"><div id="kpi-produccion" class="kpi-value">-</div><div class="kpi-label">Producción Total</div></div>
             </div>
-            <div class="charts-grid" style="margin-top: 20px;">
-                <div class="chart-box full-width" id="chart_dia"></div>
-            </div>
-        </div>
-
-        <!-- Contenido de la Pestaña 2: Análisis de Causas -->
-        <div id="causas" class="tab-content">
-            <h2><i class="fas fa-search"></i> Análisis Detallado de Causas de Parada</h2>
             <div class="charts-grid">
-                <div class="chart-box" id="chart_maquina"></div>
-                <div class="chart-box" id="chart_incidencia"></div>
-                <div class="chart-box" id="chart_operario"></div>
-                <div class="chart-box" id="chart_turno"></div>
+                <div class="chart-box full-width card" id="chart_prod_disponibilidad_dia"></div>
+            </div>
+        </div>
+
+        <div id="causas" class="tab-content card">
+            <h2><i class="fas fa-search-plus"></i>Análisis de Causas de Parada</h2>
+            <div class="charts-grid">
+                <div class="chart-box card" id="chart_pareto_incidencia"></div>
+                <div class="chart-box card" id="chart_treemap_maquina"></div>
             </div>
         </div>
         
-        <!-- Contenido de la Pestaña 3: Análisis de Producción -->
-        <div id="produccion" class="tab-content">
-            <h2><i class="fas fa-cogs"></i> Análisis de Rendimiento de Producción</h2>
+        <div id="rendimiento" class="tab-content card">
+             <h2><i class="fas fa-cogs"></i>Análisis de Rendimiento y Comparativas</h2>
             <div class="charts-grid">
-                <div class="chart-box full-width" id="chart_prod_maquina"></div>
+                <div class="chart-box card" id="chart_prod_maquina"></div>
+                <div class="chart-box card" id="chart_rendimiento_maquina"></div>
+                <div class="chart-box full-width card" id="chart_paradas_turno"></div>
             </div>
         </div>
     </div>
 
-    <script>
-        let cachedData = [];
-        const statusDiv = document.getElementById('status');
-        const applyFilterBtn = document.getElementById('applyFilterBtn');
-        const refreshBtn = document.getElementById('refreshBtn');
-        const startDateInput = document.getElementById('startDate');
-        const endDateInput = document.getElementById('endDate');
-        const localCsvFile = 'exportProduccionyEventos.csv';
+<script>
+    let globalData = [];
+    const statusDiv = document.getElementById('status');
+    const localCsvFile = 'exportProduccionyEventos.csv';
 
-        document.addEventListener('DOMContentLoaded', () => {
-            loadAndProcessData();
+    document.addEventListener('DOMContentLoaded', () => {
+        document.getElementById('applyFilterBtn').addEventListener('click', () => updateDashboard(globalData));
+        document.getElementById('refreshBtn').addEventListener('click', () => {
+            document.getElementById('startDate').value = '';
+            document.getElementById('endDate').value = '';
+            updateDashboard(globalData);
         });
-        
-        applyFilterBtn.addEventListener('click', () => {
-             if (cachedData.length > 0) {
-                statusDiv.textContent = 'Aplicando filtros...';
-                updateDashboard(cachedData);
-                statusDiv.textContent = 'Filtros aplicados.';
-             } else {
-                statusDiv.textContent = 'No hay datos cargados para filtrar.';
-             }
-        });
+        loadAndProcessData();
+    });
 
-        refreshBtn.addEventListener('click', () => {
-            startDateInput.value = '';
-            endDateInput.value = '';
-            if (cachedData.length > 0) {
-                statusDiv.textContent = 'Limpiando filtros y recargando...';
-                updateDashboard(cachedData);
-                statusDiv.textContent = 'Dashboard restaurado.';
-            } else {
-                loadAndProcessData();
-            }
-        });
+    function openTab(tabName) {
+        document.querySelectorAll('.tab-content').forEach(tab => tab.classList.remove('active'));
+        document.querySelectorAll('.tab-button').forEach(btn => btn.classList.remove('active'));
+        document.getElementById(tabName).classList.add('active');
+        event.currentTarget.classList.add('active');
+    }
 
-        function openTab(tabName) {
-            document.querySelectorAll('.tab-content').forEach(tab => tab.classList.remove('active'));
-            document.querySelectorAll('.tab-button').forEach(btn => btn.classList.remove('active'));
-            document.getElementById(tabName).classList.add('active');
-            event.currentTarget.classList.add('active');
-        }
-
-        async function loadAndProcessData() {
-            statusDiv.textContent = `Cargando archivo '${localCsvFile}'...`;
-            statusDiv.style.color = '#0056b3';
-            try {
-                const response = await fetch(localCsvFile);
-                if (!response.ok) throw new Error(`Error HTTP ${response.status}`);
-                const csvText = await response.text();
-                
-                Papa.parse(csvText, {
-                    header: true,
-                    skipEmptyLines: true,
-                    delimiter: ";",
-                    complete: (results) => {
-                        cachedData = results.data.map(row => ({
-                            ...row,
-                            // Pre-procesar fecha para facilitar el filtrado
-                            fechaObj: new Date(row.Fecha.split('/').reverse().join('-'))
-                        }));
-                        updateDashboard(cachedData);
-                        statusDiv.textContent = `Datos cargados. ${cachedData.length} registros encontrados.`;
-                        statusDiv.style.color = 'green';
-                    },
-                    error: (err) => { throw new Error(err.message); }
-                });
-            } catch (error) {
-                console.error('Error detallado:', error);
-                statusDiv.textContent = `Error: No se pudo cargar '${localCsvFile}'. Verifica que exista en la misma carpeta y que uses un servidor local.`;
-                statusDiv.style.color = 'red';
-            }
-        }
-        
-        function parseCustomFloat(value) {
-            if (typeof value !== 'string' || value.trim() === '') return 0;
-            return parseFloat(value.replace(/\./g, '').replace(',', '.')) || 0;
-        }
-        
-        function updateDashboard(sourceData) {
-            // --- 0. Aplicar Filtros ---
-            const startDate = startDateInput.value ? new Date(startDateInput.value) : null;
-            const endDate = endDateInput.value ? new Date(endDateInput.value) : null;
+    async function loadAndProcessData() {
+        statusDiv.textContent = `Cargando archivo '${localCsvFile}'...`;
+        statusDiv.style.color = 'var(--primary-color)';
+        try {
+            const response = await fetch(localCsvFile);
+            if (!response.ok) throw new Error(`Error HTTP ${response.status}`);
+            const csvText = await response.text();
             
-            const filteredData = sourceData.filter(row => {
-                if (!startDate || !endDate) return true; // Si no hay filtro, pasar todo
-                // Ajustamos la hora para incluir todo el día en la comparación
-                const rowDate = row.fechaObj;
-                const endOfDayEndDate = new Date(endDate);
-                endOfDayEndDate.setHours(23, 59, 59, 999);
-                return rowDate >= startDate && rowDate <= endOfDayEndDate;
+            Papa.parse(csvText, {
+                header: true, skipEmptyLines: true, delimiter: ";",
+                complete: (results) => {
+                    globalData = results.data.map(row => ({
+                        ...row,
+                        fechaObj: new Date(row.Fecha.split('/').reverse().join('-'))
+                    }));
+                    updateDashboard(globalData);
+                    statusDiv.textContent = `Datos cargados. ${globalData.length} registros encontrados.`;
+                    statusDiv.style.color = 'green';
+                },
+                error: (err) => { throw new Error(err.message); }
             });
-
-            // --- 1. Limpieza y preparación ---
-            const cleanData = filteredData.map(row => ({
-                Fecha: row.Fecha,
-                Minutos: parseInt(row.Minutos, 10) || 0,
-                Cantidad: parseCustomFloat(row.Cantidad),
-                IdProduccion: row.IdProduccion,
-                Descrip_Maquina: row['Descrip_Maquina'] || 'Sin Nombre',
-                NroIncidencia: row.NroIncidencia || 'N/A',
-                Apellido: row.Apellido || 'Desconocido',
-                Turno: row.Turno || 'N/A'
-            }));
-
-            // --- 2. KPIs ---
-            const totalMinutosParada = cleanData.reduce((sum, r) => sum + r.Minutos, 0);
-            const totalIncidencias = cleanData.length;
-            const produccionUnica = [...new Map(cleanData.map(item => [item.IdProduccion, item])).values()];
-            const totalProduccion = produccionUnica.reduce((sum, r) => sum + r.Cantidad, 0);
-
-            document.getElementById('kpi-produccion').textContent = totalProduccion.toLocaleString('es-AR', {maximumFractionDigits:0});
-            document.getElementById('kpi-paradas').textContent = totalMinutosParada.toLocaleString('es-AR');
-            document.getElementById('kpi-incidencias').textContent = totalIncidencias.toLocaleString('es-AR');
-
-            // --- 3. Agregación de datos ---
-            const groupBy = (arr, key, valKey) => arr.reduce((acc, r) => {
-                acc[r[key]] = (acc[r[key]] || 0) + r[valKey]; return acc;
-            }, {});
-
-            const paradasPorDia = groupBy(cleanData, 'Fecha', 'Minutos');
-            const paradasPorMaquina = groupBy(cleanData, 'Descrip_Maquina', 'Minutos');
-            const produccionPorMaquina = groupBy(produccionUnica, 'Descrip_Maquina', 'Cantidad');
-            const paradasPorIncidencia = groupBy(cleanData, 'NroIncidencia', 'Minutos');
-            const paradasPorOperario = groupBy(cleanData, 'Apellido', 'Minutos');
-            const paradasPorTurno = groupBy(cleanData, 'Turno', 'Minutos');
-            
-            // --- 4. Ordenamiento y preparación ---
-            const sortAndPrepare = (groupedData, limit=null) => {
-                let sorted = Object.entries(groupedData).sort(([,a],[,b]) => b-a);
-                if(limit) sorted = sorted.slice(0, limit);
-                return { labels: sorted.map(i => i[0]), values: sorted.map(i => i[1]) };
-            };
-            
-            const sortedFechas = Object.keys(paradasPorDia).sort((a,b) => new Date(a.split('/').reverse().join('-')) - new Date(b.split('/').reverse().join('-')));
-            const dataDia = { labels: sortedFechas, values: sortedFechas.map(f => paradasPorDia[f]) };
-            const dataMaquina = sortAndPrepare(paradasPorMaquina);
-            const dataProdMaquina = sortAndPrepare(produccionPorMaquina);
-            const dataIncidencia = sortAndPrepare(paradasPorIncidencia, 10);
-            const dataOperario = sortAndPrepare(paradasPorOperario, 10);
-            const dataTurno = sortAndPrepare(paradasPorTurno);
-
-            // --- 5. Actualización de Gráficos ---
-            const plotlyConfig = {responsive: true, displaylogo: false};
-            const layout = (title) => ({ title: title, xaxis: { categoryorder: 'total descending' } });
-
-            Plotly.react('chart_dia', [{ x: dataDia.labels, y: dataDia.values, type: 'scatter', mode: 'lines+markers', line: {color: '#0056b3'}}], {title: 'Minutos de Parada por Día'}, plotlyConfig);
-            Plotly.react('chart_maquina', [{ x: dataMaquina.labels, y: dataMaquina.values, type: 'bar', marker: {color: '#0056b3'}}], layout('Total Minutos de Parada por Máquina'), plotlyConfig);
-            Plotly.react('chart_prod_maquina', [{ x: dataProdMaquina.labels, y: dataProdMaquina.values, type: 'bar', marker: {color: '#ff7f0e'}}], layout('Producción Total por Máquina'), plotlyConfig);
-            Plotly.react('chart_incidencia', [{ x: dataIncidencia.labels, y: dataIncidencia.values, type: 'bar', marker: {color: '#2ca02c'}}], layout('Top 10 Causas de Parada (Nro. Incidencia)'), plotlyConfig);
-            Plotly.react('chart_operario', [{ x: dataOperario.labels, y: dataOperario.values, type: 'bar', marker: {color: '#d62728'}}], layout('Top 10 Operarios por Minutos de Parada'), plotlyConfig);
-            Plotly.react('chart_turno', [{ x: dataTurno.labels, y: dataTurno.values, type: 'bar', marker: {color: '#9467bd'}}], layout('Total Minutos de Parada por Turno'), plotlyConfig);
+        } catch (error) {
+            statusDiv.textContent = `Error: No se pudo cargar '${localCsvFile}'. Verifica que exista y que uses un servidor local.`;
+            statusDiv.style.color = 'red';
         }
-    </script>
+    }
+    
+    function parseCustomFloat(value) {
+        if (typeof value !== 'string' || value.trim() === '') return 0;
+        return parseFloat(value.replace(/\./g, '').replace(',', '.')) || 0;
+    }
+    
+    function updateDashboard(sourceData) {
+        const startDate = document.getElementById('startDate').valueAsDate;
+        const endDate = document.getElementById('endDate').valueAsDate;
+        
+        const filteredData = sourceData.filter(row => {
+            if (!startDate || !endDate) return true;
+            const rowDate = row.fechaObj;
+            const endOfDayEndDate = new Date(endDate);
+            endOfDayEndDate.setHours(23, 59, 59, 999);
+            return rowDate >= startDate && rowDate <= endOfDayEndDate;
+        });
+
+        if (filteredData.length === 0) {
+            statusDiv.textContent = 'No hay datos para el rango de fechas seleccionado.';
+            statusDiv.style.color = 'orange';
+            return;
+        }
+        statusDiv.textContent = `Mostrando ${[...new Set(filteredData.map(r=>r.IdProduccion))].length} órdenes de producción.`;
+
+        // --- 1. PROCESAMIENTO DE DATOS ---
+        // Objeto para almacenar datos únicos por IdProduccion (corrige el error de cálculo)
+        const produccionUnica = new Map();
+        filteredData.forEach(row => {
+            if (!produccionUnica.has(row.IdProduccion)) {
+                produccionUnica.set(row.IdProduccion, {
+                    IdProduccion: row.IdProduccion,
+                    Cantidad: parseCustomFloat(row.Cantidad),
+                    HsTrab: parseInt(row['Hs Trab'], 10) || 0,
+                    Descrip_Maquina: row['Descrip_Maquina'] || 'N/A',
+                    Fecha: row.Fecha
+                });
+            }
+        });
+        const produccionArray = Array.from(produccionUnica.values());
+
+        // Datos de paradas (eventos)
+        const paradasData = filteredData.map(row => ({
+            Fecha: row.Fecha,
+            Minutos: parseInt(row.Minutos, 10) || 0,
+            Descrip_Maquina: row['Descrip_Maquina'] || 'N/A',
+            descrip_incidencia: row['descrip_incidencia'] || 'No especificada',
+            Turno: row.Turno || 'N/A'
+        }));
+
+        // --- 2. CÁLCULO DE KPIs ---
+        const totalProduccion = produccionArray.reduce((sum, r) => sum + r.Cantidad, 0);
+        const totalMinutosParada = paradasData.reduce((sum, r) => sum + r.Minutos, 0);
+        const totalMinutosPlanificados = produccionArray.reduce((sum, r) => sum + r.HsTrab, 0);
+        const tiempoOperativoMinutos = totalMinutosPlanificados - totalMinutosParada;
+        
+        const disponibilidad = totalMinutosPlanificados > 0 ? (tiempoOperativoMinutos / totalMinutosPlanificados) * 100 : 0;
+        const rendimiento = tiempoOperativoMinutos > 0 ? totalProduccion / (tiempoOperativoMinutos / 60) : 0; // Unidades por hora
+
+        document.getElementById('kpi-produccion').textContent = totalProduccion.toLocaleString('es-AR', {maximumFractionDigits:0});
+        document.getElementById('kpi-paradas').textContent = (totalMinutosParada / 60).toFixed(1);
+        document.getElementById('kpi-disponibilidad').textContent = `${disponibilidad.toFixed(1)}%`;
+        document.getElementById('kpi-rendimiento').textContent = rendimiento.toLocaleString('es-AR', {maximumFractionDigits:0});
+        
+        // --- 3. PREPARACIÓN DE DATOS PARA GRÁFICOS ---
+        const groupBy = (arr, key, valueKey, operation = 'sum') => arr.reduce((acc, r) => {
+            const group = r[key];
+            if (!acc[group]) acc[group] = (operation === 'count') ? 0 : { sum: 0, count: 0 };
+            
+            if (operation === 'count') {
+                acc[group]++;
+            } else {
+                acc[group].sum += r[valueKey];
+                acc[group].count++;
+            }
+            return acc;
+        }, {});
+        
+        // Datos para Gráfico Evolutivo
+        const produccionPorDia = groupBy(produccionArray, 'Fecha', 'Cantidad');
+        const paradasPorDia = groupBy(paradasData, 'Fecha', 'Minutos');
+        const planificadoPorDia = groupBy(produccionArray, 'Fecha', 'HsTrab');
+        
+        const sortedFechas = Object.keys(produccionPorDia).sort((a,b) => new Date(a.split('/').reverse().join('-')) - new Date(b.split('/').reverse().join('-')));
+        
+        const dataEvolutivo = sortedFechas.map(fecha => {
+            const planificado = planificadoPorDia[fecha]?.sum || 0;
+            const paradas = paradasPorDia[fecha]?.sum || 0;
+            return {
+                fecha: fecha,
+                produccion: produccionPorDia[fecha]?.sum || 0,
+                disponibilidad: planificado > 0 ? ((planificado - paradas) / planificado) * 100 : 0
+            };
+        });
+
+        // Datos para Pareto
+        const paradasPorCausa = groupBy(paradasData, 'descrip_incidencia', 'Minutos');
+        const sortedCausas = Object.entries(paradasPorCausa).sort(([,a],[,b]) => b.sum - a.sum);
+        let cumulative = 0;
+        const totalParadas = totalMinutosParada;
+        const paretoData = sortedCausas.map(item => {
+            cumulative += item[1].sum;
+            return {
+                causa: item[0],
+                minutos: item[1].sum,
+                cum_percent: (cumulative / totalParadas) * 100
+            };
+        });
+        
+        // Datos para Treemap y otros
+        const paradasPorMaquinaYCausa = paradasData.reduce((acc, r) => {
+            const maquina = r.Descrip_Maquina;
+            const causa = r.descrip_incidencia;
+            if(!acc[maquina]) acc[maquina] = {};
+            if(!acc[maquina][causa]) acc[maquina][causa] = 0;
+            acc[maquina][causa] += r.Minutos;
+            return acc;
+        }, {});
+
+        const treemapLabels = ['Máquinas'];
+        const treemapParents = [''];
+        const treemapValues = [0]; // Root node has 0 value
+        Object.entries(paradasPorMaquinaYCausa).forEach(([maquina, causas]) => {
+            treemapLabels.push(maquina);
+            treemapParents.push('Máquinas');
+            const totalMaquina = Object.values(causas).reduce((s,v)=>s+v, 0);
+            treemapValues.push(totalMaquina);
+            Object.entries(causas).forEach(([causa, minutos]) => {
+                treemapLabels.push(causa);
+                treemapParents.push(maquina);
+                treemapValues.push(minutos);
+            });
+        });
+        
+        // Datos de producción y rendimiento por máquina
+        const prodPorMaquina = groupBy(produccionArray, 'Descrip_Maquina', 'Cantidad');
+        const tiempoPlanificadoPorMaquina = groupBy(produccionArray, 'Descrip_Maquina', 'HsTrab');
+        const tiempoParadaPorMaquina = groupBy(paradasData, 'Descrip_Maquina', 'Minutos');
+        
+        const rendimientoPorMaquina = Object.keys(prodPorMaquina).map(maquina => {
+            const prod = prodPorMaquina[maquina].sum;
+            const tPlanificado = tiempoPlanificadoPorMaquina[maquina]?.sum || 0;
+            const tParada = tiempoParadaPorMaquina[maquina]?.sum || 0;
+            const tOperativo = (tPlanificado - tParada) / 60; // en horas
+            return {
+                maquina: maquina,
+                produccion: prod,
+                rendimiento: tOperativo > 0 ? prod / tOperativo : 0
+            }
+        }).sort((a,b) => b.produccion - a.produccion);
+        
+        // Datos por turno
+        const paradasPorTurno = groupBy(paradasData, 'Turno', 'Minutos');
+        
+        // --- 4. RENDERIZADO DE GRÁFICOS ---
+        const plotlyConfig = {responsive: true, displaylogo: false};
+        const baseLayout = (title) => ({ title: { text: title, font: {size: 20, color: 'var(--primary-color)'}}, paper_bgcolor: 'var(--card-bg)', plot_bgcolor: 'var(--card-bg)'});
+
+        // Gráfico 1: Evolutivo Producción y Disponibilidad
+        Plotly.newPlot('chart_prod_disponibilidad_dia', [{
+            x: dataEvolutivo.map(d => d.fecha), y: dataEvolutivo.map(d => d.produccion),
+            name: 'Producción', type: 'bar', marker: {color: 'var(--primary-color)'}
+        }, {
+            x: dataEvolutivo.map(d => d.fecha), y: dataEvolutivo.map(d => d.disponibilidad),
+            name: 'Disponibilidad', type: 'scatter', mode: 'lines+markers', yaxis: 'y2',
+            line: {color: 'var(--accent-color)', width: 3}
+        }], {
+            ...baseLayout('Producción y Disponibilidad Diaria'),
+            yaxis: {title: 'Producción (Unidades)'},
+            yaxis2: {title: 'Disponibilidad (%)', overlaying: 'y', side: 'right', range: [0, 105]},
+            legend: {orientation: 'h', y: -0.2, x: 0.5, xanchor: 'center'}
+        }, plotlyConfig);
+
+        // Gráfico 2: Pareto de Causas
+        Plotly.newPlot('chart_pareto_incidencia', [{
+            x: paretoData.map(d => d.causa), y: paretoData.map(d => d.minutos),
+            name: 'Minutos de Parada', type: 'bar', marker: {color: 'var(--secondary-color)'}
+        }, {
+            x: paretoData.map(d => d.causa), y: paretoData.map(d => d.cum_percent),
+            name: 'Porcentaje Acumulado', type: 'scatter', mode: 'lines+markers', yaxis: 'y2',
+            line: {color: 'var(--primary-color)', width: 3}
+        }], {
+            ...baseLayout('Pareto de Causas de Parada'),
+            yaxis: {title: 'Minutos Totales de Parada'},
+            yaxis2: {title: 'Porcentaje Acumulado (%)', overlaying: 'y', side: 'right', range: [0, 105]},
+            xaxis: { categoryorder: 'total descending' },
+            legend: {orientation: 'h', y: -0.3, x: 0.5, xanchor: 'center'}
+        }, plotlyConfig);
+        
+        // Gráfico 3: Treemap
+        Plotly.newPlot('chart_treemap_maquina', [{
+            type: "treemap", ids: treemapLabels, labels: treemapLabels, parents: treemapParents,
+            values: treemapValues, textinfo: "label+value+percent root", marker: {
+                colorscale: 'Blues'
+            }
+        }], baseLayout('Desglose de Minutos de Parada por Máquina y Causa'), plotlyConfig);
+        
+        // Gráfico 4: Producción por Máquina
+        Plotly.newPlot('chart_prod_maquina', [{
+            x: rendimientoPorMaquina.map(d => d.maquina), y: rendimientoPorMaquina.map(d => d.produccion),
+            type: 'bar', text: rendimientoPorMaquina.map(d => d.produccion.toLocaleString('es-AR')), textposition: 'auto',
+            marker: {color: '#28a745'}
+        }], baseLayout('Producción Total por Máquina'), plotlyConfig);
+
+        // Gráfico 5: Rendimiento por Máquina
+        Plotly.newPlot('chart_rendimiento_maquina', [{
+            x: rendimientoPorMaquina.map(d => d.maquina), y: rendimientoPorMaquina.map(d => d.rendimiento),
+            type: 'bar', text: rendimientoPorMaquina.map(d => Math.round(d.rendimiento).toLocaleString('es-AR')), textposition: 'auto',
+            marker: {color: 'var(--accent-color)'}
+        }], baseLayout('Rendimiento (Unidades por Hora) por Máquina'), plotlyConfig);
+        
+        // Gráfico 6: Paradas por Turno
+        const turnoData = Object.entries(paradasPorTurno).sort(([,a],[,b]) => b.sum - a.sum);
+        Plotly.newPlot('chart_paradas_turno', [{
+            labels: turnoData.map(d => d[0]), values: turnoData.map(d => d[1].sum),
+            type: 'pie', hole: .4, textinfo: 'label+percent',
+            marker: { colors: ['#0d47a1', '#1976d2', '#42a5f5', '#90caf9']}
+        }], baseLayout('Distribución de Minutos de Parada por Turno'), plotlyConfig);
+    }
+</script>
 </body>
 </html>
