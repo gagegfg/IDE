@@ -204,7 +204,263 @@
 
     <!-- Lógica del Dashboard -->
     <script>
-        // El código JavaScript se insertará aquí.
+        document.addEventListener('DOMContentLoaded', function () {
+            const CSV_URL = 'exportProduccionyEventos.csv';
+
+            let originalData = [];
+            let charts = {}; // Objeto para mantener las instancias de los gráficos
+
+            // --- INICIALIZACIÓN ---
+            function init() {
+                Papa.parse(CSV_URL, {
+                    download: true,
+                    header: true,
+                    delimiter: ';', // ADDED: Specify semicolon delimiter
+                    skipEmptyLines: true,
+                    transformHeader: header => header.trim().replace(/[\s\W]+/g, '_'),
+                    complete: function(results) {
+                        originalData = processData(results.data);
+                        console.log("Parsed and processed data:", originalData); // ADDED: Log data for debugging
+                        populateFilters(originalData);
+                        addEventListeners();
+                        updateDashboard(originalData);
+                        document.getElementById('last-updated').textContent = `Actualizado: ${new Date().toLocaleString('es-ES')}`;
+                    },
+                    error: function(err) {
+                        console.error("Error al cargar o parsear el CSV:", err);
+                        alert("No se pudo cargar el archivo de datos. Revisa la consola para más detalles.");
+                    }
+                });
+            }
+
+            // --- PROCESAMIENTO DE DATOS ---
+            function processData(data) {
+                return data.map(row => {
+                    row.Cantidad = parseInt(row.Cantidad) || 0;
+                    row.Minutos = parseInt(row.Minutos) || 0;
+                    row.Hs_Trab = parseFloat(row.Hs_Trab) || 0;
+                    row.Fecha = parseDate(row.Fecha);
+                    return row;
+                }).filter(row => row.Fecha); // Filtrar filas con fecha inválida
+            }
+
+            function parseDate(dateString) {
+                const parts = dateString.split('/');
+                // Ensure parts has 3 elements and they are valid numbers before creating Date object
+                if (parts.length === 3 && !isNaN(parts[0]) && !isNaN(parts[1]) && !isNaN(parts[2])) {
+                    // Date constructor expects year, month (0-indexed), day
+                    return new Date(parts[2], parts[1] - 1, parts[0]);
+                }
+                return null;
+            }
+
+            // --- FILTROS Y EVENTOS ---
+            function populateFilters(data) {
+                const uniqueMachines = [...new Set(data.map(row => row.Descrip_Maquina))].sort();
+                const uniqueShifts = [...new Set(data.map(row => row.Turno))].sort();
+
+                const machineFilter = document.getElementById('machine-filter');
+                machineFilter.innerHTML = ''; // Clear existing options
+                uniqueMachines.forEach(machine => {
+                    if (machine) machineFilter.add(new Option(machine, machine)); // Only add if not empty/null
+                });
+
+                const shiftFilter = document.getElementById('shift-filter');
+                shiftFilter.innerHTML = ''; // Clear existing options
+                uniqueShifts.forEach(shift => {
+                    if (shift) shiftFilter.add(new Option(shift, shift)); // Only add if not empty/null
+                });
+            }
+
+            function addEventListeners() {
+                flatpickr("#date-range-picker", {
+                    mode: "range",
+                    dateFormat: "d/m/Y",
+                    locale: "es",
+                    // Set defaultDate only if originalData has elements
+                    defaultDate: originalData.length > 0 ? [originalData[0].Fecha, originalData[originalData.length - 1].Fecha] : [],
+                    onChange: function(selectedDates, dateStr, instance) {
+                        if (selectedDates.length === 2) applyFilters();
+                    }
+                });
+
+                document.getElementById('machine-filter').addEventListener('change', applyFilters);
+                document.getElementById('shift-filter').addEventListener('change', applyFilters);
+            }
+
+            function applyFilters() {
+                const dateRangePicker = document.getElementById('date-range-picker')._flatpickr;
+                const dateRange = dateRangePicker ? dateRangePicker.selectedDates : [];
+                const selectedMachines = Array.from(document.getElementById('machine-filter').selectedOptions).map(opt => opt.value);
+                const selectedShifts = Array.from(document.getElementById('shift-filter').selectedOptions).map(opt => opt.value);
+
+                const filteredData = originalData.filter(row => {
+                    const isDateInRange = dateRange.length === 2 ? row.Fecha >= dateRange[0] && row.Fecha <= dateRange[1] : true;
+                    const isMachineSelected = selectedMachines.length > 0 ? selectedMachines.includes(row.Descrip_Maquina) : true;
+                    const isShiftSelected = selectedShifts.length > 0 ? selectedShifts.includes(row.Turno) : true;
+                    return isDateInRange && isMachineSelected && isShiftSelected;
+                });
+
+                updateDashboard(filteredData);
+            }
+
+            // --- LÓGICA DEL DASHBOARD ---
+            function updateDashboard(data) {
+                const kpiData = calculateKPIs(data);
+                renderKPIs(kpiData);
+                updateCharts(data, kpiData);
+                updateSummary(data, kpiData);
+            }
+
+            function calculateKPIs(data) {
+                const uniqueProductions = new Map();
+                data.forEach(row => {
+                    // Use a composite key for unique productions if IdProduccion alone isn't enough
+                    // For now, assuming IdProduccion is unique per production run
+                    if (row.IdProduccion && !uniqueProductions.has(row.IdProduccion)) {
+                        uniqueProductions.set(row.IdProduccion, { cantidad: row.Cantidad, hsTrab: row.Hs_Trab });
+                    }
+                });
+
+                const productionValues = Array.from(uniqueProductions.values());
+                const totalProduction = productionValues.reduce((sum, item) => sum + item.cantidad, 0);
+                const totalWorkMinutes = productionValues.reduce((sum, item) => sum + item.hsTrab, 0);
+                const totalDowntimeMinutes = data.reduce((sum, row) => sum + row.Minutos, 0);
+                
+                const plannedTime = totalWorkMinutes > 0 ? totalWorkMinutes : 1; // Evitar división por cero
+                const runTime = totalWorkMinutes - totalDowntimeMinutes;
+                const availability = (runTime / plannedTime);
+                const efficiency = runTime > 0 ? totalProduction / (runTime / 60) : 0; // Piezas por hora
+
+                return {
+                    totalProduction,
+                    totalDowntimeHours: totalDowntimeMinutes / 60,
+                    availability,
+                    efficiency,
+                    activeMachines: new Set(data.map(row => row.Descrip_Maquina)).size
+                };
+            }
+
+            function renderKPIs(kpiData) {
+                document.getElementById('kpi-total-production').textContent = kpiData.totalProduction.toLocaleString('es-ES');
+                document.getElementById('kpi-availability').textContent = `${(kpiData.availability * 100).toFixed(1)}%`;
+                document.getElementById('kpi-efficiency').textContent = kpiData.efficiency.toFixed(0);
+                document.getElementById('kpi-total-downtime').textContent = kpiData.totalDowntimeHours.toFixed(1);
+            }
+
+            function updateSummary(data, kpiData) {
+                if (data.length === 0) {
+                    document.getElementById('summary-text').textContent = "No hay datos para el período o filtros seleccionados.";
+                    return;
+                }
+                const downtimeByReason = aggregateAndSort(data, 'descrip_incidencia', 'Minutos', 'sum');
+                const topReason = downtimeByReason[0] ? downtimeByReason[0].category : "N/A";
+                const topReasonMins = downtimeByReason[0] ? downtimeByReason[0].value : 0;
+                const totalDowntimeMins = kpiData.totalDowntimeHours * 60;
+                const topReasonPercentage = totalDowntimeMins > 0 ? (topReasonMins / totalDowntimeMins * 100).toFixed(0) : 0;
+
+                const summary = `El KPI de **Disponibilidad** se sitúa en un **${(kpiData.availability * 100).toFixed(1)}%**. La principal causa de inactividad es **"${topReason}"**, responsable del **${topReasonPercentage}%** del tiempo total de parada.`;
+                document.getElementById('summary-text').innerHTML = summary.replace(/\*\*([^*]+)\*\*/g, '<strong>$1</strong>');
+            }
+
+            function updateCharts(data) {
+                const prodByMachineData = aggregateAndSort(data, 'Descrip_Maquina', 'Cantidad', 'sum', true);
+                renderChart('chart-prod-by-machine', 'bar', { 
+                    categories: prodByMachineData.map(d => d.category),
+                    series: [{ name: 'Producción Total', data: prodByMachineData.map(d => d.value) }],
+                    horizontal: false
+                });
+
+                const prodByOperatorData = aggregateAndSort(data, 'Apellido', 'Cantidad', 'sum', true);
+                renderChart('chart-prod-by-operator', 'bar', { 
+                    categories: prodByOperatorData.map(d => d.category),
+                    series: [{ name: 'Producción Total', data: prodByOperatorData.map(d => d.value) }],
+                    horizontal: false
+                });
+
+                const downtimeReasonsData = aggregateAndSort(data, 'descrip_incidencia', 'Minutos', 'sum');
+                renderChart('chart-downtime-reasons', 'bar', { 
+                    categories: downtimeReasonsData.map(d => d.category),
+                    series: [{ name: 'Minutos de Parada', data: downtimeReasonsData.map(d => d.value) }],
+                    horizontal: true
+                });
+
+                const dailyProdData = aggregateAndSort(data, 'Fecha', 'Cantidad', 'sum', true, false); // No ordenar por valor
+                renderChart('chart-daily-production', 'line', { 
+                    categories: dailyProdData.map(d => d.category),
+                    series: [{ name: 'Producción Diaria', data: dailyProdData.map(d => d.value) }],
+                    isTimeSeries: true
+                });
+            }
+
+            function renderChart(elementId, type, chartData) {
+                const commonOptions = {
+                    chart: { type: type, height: 350, toolbar: { show: true, tools: { download: true, selection: true, zoom: true, zoomin: true, zoomout: true, pan: true } } },
+                    dataLabels: { enabled: false },
+                    stroke: { width: 2 },
+                    fill: { opacity: 1 },
+                    tooltip: { y: { formatter: val => val.toLocaleString('es-ES') } }
+                };
+
+                let options = {};
+                if (type === 'bar') {
+                    options = {
+                        ...commonOptions,
+                        series: chartData.series,
+                        plotOptions: { bar: { horizontal: chartData.horizontal, borderRadius: 4 } },
+                        xaxis: { categories: chartData.categories, labels: { style: { fontSize: '12px' } } },
+                    };
+                } else if (type === 'line') {
+                    options = {
+                        ...commonOptions,
+                        series: chartData.series,
+                        stroke: { curve: 'smooth' },
+                        xaxis: { type: 'datetime', categories: chartData.categories, labels: { datetimeUTC: false, format: 'dd/MM' } },
+                        tooltip: { x: { format: 'dd/MM/yyyy' } }
+                    };
+                }
+
+                if (charts[elementId]) {
+                    charts[elementId].updateOptions(options);
+                }
+                else {
+                    charts[elementId] = new ApexCharts(document.querySelector(`#${elementId}`), options);
+                    charts[elementId].render();
+                }
+            }
+
+            // --- FUNCIÓN UTILITARIA DE AGREGACIÓN Y ORDENACIÓN ---
+            function aggregateAndSort(data, categoryField, valueField, method = 'sum', uniqueByIdProd = false, sortByValue = true) {
+                const aggregation = {};
+                const seenIds = new Set();
+
+                data.forEach(row => {
+                    const category = categoryField === 'Fecha' ? row[categoryField].toISOString().split('T')[0] : row[categoryField];
+                    if (!category) return; // Skip rows with empty/null category
+
+                    if (uniqueByIdProd) {
+                        const uniqueKey = `${row.IdProduccion}-${category}`;
+                        if (!seenIds.has(uniqueKey)) {
+                            aggregation[category] = (aggregation[category] || 0) + row[valueField];
+                            seenIds.add(uniqueKey);
+                        }
+                    } else {
+                        aggregation[category] = (aggregation[category] || 0) + row[valueField];
+                    }
+                });
+
+                let aggregatedArray = Object.keys(aggregation).map(key => ({ category: key, value: aggregation[key] }));
+
+                if (sortByValue) {
+                    aggregatedArray.sort((a, b) => b.value - a.value);
+                }
+
+                return aggregatedArray;
+            }
+
+            // --- Iniciar la aplicación ---
+            init();
+        });
     </script>
 </body>
 </html>
