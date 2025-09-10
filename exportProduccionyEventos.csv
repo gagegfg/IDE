@@ -963,4 +963,60 @@
 190080;01/09/2025;14-22;0;;13;Pan Dulcera 13;331;Torrez Pantoja;40800;395;;;299683;99;Otros;1;10;False
 190080;01/09/2025;14-22;0;;13;Pan Dulcera 13;331;Torrez Pantoja;40800;395;;;299684;3;Limpieza fin de turno;1;30;False
 190080;01/09/2025;14-22;0;;13;Pan Dulcera 13;331;Torrez Pantoja;40800;395;;;299685;11;Cambio de Medida;1;10;False
-190081;01/09/2025;14-22;4000;;9;Pan Dulcera 9;189;Avendaño;28100;0;;;299686;1;Arranque / Puesta a Punto;1;15;False
+190081;01/09/2025;14-22;4000;;9;Pan Dulcera 9;189;Avendaño;28100;310;;;299686;1;Arranque / Puesta a Punto;1;15;False
+190081;01/09/2025;14-22;4000;;9;Pan Dulcera 9;189;Avendaño;28100;310;;;299687;4;Ajuste de mantenimiento;4;80;False
+190081;01/09/2025;14-22;4000;;9;Pan Dulcera 9;189;Avendaño;28100;310;;;299688;14;Incidencia Papel;3;40;False
+190081;01/09/2025;14-22;4000;;9;Pan Dulcera 9;189;Avendaño;28100;310;;;299689;2;Limpieza en Proceso;2;25;False
+190081;01/09/2025;14-22;4000;;9;Pan Dulcera 9;189;Avendaño;28100;310;;;299690;10;Cambio de Bobina;1;10;False
+190082;01/09/2025;14-22;0;;13;Pan Dulcera 13;335;Arnaldi;42000;420;;;299691;4;Ajuste de mantenimiento;1;20;False
+190082;01/09/2025;14-22;0;;13;Pan Dulcera 13;335;Arnaldi;42000;420;;;299692;4;Ajuste de mantenimiento;1;5;False
+190082;01/09/2025;14-22;0;;13;Pan Dulcera 13;335;Arnaldi;42000;420;;;299693;2;Limpieza en Proceso;1;30;False
+190082;01/09/2025;14-22;0;;13;Pan Dulcera 13;335;Arnaldi;42000;420;;;299694;10;Cambio de Bobina;1;5;False
+190083;02/09/2025;14-22;4000;;9;Pan Dulcera 9;225;Reviglio;0;0;;;299695;11;Cambio de Medida;1;480;False
+190084;02/09/2025;14-22;0;;10;Pan Dulcera 10;273;Gutierrez;38400;390;;;299696;4;Ajuste de mantenimiento;1;10;False
+190084;02/09/2025;14-22;0;;10;Pan Dulcera 10;273;Gutierrez;38400;390;;;299697;4;Ajuste de mantenimiento;1;5;False
+190084;02/09/2025;14-22;0;;10;Pan Dulcera 10;273;Gutierrez;38400;390;;;299698;4;Ajuste de mantenimiento;1;45;False
+190084;02/09/2025;14-22;0;;10;Pan Dulcera 10;273;Gutierrez;38400;390;;;299699;2;Limpieza en Proceso;1;30;False
+190085;02/09/2025;14-22;0;;13;Pan Dulcera 13;331;Torrez Pantoja;43800;430;;;299700;10;Cambio de Bobina;2;20;False
+190085;02/09/2025;14-22;0;;13;Pan Dulcera 13;331;Torrez Pantoja;43800;430;;;299701;3;Limpieza fin de turno;1;30;False
+190086;02/09/2025;06-14;4000;;9;Pan Dulcera 9;109;Pacheco;5700;80;;;299702;14;Incidencia Papel;3;40;False
+190086;02/09/2025;06-14;4000;;9;Pan Dulcera 9;109;Pacheco;5700;80;;;299703;2;Limpieza en Proceso;1;10;False
+190086;02/09/2025;06-14;4000;;9;Pan Dulcera 9;109;Pacheco;5700;80;;;299704;11;Cambio de Medida;1;340;False
+190086;02/09/2025;06-14;4000;;9;Pan Dulcera 9;109;Pacheco;5700;80;;;299705;10;Cambio de Bobina;1;10;False
+190087;02/09/2025;06-14;0;;10;Pan Dulcera 10;109;Pacheco;36000;405;;;299706;14;Incidencia Papel;1;10;False
+190087;02/09/2025;06-14;0;;10;Pan Dulcera 10;109;Pacheco;36000;405;;;299707;4;Ajuste de mantenimiento;3;35;False
+190087;02/09/2025;06-14;0;;10;Pan Dulcera 10;109;Pacheco;36000;405;;;299708;2;Limpieza en Proceso;1;30;False
+190088;02/09/2025;06-14;0;;13;Pan Dulcera 13;109;Pacheco;41400;420;;;299709;10;Cambio de Bobina;1;10;False
+190088;02/09/2025;06-14;0;;13;Pan Dulcera 13;109;Pacheco;41400;420;;;299710;4;Ajuste de mantenimiento;1;10;False
+190088;02/09/2025;06-14;0;;13;Pan Dulcera 13;109;Pacheco;41400;420;;;299711;2;Limpieza en Proceso;1;30;False
+190088;02/09/2025;06-14;0;;13;Pan Dulcera 13;109;Pacheco;41400;420;;;299712;14;Incidencia Papel;1;10;False
+190089;02/09/2025;22-06;4000;;9;Pan Dulcera 9;75;Aguinaldo;19800;145;;;299713;4;Ajuste de mantenimiento;3;280;False
+190089;02/09/2025;22-06;4000;;9;Pan Dulcera 9;75;Aguinaldo;19800;145;;;299714;2;Limpieza en Proceso;1;10;False
+190089;02/09/2025;22-06;4000;;9;Pan Dulcera 9;75;Aguinaldo;19800;145;;;299715;2;Limpieza en Proceso;1;30;False
+190089;02/09/2025;22-06;4000;;9;Pan Dulcera 9;75;Aguinaldo;19800;145;;;299716;14;Incidencia Papel;1;15;False
+190090;02/09/2025;22-06;0;;10;Pan Dulcera 10;211;Alvarez;35400;365;;;299717;4;Ajuste de mantenimiento;3;100;False
+190090;02/09/2025;22-06;0;;10;Pan Dulcera 10;211;Alvarez;35400;365;;;299718;14;Incidencia Papel;1;10;False
+190090;02/09/2025;22-06;0;;10;Pan Dulcera 10;211;Alvarez;35400;365;;;299719;10;Cambio de Bobina;1;5;False
+190091;02/09/2025;22-06;0;;13;Pan Dulcera 13;335;Arnaldi;43200;430;;;299720;2;Limpieza en Proceso;1;5;False
+190091;02/09/2025;22-06;0;;13;Pan Dulcera 13;335;Arnaldi;43200;430;;;299721;10;Cambio de Bobina;1;5;False
+190091;02/09/2025;22-06;0;;13;Pan Dulcera 13;335;Arnaldi;43200;430;;;299722;14;Incidencia Papel;1;10;False
+190091;02/09/2025;22-06;0;;13;Pan Dulcera 13;335;Arnaldi;43200;430;;;299723;2;Limpieza en Proceso;1;30;False
+190092;03/09/2025;06-14;4000;;9;Pan Dulcera 9;225;Reviglio;20400;240;;;299724;5;Falla Mecánica;1;20;False
+190092;03/09/2025;06-14;4000;;9;Pan Dulcera 9;225;Reviglio;20400;240;;;299725;5;Falla Mecánica;1;20;False
+190092;03/09/2025;06-14;4000;;9;Pan Dulcera 9;225;Reviglio;20400;240;;;299726;5;Falla Mecánica;2;50;False
+190092;03/09/2025;06-14;4000;;9;Pan Dulcera 9;225;Reviglio;20400;240;;;299727;4;Ajuste de mantenimiento;3;120;False
+190092;03/09/2025;06-14;4000;;9;Pan Dulcera 9;225;Reviglio;20400;240;;;299728;2;Limpieza en Proceso;1;30;False
+190093;03/09/2025;06-14;0;;10;Pan Dulcera 10;109;Pacheco;40800;410;;;299729;10;Cambio de Bobina;1;30;False
+190093;03/09/2025;06-14;0;;10;Pan Dulcera 10;109;Pacheco;40800;410;;;299730;14;Incidencia Papel;1;10;False
+190093;03/09/2025;06-14;0;;10;Pan Dulcera 10;109;Pacheco;40800;410;;;299731;2;Limpieza en Proceso;1;30;False
+190094;03/09/2025;06-14;0;;13;Pan Dulcera 13;258;Torre;40200;400;;;299732;10;Cambio de Bobina;1;10;False
+190094;03/09/2025;06-14;0;;13;Pan Dulcera 13;258;Torre;40200;400;;;299733;4;Ajuste de mantenimiento;2;30;False
+190094;03/09/2025;06-14;0;;13;Pan Dulcera 13;258;Torre;40200;400;;;299734;2;Limpieza en Proceso;1;30;False
+190094;03/09/2025;06-14;0;;13;Pan Dulcera 13;258;Torre;40200;400;;;299735;10;Cambio de Bobina;1;10;False
+190095;03/09/2025;14-22;4000;;9;Pan Dulcera 9;189;Avendaño;34800;380;;;299736;2;Limpieza en Proceso;3;50;False
+190095;03/09/2025;14-22;4000;;9;Pan Dulcera 9;189;Avendaño;34800;380;;;299737;14;Incidencia Papel;2;25;False
+190095;03/09/2025;14-22;4000;;9;Pan Dulcera 9;189;Avendaño;34800;380;;;299738;14;Incidencia Papel;1;10;False
+190095;03/09/2025;14-22;4000;;9;Pan Dulcera 9;189;Avendaño;34800;380;;;299739;4;Ajuste de mantenimiento;1;15;False
+190096;03/09/2025;14-22;0;;10;Pan Dulcera 10;273;Gutierrez;40500;410;;;299740;4;Ajuste de mantenimiento;4;40;False
+190096;03/09/2025;14-22;0;;10;Pan Dulcera 10;273;Gutierrez;40500;410;;;299741;2;Limpieza en Proceso;1;30;False
+190097;03/09/2025;14-22;0;;13;Pan Dulcera 13;331;Torrez Pantoja;0;0;;;;;;;;
