@@ -1,0 +1,18 @@
+Código;Incidencia;Categoría OEE sugerida
+00;Tiempo de proceso;Tiempo planificado (no pérdida)
+01;Arranque/Puesta a punto;Setup/Cambio formato
+02;Limpieza;Microparadas/Performance
+04;Regulación de mantenimiento;Mantenimiento
+05;Falla Mecánica;Mantenimiento
+06;Falla Eléctrica;Mantenimiento
+07;Falla Neumática;Mantenimiento
+08;Mantenimiento preventivo;	Mantenimiento
+09;Falta de papel/insumo;Otros (Materiales)
+10;Cambio de Bobina;Setup/Cambio formato
+11;Cambio de Medida;Setup/Cambio formato
+12;Formación/Capacitación/Reunión;Otros
+13;Descanso/Refrigerio;Otros (Turno/Breaks)
+14;Incidencia Papel;Microparadas/Performance
+15;Incidencia Adhesivo;Microparadas/Performance
+16;Relevo;Otros (Turno/Breaks)
+20;Corte de energía/Aire comprimido/Vacío;Mantenimiento/Externo
