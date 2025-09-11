@@ -178,38 +178,36 @@
     }
     
     // --- CARGA Y PROCESAMIENTO DE DATOS ---
-    async function loadAndProcessData() {
+    function loadAndProcessData() {
         const url = "exportProduccionyEventos.csv";
-        try {
-            const response = await fetch(url);
-            if (!response.ok) {
-                throw new Error(`Error HTTP: ${response.status}. El archivo no fue encontrado o hay un problema de red.`);
-            }
-            const csvText = await response.text();
-            
-            Papa.parse(csvText, {
-                header: true,
-                skipEmptyLines: true,
-                delimiter: ';',
-                complete: (results) => {
-                    if (results.data.length === 0) {
-                         document.getElementById("last-updated").innerHTML = `<span class="text-danger fw-bold">Error: El archivo CSV está vacío.</span>`;
-                        return;
-                    }
-                    const processedData = processData(results.data);
-                    const benchmarks = calculateBenchmarks(processedData);
-                    onDataLoaded(processedData, benchmarks);
-                },
-                error: (err) => { 
-                    console.error("Error al parsear el CSV:", err); 
-                    alert("Error al procesar el formato del archivo CSV."); 
+        
+        Papa.parse(url, {
+            download: true, // Usa PapaParse para hacer el fetch del archivo.
+            header: true,
+            skipEmptyLines: true,
+            delimiter: ';',
+            complete: (results) => {
+                if (results.data.length === 0) {
+                     document.getElementById("last-updated").innerHTML = `<span class="text-danger fw-bold">Error: El archivo CSV está vacío.</span>`;
+                    return;
                 }
-            });
-        } catch (error) {
-            console.error("Error CRÍTICO al cargar el archivo:", error);
-            alert("No se pudo cargar 'exportProduccionyEventos.csv'.\n\nIMPORTANTE: Para probarlo en tu PC, debes usar un servidor local (como la extensión 'Live Server' de VS Code). Abrir el HTML directamente no funcionará.");
-            document.getElementById("last-updated").innerHTML = `<span class="text-danger fw-bold">Error de carga. Revisa la consola.</span>`;
-        }
+                const processedData = processData(results.data);
+                const benchmarks = calculateBenchmarks(processedData);
+                onDataLoaded(processedData, benchmarks);
+            },
+            error: (err, file) => { 
+                console.error("Error al cargar el CSV:", err); 
+                document.getElementById("last-updated").innerHTML = `<span class="text-danger fw-bold">Error de carga.</span>`;
+                alert(
+                    "No se pudo cargar 'exportProduccionyEventos.csv'.\n\n" +
+                    "POSIBLES CAUSAS:\n" +
+                    "1. El archivo CSV no está en el mismo directorio que el HTML en el repositorio.\n" +
+                    "2. Estás abriendo el archivo HTML directamente en tu PC (file://...).\n\n" +
+                    "SOLUCIÓN PARA PROBAR EN PC:\n" +
+                    "Usa un servidor local. La forma más fácil es con la extensión 'Live Server' de Visual Studio Code."
+                );
+            }
+        });
     }
 
     function processData(data) {
@@ -415,4 +413,3 @@
   </script>
 </body>
 </html>
-
