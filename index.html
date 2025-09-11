@@ -3,7 +3,7 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Dashboard de Rendimiento Industrial</title>
+    <title>Dashboard de Producción - Molderil</title>
     <!-- Bootstrap 5 CSS -->
     <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.3/dist/css/bootstrap.min.css" rel="stylesheet">
     <!-- Google Fonts -->
@@ -16,422 +16,377 @@
         :root {
             --sidebar-width: 280px;
             --primary-color: #0d6efd;
-            --light-gray: #f8f9fa;
-            --dark-gray: #343a40;
-            --card-shadow: 0 4px 12px rgba(0,0,0,0.08);
+            --light-bg: #f8f9fa;
+            --dark-text: #343a40;
+            --card-shadow: 0 6px 18px rgba(0,0,0,0.07);
+            --border-radius: 0.75rem;
         }
         body {
             font-family: 'Inter', sans-serif;
-            background-color: var(--light-gray);
-            padding-left: var(--sidebar-width);
-        }
-        .sidebar {
-            position: fixed;
-            top: 0;
-            left: 0;
-            height: 100vh;
-            width: var(--sidebar-width);
-            background-color: #ffffff;
-            border-right: 1px solid #dee2e6;
-            display: flex;
-            flex-direction: column;
-            padding: 1.5rem;
-        }
-        .sidebar-header {
-            margin-bottom: 2rem;
-        }
-        .sidebar-header h3 {
-            font-weight: 700;
-            color: var(--primary-color);
-        }
-        .filter-section {
-            flex-grow: 1;
-        }
-        .filter-section .form-label {
-            font-weight: 600;
-            font-size: 0.9rem;
-            color: #495057;
-        }
-        .sidebar-footer {
-            font-size: 0.8rem;
-            color: #6c757d;
+            background-color: var(--light-bg);
+            color: var(--dark-text);
         }
         .main-content {
             padding: 2rem;
         }
         .card {
             border: none;
-            border-radius: 0.75rem;
+            border-radius: var(--border-radius);
             box-shadow: var(--card-shadow);
-            transition: transform 0.2s ease, box-shadow 0.2s ease;
+            transition: transform 0.2s ease-in-out;
         }
         .card:hover {
-            transform: translateY(-3px);
+            transform: translateY(-5px);
         }
-        .card-title {
+        .card-header {
+            background-color: transparent;
+            border-bottom: 1px solid #dee2e6;
             font-weight: 600;
-            color: #495057;
         }
-        .kpi-value {
-            font-size: 2.2rem;
+        .kpi-card {
+            text-align: center;
+        }
+        .kpi-card .kpi-value {
+            font-size: 2.5rem;
             font-weight: 700;
-            color: var(--dark-gray);
+            color: var(--primary-color);
         }
-        .chart-container {
+        .kpi-card .kpi-label {
+            font-size: 1rem;
+            color: #6c757d;
+        }
+        .filter-section {
+            background-color: #fff;
             padding: 1.5rem;
+            border-radius: var(--border-radius);
+            box-shadow: var(--card-shadow);
+            margin-bottom: 2rem;
         }
-        h1, h2, h3, h4, h5, h6 {
-            font-weight: 600;
+        #date-range-picker {
+            cursor: pointer;
+        }
+        .apexcharts-toolbar {
+            z-index: 1 !important;
         }
     </style>
 </head>
 <body>
+    <div class="main-content">
+        <header class="mb-4">
+            <h1 class="h2">Dashboard de Control de Producción</h1>
+            <p class="text-muted">Análisis de rendimiento y paradas de máquinas en Molderil.</p>
+        </header>
 
-    <!-- NAVEGACIÓN LATERAL FIJA -->
-    <nav class="sidebar">
-        <div class="sidebar-header">
-            <h3>Dashboard Industrial</h3>
-        </div>
+        <!-- Sección de Filtros -->
         <div class="filter-section">
-            <h4>Filtros</h4>
-            <div class="mb-3">
-                <label for="date-range-picker" class="form-label">Rango de Fechas</label>
-                <input type="text" class="form-control form-control-sm" id="date-range-picker" placeholder="Seleccionar rango...">
-            </div>
-            <div class="mb-3">
-                <label for="machine-filter" class="form-label">Máquinas</label>
-                <select id="machine-filter" class="form-select form-select-sm" multiple>
-                    <!-- Opciones de máquinas se cargarán dinámicamente -->
-                </select>
-            </div>
-            <div class="mb-3">
-                <label for="shift-filter" class="form-label">Turnos</label>
-                <select id="shift-filter" class="form-select form-select-sm" multiple>
-                    <!-- Opciones de turnos se cargarán dinámicamente -->
-                </select>
+            <div class="row align-items-end g-3">
+                <div class="col-md-5">
+                    <label for="date-range-picker" class="form-label fw-bold">Rango de Fechas</label>
+                    <input type="text" id="date-range-picker" class="form-control" placeholder="Seleccione un rango de fechas...">
+                </div>
+                <div class="col-md-7">
+                     <label class="form-label fw-bold">Filtros Rápidos</label>
+                    <div>
+                        <div class="btn-group" role="group" aria-label="Filtros rápidos de fecha">
+                            <button type="button" class="btn btn-outline-primary" id="btnHoy">Hoy</button>
+                            <button type="button" class="btn btn-outline-primary" id="btnAyer">Ayer</button>
+                            <button type="button" class="btn btn-outline-primary" id="btn7Dias">Últimos 7 Días</button>
+                            <button type="button" class="btn btn-outline-primary" id="btnEsteMes">Este Mes</button>
+                            <button type="button" class="btn btn-outline-primary" id="btnMesPasado">Mes Pasado</button>
+                        </div>
+                    </div>
+                </div>
             </div>
         </div>
-        <div class="sidebar-footer">
-            <p id="last-updated">Actualizado: Cargando...</p>
-        </div>
-    </nav>
 
-    <!-- CONTENIDO PRINCIPAL -->
-    <main class="main-content">
-        <!-- KPIs -->
-        <section class="row mb-4 g-4">
-            <div class="col-lg-3 col-md-6">
-                <div class="card text-center p-3">
+        <!-- KPIs Principales -->
+        <div class="row g-4 mb-4">
+            <div class="col-md-4">
+                <div class="card kpi-card">
                     <div class="card-body">
-                        <h5 class="card-title">Producción Total</h5>
-                        <p class="kpi-value" id="kpi-total-production">--</p>
+                        <div id="kpi-produccion-total" class="kpi-value">Cargando...</div>
+                        <div class="kpi-label">Producción Total</div>
                     </div>
                 </div>
             </div>
-            <div class="col-lg-3 col-md-6">
-                <div class="card text-center p-3">
+            <div class="col-md-4">
+                <div class="card kpi-card">
                     <div class="card-body">
-                        <h5 class="card-title">Disponibilidad</h5>
-                        <p class="kpi-value" id="kpi-availability">--</p>
+                        <div id="kpi-minutos-parada" class="kpi-value">Cargando...</div>
+                        <div class="kpi-label">Minutos Totales de Parada</div>
                     </div>
                 </div>
             </div>
-            <div class="col-lg-3 col-md-6">
-                <div class="card text-center p-3">
+            <div class="col-md-4">
+                <div class="card kpi-card">
                     <div class="card-body">
-                        <h5 class="card-title">Eficiencia (Pzas/Hr)</h5>
-                        <p class="kpi-value" id="kpi-efficiency">--</p>
+                        <div id="kpi-maquina-top" class="kpi-value">Cargando...</div>
+                        <div class="kpi-label">Máquina con Mayor Producción</div>
                     </div>
                 </div>
             </div>
-            <div class="col-lg-3 col-md-6">
-                <div class="card text-center p-3">
-                    <div class="card-body">
-                        <h5 class="card-title">Horas de Parada</h5>
-                        <p class="kpi-value" id="kpi-total-downtime">--</p>
-                    </div>
-                </div>
-            </div>
-        </section>
-        
-        <!-- Resumen Gerencial -->
-        <section class="row mb-4 g-4">
-            <div class="col-12">
-                <div class="card p-4">
-                    <div class="card-body">
-                        <h4 class="card-title mb-3">Análisis Inteligente</h4>
-                        <p id="summary-text" class="fs-5">Calculando...</p>
-                    </div>
-                </div>
-            </div>
-        </section>
+        </div>
 
         <!-- Gráficos -->
-        <section class="row g-4">
-            <div class="col-lg-6 mb-4">
-                <div class="card chart-container">
-                    <h4 class="mb-3">Producción por Máquina</h4>
-                    <div id="chart-prod-by-machine"></div>
+        <div class="row g-4">
+            <div class="col-lg-12">
+                <div class="card">
+                    <div class="card-header">Producción por Día</div>
+                    <div class="card-body">
+                        <div id="chart-produccion-diaria"></div>
+                    </div>
                 </div>
             </div>
-            <div class="col-lg-6 mb-4">
-                <div class="card chart-container">
-                    <h4 class="mb-3">Producción por Operario</h4>
-                    <div id="chart-prod-by-operator"></div>
+            <div class="col-lg-6">
+                <div class="card">
+                    <div class="card-header">Top 5 Máquinas por Producción</div>
+                    <div class="card-body">
+                        <div id="chart-top-maquinas"></div>
+                    </div>
                 </div>
             </div>
-            <div class="col-lg-12 mb-4">
-                <div class="card chart-container">
-                    <h4 class="mb-3">Análisis de Paradas (Minutos)</h4>
-                    <div id="chart-downtime-reasons"></div>
+            <div class="col-lg-6">
+                <div class="card">
+                    <div class="card-header">Top 5 Causas de Parada (en Minutos)</div>
+                    <div class="card-body">
+                        <div id="chart-top-paradas"></div>
+                    </div>
                 </div>
             </div>
-            <div class="col-lg-12 mb-4">
-                <div class="card chart-container">
-                    <h4 class="mb-3">Producción Diaria</h4>
-                    <div id="chart-daily-production"></div>
+             <div class="col-lg-12">
+                <div class="card">
+                    <div class="card-header">Minutos de Parada por Máquina</div>
+                    <div class="card-body">
+                        <div id="chart-paradas-maquina"></div>
+                    </div>
                 </div>
             </div>
-        </section>
-    </main>
+        </div>
+    </div>
 
-    <!-- Librerías JS -->
-    <script src="https://cdn.jsdelivr.net/npm/papaparse@5.3.2/papaparse.min.js"></script>
-    <script src="https://cdn.jsdelivr.net/npm/apexcharts"></script>
+    <!-- Scripts -->
     <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.3/dist/js/bootstrap.bundle.min.js"></script>
+    <script src="https://cdn.jsdelivr.net/npm/d3@7"></script>
+    <script src="https://cdn.jsdelivr.net/npm/apexcharts"></script>
     <script src="https://cdn.jsdelivr.net/npm/flatpickr"></script>
     <script src="https://npmcdn.com/flatpickr/dist/l10n/es.js"></script>
 
-    <!-- Lógica del Dashboard -->
     <script>
         document.addEventListener('DOMContentLoaded', function () {
+            // --- CONFIGURACIÓN GLOBAL ---
             const CSV_URL = 'exportProduccionyEventos.csv';
-
-            let originalData = [];
-            let charts = {}; // Objeto para mantener las instancias de los gráficos
+            let masterData = [];
+            let datepicker;
+            const charts = {};
 
             // --- INICIALIZACIÓN ---
-            function init() {
-                Papa.parse(CSV_URL, {
-                    download: true,
-                    header: true,
-                    delimiter: ';', // ADDED: Specify semicolon delimiter
-                    skipEmptyLines: true,
-                    transformHeader: header => header.trim().replace(/[\s\W]+/g, '_'),
-                    complete: function(results) {
-                        originalData = processData(results.data);
-                        console.log("Parsed and processed data:", originalData); // ADDED: Log data for debugging
-                        populateFilters(originalData);
-                        addEventListeners();
-                        updateDashboard(originalData);
-                        document.getElementById('last-updated').textContent = `Actualizado: ${new Date().toLocaleString('es-ES')}`;
-                    },
-                    error: function(err) {
-                        console.error("Error al cargar o parsear el CSV:", err);
-                        alert("No se pudo cargar el archivo de datos. Revisa la consola para más detalles.");
+            async function init() {
+                setupCharts();
+                setupDatepicker();
+                setupQuickFilters();
+                await loadData();
+            }
+
+            // --- CARGA Y PROCESAMIENTO DE DATOS ---
+            async function loadData() {
+                try {
+                    const rawData = await d3.dsv(';', CSV_URL);
+                    const parseDate = d3.timeParse("%d/%m/%Y");
+                    
+                    masterData = rawData.map(row => ({
+                        IdProduccion: +row.IdProduccion,
+                        Fecha: parseDate(row.Fecha),
+                        Descrip_Maquina: row.Descrip_Maquina,
+                        Cantidad: +row.Cantidad || 0,
+                        IdIncidencia: +row.IdIncidencia,
+                        descrip_incidencia: row.descrip_incidencia,
+                        Minutos: +row.Minutos || 0
+                    })).filter(d => d.Fecha instanceof Date && !isNaN(d.Fecha)); // Filtrar fechas inválidas
+
+                    if (masterData.length === 0) {
+                        console.error("No se pudieron cargar o procesar los datos del CSV.");
+                        return;
                     }
-                });
-            }
-
-            // --- PROCESAMIENTO DE DATOS ---
-            function processData(data) {
-                return data.map(row => {
-                    row.Cantidad = parseInt(row.Cantidad) || 0;
-                    row.Minutos = parseInt(row.Minutos) || 0;
-                    row.Hs_Trab = parseFloat(row.Hs_Trab) || 0;
-                    row.Fecha = parseDate(row.Fecha);
-                    return row;
-                }).filter(row => row.Fecha); // Filtrar filas con fecha inválida
-            }
-
-            function parseDate(dateString) {
-                const parts = dateString.split('/');
-                // Ensure parts has 3 elements and they are valid numbers before creating Date object
-                if (parts.length === 3 && !isNaN(parts[0]) && !isNaN(parts[1]) && !isNaN(parts[2])) {
-                    // Date constructor expects year, month (0-indexed), day
-                    return new Date(parts[2], parts[1] - 1, parts[0]);
+                    
+                    // Configurar el datepicker con las fechas min/max de los datos
+                    const dateExtent = d3.extent(masterData, d => d.Fecha);
+                    datepicker.set('minDate', dateExtent[0]);
+                    datepicker.set('maxDate', dateExtent[1]);
+                    
+                    // Establecer el rango inicial al último mes con datos y actualizar
+                    const lastDate = dateExtent[1];
+                    const firstDateOfLastMonth = new Date(lastDate.getFullYear(), lastDate.getMonth() -1, lastDate.getDate());
+                    datepicker.setDate([firstDateOfLastMonth, lastDate], true);
+                    
+                } catch (error) {
+                    console.error("Error al cargar el archivo CSV:", error);
                 }
-                return null;
             }
 
-            // --- FILTROS Y EVENTOS ---
-            function populateFilters(data) {
-                const uniqueMachines = [...new Set(data.map(row => row.Descrip_Maquina))].sort();
-                const uniqueShifts = [...new Set(data.map(row => row.Turno))].sort();
-
-                const machineFilter = document.getElementById('machine-filter');
-                machineFilter.innerHTML = ''; // Clear existing options
-                uniqueMachines.forEach(machine => {
-                    if (machine) machineFilter.add(new Option(machine, machine)); // Only add if not empty/null
-                });
-
-                const shiftFilter = document.getElementById('shift-filter');
-                shiftFilter.innerHTML = ''; // Clear existing options
-                uniqueShifts.forEach(shift => {
-                    if (shift) shiftFilter.add(new Option(shift, shift)); // Only add if not empty/null
-                });
-            }
-
-            function addEventListeners() {
-                flatpickr("#date-range-picker", {
+            // --- CONFIGURACIÓN DE INTERFACES ---
+            function setupDatepicker() {
+                datepicker = flatpickr("#date-range-picker", {
                     mode: "range",
                     dateFormat: "d/m/Y",
                     locale: "es",
-                    // Set defaultDate only if originalData has elements
-                    defaultDate: originalData.length > 0 ? [originalData[0].Fecha, originalData[originalData.length - 1].Fecha] : [],
-                    onChange: function(selectedDates, dateStr, instance) {
-                        if (selectedDates.length === 2) applyFilters();
+                    onChange: function(selectedDates) {
+                        if (selectedDates.length === 2) {
+                            updateDashboard(selectedDates[0], selectedDates[1]);
+                        }
                     }
                 });
+            }
+            
+            function setupQuickFilters() {
+                const today = new Date();
+                const yesterday = new Date(); yesterday.setDate(today.getDate() - 1);
+                const sevenDaysAgo = new Date(); sevenDaysAgo.setDate(today.getDate() - 6);
+                const startOfMonth = new Date(today.getFullYear(), today.getMonth(), 1);
+                const startOfLastMonth = new Date(today.getFullYear(), today.getMonth() - 1, 1);
+                const endOfLastMonth = new Date(today.getFullYear(), today.getMonth(), 0);
 
-                document.getElementById('machine-filter').addEventListener('change', applyFilters);
-                document.getElementById('shift-filter').addEventListener('change', applyFilters);
+                document.getElementById('btnHoy').addEventListener('click', () => datepicker.setDate([today, today], true));
+                document.getElementById('btnAyer').addEventListener('click', () => datepicker.setDate([yesterday, yesterday], true));
+                document.getElementById('btn7Dias').addEventListener('click', () => datepicker.setDate([sevenDaysAgo, today], true));
+                document.getElementById('btnEsteMes').addEventListener('click', () => datepicker.setDate([startOfMonth, today], true));
+                document.getElementById('btnMesPasado').addEventListener('click', () => datepicker.setDate([startOfLastMonth, endOfLastMonth], true));
             }
 
-            function applyFilters() {
-                const dateRangePicker = document.getElementById('date-range-picker')._flatpickr;
-                const dateRange = dateRangePicker ? dateRangePicker.selectedDates : [];
-                const selectedMachines = Array.from(document.getElementById('machine-filter').selectedOptions).map(opt => opt.value);
-                const selectedShifts = Array.from(document.getElementById('shift-filter').selectedOptions).map(opt => opt.value);
-
-                const filteredData = originalData.filter(row => {
-                    const isDateInRange = dateRange.length === 2 ? row.Fecha >= dateRange[0] && row.Fecha <= dateRange[1] : true;
-                    const isMachineSelected = selectedMachines.length > 0 ? selectedMachines.includes(row.Descrip_Maquina) : true;
-                    const isShiftSelected = selectedShifts.length > 0 ? selectedShifts.includes(row.Turno) : true;
-                    return isDateInRange && isMachineSelected && isShiftSelected;
-                });
-
-                updateDashboard(filteredData);
-            }
-
-            // --- LÓGICA DEL DASHBOARD ---
-            function updateDashboard(data) {
-                const kpiData = calculateKPIs(data);
-                renderKPIs(kpiData);
-                updateCharts(data, kpiData);
-                updateSummary(data, kpiData);
-            }
-
-            function calculateKPIs(data) {
-                const uniqueProductions = new Map();
-                data.forEach(row => {
-                    // Use a composite key for unique productions if IdProduccion alone isn't enough
-                    // For now, assuming IdProduccion is unique per production run
-                    if (row.IdProduccion && !uniqueProductions.has(row.IdProduccion)) {
-                        uniqueProductions.set(row.IdProduccion, { cantidad: row.Cantidad, hsTrab: row.Hs_Trab });
-                    }
-                });
-
-                const productionValues = Array.from(uniqueProductions.values());
-                const totalProduction = productionValues.reduce((sum, item) => sum + item.cantidad, 0);
-                const totalWorkMinutes = productionValues.reduce((sum, item) => sum + item.hsTrab, 0);
-                const totalDowntimeMinutes = data.reduce((sum, row) => sum + row.Minutos, 0);
-                
-                const plannedTime = totalWorkMinutes > 0 ? totalWorkMinutes : 1; // Evitar división por cero
-                const runTime = totalWorkMinutes - totalDowntimeMinutes;
-                const availability = (runTime / plannedTime);
-                const efficiency = runTime > 0 ? totalProduction / (runTime / 60) : 0; // Piezas por hora
-
-                return {
-                    totalProduction,
-                    totalDowntimeHours: totalDowntimeMinutes / 60,
-                    availability,
-                    efficiency,
-                    activeMachines: new Set(data.map(row => row.Descrip_Maquina)).size
-                };
-            }
-
-            function renderKPIs(kpiData) {
-                document.getElementById('kpi-total-production').textContent = kpiData.totalProduction.toLocaleString('es-ES');
-                document.getElementById('kpi-availability').textContent = `${(kpiData.availability * 100).toFixed(1)}%`;
-                document.getElementById('kpi-efficiency').textContent = kpiData.efficiency.toFixed(0);
-                document.getElementById('kpi-total-downtime').textContent = kpiData.totalDowntimeHours.toFixed(1);
-            }
-
-            function updateSummary(data, kpiData) {
-                if (data.length === 0) {
-                    document.getElementById('summary-text').textContent = "No hay datos para el período o filtros seleccionados.";
-                    return;
-                }
-                const downtimeByReason = aggregateAndSort(data, 'descrip_incidencia', 'Minutos', 'sum');
-                const topReason = downtimeByReason[0] ? downtimeByReason[0].category : "N/A";
-                const topReasonMins = downtimeByReason[0] ? downtimeByReason[0].value : 0;
-                const totalDowntimeMins = kpiData.totalDowntimeHours * 60;
-                const topReasonPercentage = totalDowntimeMins > 0 ? (topReasonMins / totalDowntimeMins * 100).toFixed(0) : 0;
-
-                const summary = `El KPI de **Disponibilidad** se sitúa en un **${(kpiData.availability * 100).toFixed(1)}%**. La principal causa de inactividad es **"${topReason}"**, responsable del **${topReasonPercentage}%** del tiempo total de parada.`;
-                document.getElementById('summary-text').innerHTML = summary.replace(/\*\*([^*]+)\*\*/g, '<strong>$1</strong>');
-            }
-
-            function updateCharts(data) {
-                const prodByMachineData = aggregateAndSort(data, 'Descrip_Maquina', 'Cantidad', 'sum', true);
-                renderChart('chart-prod-by-machine', 'bar', { 
-                    categories: prodByMachineData.map(d => d.category),
-                    series: [{ name: 'Producción Total', data: prodByMachineData.map(d => d.value) }],
-                    horizontal: false
-                });
-
-                const prodByOperatorData = aggregateAndSort(data, 'Apellido', 'Cantidad', 'sum', true);
-                renderChart('chart-prod-by-operator', 'bar', { 
-                    categories: prodByOperatorData.map(d => d.category),
-                    series: [{ name: 'Producción Total', data: prodByOperatorData.map(d => d.value) }],
-                    horizontal: false
-                });
-
-                const downtimeReasonsData = aggregateAndSort(data, 'descrip_incidencia', 'Minutos', 'sum');
-                renderChart('chart-downtime-reasons', 'bar', { 
-                    categories: downtimeReasonsData.map(d => d.category),
-                    series: [{ name: 'Minutos de Parada', data: downtimeReasonsData.map(d => d.value) }],
-                    horizontal: true
-                });
-
-                const dailyProdData = aggregateAndSort(data, 'Fecha', 'Cantidad', 'sum', true, false); // No ordenar por valor
-                renderChart('chart-daily-production', 'line', { 
-                    categories: dailyProdData.map(d => d.category),
-                    series: [{ name: 'Producción Diaria', data: dailyProdData.map(d => d.value) }],
-                    isTimeSeries: true
-                });
-            }
-
-            function renderChart(elementId, type, chartData) {
+            function setupCharts() {
                 const commonOptions = {
-                    chart: { type: type, height: 350, toolbar: { show: true, tools: { download: true, selection: true, zoom: true, zoomin: true, zoomout: true, pan: true } } },
-                    dataLabels: { enabled: false },
-                    stroke: { width: 2 },
-                    fill: { opacity: 1 },
-                    tooltip: { y: { formatter: val => val.toLocaleString('es-ES') } }
+                    chart: {
+                        type: 'bar',
+                        height: 350,
+                        toolbar: { show: true },
+                         fontFamily: 'Inter, sans-serif'
+                    },
+                    plotOptions: {
+                        bar: {
+                            horizontal: false,
+                            borderRadius: 4,
+                            dataLabels: {
+                                position: 'top',
+                            },
+                        }
+                    },
+                    // --- ¡MEJORA! Habilitar etiquetas de datos para mayor claridad ---
+                    dataLabels: {
+                        enabled: true,
+                        formatter: val => val.toLocaleString('es-ES'),
+                        offsetY: -20,
+                        style: {
+                            fontSize: '12px',
+                            colors: ["#304758"]
+                        }
+                    },
+                    xaxis: {
+                        labels: {
+                             style: {
+                                colors: '#6c757d',
+                                fontSize: '12px',
+                            },
+                        }
+                    },
+                    yaxis: {
+                         labels: {
+                             style: {
+                                colors: '#6c757d',
+                            },
+                            formatter: val => val.toLocaleString('es-ES')
+                        }
+                    },
+                    noData: {
+                        text: 'No hay datos para mostrar en el rango seleccionado.'
+                    },
+                    grid: {
+                        borderColor: '#e7e7e7',
+                        row: {
+                            colors: ['#f3f3f3', 'transparent'],
+                            opacity: 0.5
+                        },
+                    },
                 };
 
-                let options = {};
-                if (type === 'bar') {
-                    options = {
-                        ...commonOptions,
-                        series: chartData.series,
-                        plotOptions: { bar: { horizontal: chartData.horizontal, borderRadius: 4 } },
-                        xaxis: { categories: chartData.categories, labels: { style: { fontSize: '12px' } } },
-                    };
-                } else if (type === 'line') {
-                    options = {
-                        ...commonOptions,
-                        series: chartData.series,
-                        stroke: { curve: 'smooth' },
-                        xaxis: { type: 'datetime', categories: chartData.categories, labels: { datetimeUTC: false, format: 'dd/MM' } },
-                        tooltip: { x: { format: 'dd/MM/yyyy' } }
-                    };
-                }
+                charts.produccionDiaria = new ApexCharts(document.querySelector("#chart-produccion-diaria"), {
+                    ...commonOptions,
+                    chart: { ...commonOptions.chart, type: 'line', height: 350 },
+                    stroke: { curve: 'smooth', width: 3 },
+                    markers: { size: 5 },
+                    xaxis: { type: 'datetime' },
+                    tooltip: { x: { format: 'dd/MM/yyyy' } }
+                });
 
-                if (charts[elementId]) {
-                    charts[elementId].updateOptions(options);
-                }
-                else {
-                    charts[elementId] = new ApexCharts(document.querySelector(`#${elementId}`), options);
-                    charts[elementId].render();
-                }
+                charts.topMaquinas = new ApexCharts(document.querySelector("#chart-top-maquinas"), {
+                    ...commonOptions,
+                    plotOptions: { bar: { ...commonOptions.plotOptions.bar, horizontal: true, dataLabels: { position: 'center' } } },
+                     dataLabels: { ...commonOptions.dataLabels, enabled: false }, // Deshabilitado para gráfico horizontal, se ve mejor
+                });
+
+                charts.topParadas = new ApexCharts(document.querySelector("#chart-top-paradas"), commonOptions);
+                charts.paradasMaquina = new ApexCharts(document.querySelector("#chart-paradas-maquina"), commonOptions);
+
+                Object.values(charts).forEach(chart => chart.render());
+            }
+
+            // --- LÓGICA DE ACTUALIZACIÓN DEL DASHBOARD ---
+            function updateDashboard(startDate, endDate) {
+                // Ajustar endDate para incluir todo el día
+                endDate.setHours(23, 59, 59, 999);
+
+                const filteredData = masterData.filter(d => d.Fecha >= startDate && d.Fecha <= endDate);
+                
+                // Actualizar KPIs
+                updateKPIs(filteredData);
+
+                // Actualizar Gráficos
+                updateProduccionDiaria(filteredData);
+                updateTopMaquinas(filteredData);
+                updateTopParadas(filteredData);
+                updateParadasMaquina(filteredData);
+            }
+
+            function updateKPIs(data) {
+                const totalProduccion = d3.sum(aggregateAndSort(data, 'IdProduccion', 'Cantidad', 'sum', true), d => d.value);
+                document.getElementById('kpi-produccion-total').textContent = totalProduccion.toLocaleString('es-ES');
+
+                const totalMinutosParada = d3.sum(data, d => d.Minutos);
+                document.getElementById('kpi-minutos-parada').textContent = totalMinutosParada.toLocaleString('es-ES');
+
+                const maquinaTopData = aggregateAndSort(data, 'Descrip_Maquina', 'Cantidad', 'sum', true);
+                const maquinaTop = maquinaTopData.length > 0 ? maquinaTopData[0].category : 'N/A';
+                document.getElementById('kpi-maquina-top').textContent = maquinaTop;
+            }
+
+            function updateProduccionDiaria(data) {
+                const dailyData = aggregateAndSort(data, 'Fecha', 'Cantidad', 'sum', true, false);
+                const series = [{
+                    name: 'Producción',
+                    data: dailyData.map(d => [new Date(d.category).getTime(), d.value])
+                }];
+                charts.produccionDiaria.updateSeries(series);
+            }
+
+            function updateTopMaquinas(data) {
+                const topData = aggregateAndSort(data, 'Descrip_Maquina', 'Cantidad', 'sum', true).slice(0, 5);
+                charts.topMaquinas.updateSeries([{ name: 'Producción', data: topData.map(d => d.value) }]);
+                charts.topMaquinas.updateOptions({ xaxis: { categories: topData.map(d => d.category) } });
+            }
+
+            function updateTopParadas(data) {
+                const paradaData = aggregateAndSort(data.filter(d => d.descrip_incidencia), 'descrip_incidencia', 'Minutos').slice(0, 5);
+                charts.topParadas.updateSeries([{ name: 'Minutos', data: paradaData.map(d => d.value) }]);
+                charts.topParadas.updateOptions({ xaxis: { categories: paradaData.map(d => d.category) } });
+            }
+
+             function updateParadasMaquina(data) {
+                const paradaData = aggregateAndSort(data, 'Descrip_Maquina', 'Minutos');
+                charts.paradasMaquina.updateSeries([{ name: 'Minutos de Parada', data: paradaData.map(d => d.value) }]);
+                charts.paradasMaquina.updateOptions({ xaxis: { categories: paradaData.map(d => d.category) } });
             }
 
             // --- FUNCIÓN UTILITARIA DE AGREGACIÓN Y ORDENACIÓN ---
             function aggregateAndSort(data, categoryField, valueField, method = 'sum', uniqueByIdProd = false, sortByValue = true) {
-                const aggregation = {};
+                const aggregation = new Map();
                 const seenIds = new Set();
 
                 data.forEach(row => {
@@ -439,17 +394,21 @@
                     if (!category) return; // Skip rows with empty/null category
 
                     if (uniqueByIdProd) {
-                        const uniqueKey = `${row.IdProduccion}-${category}`;
+                        // Para producción, contamos una sola vez por IdProduccion para evitar duplicados por incidencias
+                        const uniqueKey = `${row.IdProduccion}`;
                         if (!seenIds.has(uniqueKey)) {
-                            aggregation[category] = (aggregation[category] || 0) + row[valueField];
+                            const currentValue = aggregation.get(category) || 0;
+                            aggregation.set(category, currentValue + row[valueField]);
                             seenIds.add(uniqueKey);
                         }
                     } else {
-                        aggregation[category] = (aggregation[category] || 0) + row[valueField];
+                        // Para paradas, sumamos todas las incidencias
+                        const currentValue = aggregation.get(category) || 0;
+                        aggregation.set(category, currentValue + row[valueField]);
                     }
                 });
 
-                let aggregatedArray = Object.keys(aggregation).map(key => ({ category: key, value: aggregation[key] }));
+                let aggregatedArray = Array.from(aggregation, ([category, value]) => ({ category, value }));
 
                 if (sortByValue) {
                     aggregatedArray.sort((a, b) => b.value - a.value);
