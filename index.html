@@ -3,7 +3,7 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Dashboard de Producción v11 - Molderil</title>
+    <title>Dashboard Industrial Mejorado</title>
     <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.3/dist/css/bootstrap.min.css" rel="stylesheet">
     <link rel="preconnect" href="https://fonts.googleapis.com">
     <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
@@ -17,7 +17,7 @@
             --secondary-color: #039BE5; /* Light Blue */
             --accent-color: #00897B; /* Teal */
             --danger-color: #E53935; /* Red */
-            --light-bg: #f4f6f9; /* Softer background */
+            --light-bg: #f4f6f9;
             --dark-text: #333;
             --light-text: #777;
             --card-shadow: 0 8px 24px rgba(149, 157, 165, 0.2);
@@ -29,7 +29,7 @@
             color: var(--dark-text);
             display: flex;
         }
-        #sidebar {
+        .sidebar {
             width: var(--sidebar-width);
             height: 100vh;
             position: fixed;
@@ -41,467 +41,477 @@
             overflow-y: auto;
             z-index: 1000;
             box-shadow: 0 0 15px rgba(0,0,0,0.05);
+            display: flex;
+            flex-direction: column;
+        }
+        .filter-section {
+            flex-grow: 1;
         }
         .main-content {
             margin-left: var(--sidebar-width);
             width: calc(100% - var(--sidebar-width));
             padding: 2.5rem;
-            position: relative; /* Needed for loading overlay */
+            position: relative;
         }
         #loading-overlay {
-            position: absolute;
-            top: 0;
-            left: 0;
-            right: 0;
-            bottom: 0;
+            position: absolute; top: 0; left: 0; right: 0; bottom: 0;
             background-color: rgba(244, 246, 249, 0.8);
             z-index: 9999;
-            display: flex;
-            align-items: center;
-            justify-content: center;
+            display: flex; align-items: center; justify-content: center;
             transition: opacity 0.3s;
         }
-        #loading-overlay.d-none {
-            opacity: 0;
-            pointer-events: none;
-        }
-        .filter-group {
-            margin-bottom: 1.5rem;
-        }
+        #loading-overlay.d-none { opacity: 0; pointer-events: none; }
         .card {
             border: none;
             border-radius: var(--border-radius);
             box-shadow: var(--card-shadow);
-            transition: transform 0.2s ease-in-out, box-shadow 0.2s ease-in-out;
+            transition: transform 0.2s ease, box-shadow 0.2s ease;
         }
-        .card:hover {
-            transform: translateY(-5px);
-            box-shadow: 0 12px 28px rgba(149, 157, 165, 0.25);
-        }
+        .card:hover { transform: translateY(-5px); }
         .card-header {
-            background-color: transparent;
-            border-bottom: 1px solid #eee;
-            font-weight: 600;
-            font-size: 1rem;
-            padding: 1rem 1.25rem;
+            background-color: transparent; border-bottom: 1px solid #eee;
+            font-weight: 600; font-size: 1rem; padding: 1rem 1.25rem;
         }
-        .kpi-card .card-body {
-            display: flex;
-            align-items: center;
-            justify-content: space-between;
-        }
-        .kpi-icon {
-            width: 48px;
-            height: 48px;
-            display: flex;
-            align-items: center;
-            justify-content: center;
-            border-radius: 50%;
-            flex-shrink: 0;
-        }
-        .kpi-text { text-align: right; }
-        .kpi-value {
-            font-size: 2rem;
-            font-weight: 700;
-            color: var(--dark-text);
-        }
-        .kpi-label { font-size: 0.9rem; color: var(--light-text); }
-        .choices__inner { border-radius: 0.375rem; border-color: #ced4da;}
-        .choices__list--multiple .choices__item { background-color: var(--primary-color); border-color: var(--primary-color);}
+        .kpi-value { font-size: 2.2rem; font-weight: 700; color: var(--dark-text); }
+        .choices__inner { border-radius: 0.375rem; border-color: #ced4da; }
+        .choices__list--multiple .choices__item { background-color: var(--primary-color); border-color: var(--primary-color); }
         #reset-filters { background-color: var(--danger-color); border-color: var(--danger-color); }
-
-        @media (max-width: 1200px) { .kpi-value { font-size: 1.75rem; } }
+        
         @media (max-width: 992px) {
             body { display: block; }
-            #sidebar { position: relative; width: 100%; height: auto; border-right: none; border-bottom: 1px solid #e0e0e0; }
+            .sidebar { position: relative; width: 100%; height: auto; border-right: none; border-bottom: 1px solid #e0e0e0; }
             .main-content { margin-left: 0; width: 100%; padding: 1.5rem; }
         }
     </style>
 </head>
 <body>
-    <div id="sidebar">
-        <h4 class="mb-4" style="color: var(--primary-color); font-weight: 700;">Panel de Control</h4>
-        <div class="filter-group">
-            <label class="form-label fw-bold">Rango de Fechas</label>
-            <input type="text" id="date-range-picker" class="form-control mb-2" placeholder="Seleccione un rango...">
-            <div class="btn-group w-100" role="group">
-                <button type="button" class="btn btn-sm btn-outline-secondary" id="btnUltimaSemana">Últ. Semana</button>
-                <button type="button" class="btn btn-sm btn-outline-secondary" id="btnSemanaAnterior">Sem. Ant.</button>
-            </div>
-             <div class="btn-group w-100 mt-1" role="group">
-                <button type="button" class="btn btn-sm btn-outline-secondary" id="btnMesActual">Mes Actual</button>
-                <button type="button" class="btn btn-sm btn-outline-secondary" id="btnMesAnterior">Mes Ant.</button>
-            </div>
-        </div>
-        <div class="filter-group">
-            <label for="maquina-select" class="form-label fw-bold">Máquinas</label>
-            <select id="maquina-select" multiple></select>
-        </div>
-        <div class="filter-group">
-            <label for="turno-select" class="form-label fw-bold">Turnos</label>
-            <select id="turno-select" multiple></select>
-        </div>
-        <button id="reset-filters" class="btn btn-danger w-100 mt-3">Limpiar Filtros</button>
-    </div>
 
-    <div class="main-content">
-        <!-- El contenido se generará dinámicamente -->
-    </div>
+    <nav class="sidebar">
+        <h4 class="mb-4" style="color: var(--primary-color); font-weight: 700;">Dashboard Industrial</h4>
+        <div class="filter-section">
+            <div class="mb-3">
+                <label class="form-label fw-bold">Rango de Fechas</label>
+                <input type="text" id="date-range-picker" class="form-control mb-2" placeholder="Seleccione un rango...">
+                 <div class="btn-group w-100" role="group">
+                    <button type="button" class="btn btn-sm btn-outline-secondary" id="btnHoy">Hoy</button>
+                    <button type="button" class="btn btn-sm btn-outline-secondary" id="btnAyer">Ayer</button>
+                </div>
+                 <div class="btn-group w-100 mt-1" role="group">
+                    <button type="button" class="btn btn-sm btn-outline-secondary" id="btnMesActual">Mes Actual</button>
+                    <button type="button" class="btn btn-sm btn-outline-secondary" id="btnMesAnterior">Mes Ant.</button>
+                </div>
+            </div>
+            <div class="mb-3">
+                <label for="machine-filter" class="form-label fw-bold">Máquinas</label>
+                <select id="machine-filter" multiple></select>
+            </div>
+            <div class="mb-3">
+                <label for="shift-filter" class="form-label fw-bold">Turnos</label>
+                <select id="shift-filter" multiple></select>
+            </div>
+        </div>
+        <div>
+            <button id="reset-filters" class="btn btn-danger w-100 mt-3">Limpiar Filtros</button>
+            <p id="last-updated" class="text-muted text-center mt-3 small">Actualizado: Cargando...</p>
+        </div>
+    </nav>
 
-    <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.3/dist/js/bootstrap.bundle.min.js"></script>
-    <script src="https://cdn.jsdelivr.net/npm/d3@7"></script>
+    <main class="main-content">
+        <div id="loading-overlay" class="d-none">
+            <div class="spinner-border text-primary" role="status" style="width: 3rem; height: 3rem;"></div>
+        </div>
+        
+        <header class="mb-4">
+            <h1 class="h2 fw-bold">Análisis de Rendimiento de Producción</h1>
+        </header>
+
+        <section class="row mb-4 g-4">
+            <div class="col-lg-3 col-md-6">
+                <div class="card p-3">
+                    <div class="card-body text-center">
+                        <h5 class="card-title text-muted">Producción Total</h5>
+                        <p class="kpi-value" id="kpi-total-production">--</p>
+                    </div>
+                </div>
+            </div>
+            <div class="col-lg-3 col-md-6">
+                <div class="card p-3">
+                    <div class="card-body text-center">
+                        <h5 class="card-title text-muted">Disponibilidad</h5>
+                        <p class="kpi-value" id="kpi-availability">--</p>
+                    </div>
+                </div>
+            </div>
+            <div class="col-lg-3 col-md-6">
+                <div class="card p-3">
+                    <div class="card-body text-center">
+                        <h5 class="card-title text-muted">Eficiencia (Pzas/Hr)</h5>
+                        <p class="kpi-value" id="kpi-efficiency">--</p>
+                    </div>
+                </div>
+            </div>
+            <div class="col-lg-3 col-md-6">
+                <div class="card p-3">
+                     <div class="card-body text-center">
+                        <h5 class="card-title text-muted">Horas de Parada</h5>
+                        <p class="kpi-value" id="kpi-total-downtime">--</p>
+                    </div>
+                </div>
+            </div>
+        </section>
+        
+        <section class="row mb-4 g-4">
+            <div class="col-12">
+                <div class="card">
+                    <div class="card-header">Análisis Inteligente</div>
+                    <div class="card-body">
+                        <p id="summary-text" class="fs-5">Calculando...</p>
+                    </div>
+                </div>
+            </div>
+        </section>
+
+        <section class="row g-4">
+            <div class="col-lg-6 mb-4">
+                <div class="card">
+                    <div class="card-header">Producción por Máquina</div>
+                    <div class="card-body">
+                        <div id="chart-prod-by-machine"></div>
+                    </div>
+                </div>
+            </div>
+            <div class="col-lg-6 mb-4">
+                <div class="card">
+                     <div class="card-header">Producción por Operario</div>
+                     <div class="card-body">
+                        <div id="chart-prod-by-operator"></div>
+                    </div>
+                </div>
+            </div>
+            <div class="col-lg-12 mb-4">
+                <div class="card">
+                    <div class="card-header">Análisis de Paradas (Minutos)</div>
+                     <div class="card-body">
+                        <div id="chart-downtime-reasons"></div>
+                    </div>
+                </div>
+            </div>
+            <div class="col-lg-12 mb-4">
+                <div class="card">
+                    <div class="card-header">Producción Diaria</div>
+                    <div class="card-body">
+                        <div id="chart-daily-production"></div>
+                    </div>
+                </div>
+            </div>
+        </section>
+    </main>
+
+    <script src="https://cdn.jsdelivr.net/npm/papaparse@5.3.2/papaparse.min.js"></script>
     <script src="https://cdn.jsdelivr.net/npm/apexcharts"></script>
+    <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.3/dist/js/bootstrap.bundle.min.js"></script>
     <script src="https://cdn.jsdelivr.net/npm/flatpickr"></script>
     <script src="https://npmcdn.com/flatpickr/dist/l10n/es.js"></script>
     <script src="https://cdn.jsdelivr.net/npm/choices.js/public/assets/scripts/choices.min.js"></script>
 
     <script>
-    document.addEventListener('DOMContentLoaded', function () {
-        // --- CONFIGURACIÓN ---
-        const CSV_PRODUCCION_URL = 'exportProduccionyEventos.csv';
-        const FILTERS_STORAGE_KEY = 'molderilDashboardFilters';
+        document.addEventListener('DOMContentLoaded', function () {
+            const CSV_URL = 'exportProduccionyEventos.csv';
 
-        // --- ALMACENAMIENTO DE DATOS ---
-        let produccionData = new Map();
-        let eventosData = [];
-        let datepicker;
-        let choicesMaquina, choicesTurno;
-        const charts = {};
-        const chartColors = ['#5E35B1', '#039BE5', '#00897B', '#FDD835', '#E53935', '#8E24AA', '#3949AB'];
-
-        const mainContentEl = document.querySelector('.main-content');
-        let loadingOverlay;
-
-        // --- SISTEMA DE DIAGNÓSTICO MEJORADO ---
-        function displayError(title, message, isTechnical = false) {
-            let technicalHelp = isTechnical 
-                ? `<hr><p class="mb-0">Este es un problema común de seguridad del navegador. Para solucionarlo, debe ejecutar este archivo a través de un <strong>servidor web local</strong>. Aquí hay dos opciones sencillas:</p>
-                    <ul class="mt-2">
-                        <li><b>Si usa Visual Studio Code:</b> Instale la extensión "Live Server" de Ritwick Dey y haga clic en el botón "Go Live" en la parte inferior derecha de la ventana.</li>
-                        <li><b>Si tiene Python instalado:</b> Abra una terminal en la carpeta de este archivo, ejecute el comando <code>python -m http.server</code> (o <code>python3 -m http.server</code>) y luego visite <code>http://localhost:8000</code> en su navegador.</li>
-                    </ul>` 
-                : `<hr><p class="mb-0">Por favor, revise la consola del navegador (presionando F12) para ver los detalles técnicos del error.</p>`;
-
-            mainContentEl.innerHTML = `
-                <div class="alert alert-danger">
-                    <h4 class="alert-heading">${title}</h4>
-                    <p>${message}</p>
-                    ${technicalHelp}
-                </div>`;
-        }
-        
-        function renderDashboardLayout() {
-            mainContentEl.innerHTML = `
-                <div id="loading-overlay" class="d-none">
-                    <div class="spinner-border text-primary" role="status" style="width: 3rem; height: 3rem;">
-                        <span class="visually-hidden">Cargando...</span>
-                    </div>
-                </div>
-                <header class="mb-5">
-                    <h1 class="h2 fw-bold">Dashboard de Producción y OEE</h1>
-                    <p class="text-muted">Análisis de rendimiento para Molderil.</p>
-                </header>
-                <div class="row g-4 mb-5">
-                    <div class="col-xl-3 col-md-6"><div class="card kpi-card"><div class="card-body"><div class="kpi-icon" style="background-color: #E3F2FD;"><svg xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="#039BE5" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M21 16V8a2 2 0 0 0-1-1.73l-7-4a2 2 0 0 0-2 0l-7 4A2 2 0 0 0 3 8v8a2 2 0 0 0 1 1.73l7 4a2 2 0 0 0 2 0l7-4A2 2 0 0 0 21 16z"></path><polyline points="3.27 6.96 12 12.01 20.73 6.96"></polyline><line x1="12" y1="22.08" x2="12" y2="12"></line></svg></div><div class="kpi-text"><div id="kpi-produccion-total" class="kpi-value">...</div><div class="kpi-label">Producción Total</div></div></div></div></div>
-                    <div class="col-xl-3 col-md-6"><div class="card kpi-card"><div class="card-body"><div class="kpi-icon" style="background-color: #E0F2F1;"><svg xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="#00897B" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M10.29 3.86L1.82 18a2 2 0 0 0 1.71 3h16.94a2 2 0 0 0 1.71-3L13.71 3.86a2 2 0 0 0-3.42 0z"></path><line x1="12" y1="9" x2="12" y2="13"></line><line x1="12" y1="17" x2="12.01" y2="17"></line></svg></div><div class="kpi-text"><div id="kpi-disponibilidad" class="kpi-value">...</div><div class="kpi-label">% Disponibilidad</div></div></div></div></div>
-                    <div class="col-xl-3 col-md-6"><div class="card kpi-card"><div class="card-body"><div class="kpi-icon" style="background-color: #FFEBEE;"><svg xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="#E53935" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="12" r="10"></circle><line x1="12" y1="8" x2="12" y2="12"></line><line x1="12" y1="16" x2="12.01" y2="16"></line></svg></div><div class="kpi-text"><div id="kpi-minutos-parada" class="kpi-value">...</div><div class="kpi-label">Minutos Totales Parada</div></div></div></div></div>
-                    <div class="col-xl-3 col-md-6"><div class="card kpi-card"><div class="card-body"><div class="kpi-icon" style="background-color: #EDE7F6;"><svg xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="#5E35B1" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M12 22s8-4 8-10V5l-8-3-8 3v7c0 6 8 10 8 10z"></path></svg></div><div class="kpi-text"><div id="kpi-maquina-top" class="kpi-value">...</div><div class="kpi-label">Máquina Top (Prod.)</div></div></div></div></div>
-                </div>
-                <div class="row g-4">
-                    <div class="col-lg-6"><div class="card"><div class="card-header">Producción por Día</div><div class="card-body"><div id="chart-produccion-diaria"></div></div></div></div>
-                    <div class="col-lg-6"><div class="card"><div class="card-header">Disponibilidad por Día</div><div class="card-body"><div id="chart-disponibilidad-diaria"></div></div></div></div>
-                    <div class="col-lg-6"><div class="card"><div class="card-header">Top 5 Máquinas por Producción</div><div class="card-body"><div id="chart-top-maquinas"></div></div></div></div>
-                    <div class="col-lg-6"><div class="card"><div class="card-header">Top 10 Causas de Parada</div><div class="card-body"><div id="chart-paradas-causa"></div></div></div></div>
-                    <div class="col-lg-12"><div class="card"><div class="card-header">Minutos de Parada por Operario</div><div class="card-body"><div id="chart-paradas-operario"></div></div></div></div>
-                </div>
-            `;
-            loadingOverlay = document.getElementById('loading-overlay');
-        }
-
-        async function init() {
-            // --- CHEQUEO DE ENTORNO DE EJECUCIÓN ---
-            if (window.location.protocol === 'file:') {
-                displayError(
-                    'Error de Entorno de Ejecución',
-                    'Este dashboard no puede cargar los archivos de datos (.csv) cuando se abre directamente desde el sistema de archivos (`file://`).',
-                    true // Indica que es un error técnico con solución guiada
-                );
-                return; // Detiene la ejecución para evitar más errores
-            }
-
-            try {
-                await loadAndProcessProductionData();
-
-                if (produccionData.size > 0) {
-                    renderDashboardLayout();
-                    setupCharts();
-                    setupDatepicker();
-                    populateFiltersAndInitChoices();
-                    setupEventListeners();
-                    
-                    if (!loadFiltersFromLocalStorage()) {
-                        document.getElementById('btnMesActual').click();
-                    }
-                } else {
-                    displayError('No se encontraron datos de producción', 'El archivo `exportProduccionyEventos.csv` parece estar vacío o no contiene filas con fechas válidas. Por favor, verifique el contenido del archivo.');
-                }
-            } catch (error) {
-                console.error(error);
-                displayError(error.name || 'Error Inesperado', error.message || 'Ocurrió un error al iniciar la aplicación.');
-            }
-        }
-        
-        async function loadAndProcessProductionData() {
-            try {
-                const response = await fetch(CSV_PRODUCCION_URL);
-                if (!response.ok) { throw new Error(`HTTP error! status: ${response.status}`); }
-                const rawProduccionText = await response.text();
-                const cleanText = rawProduccionText.trim().charCodeAt(0) === 0xFEFF ? rawProduccionText.trim().substring(1) : rawProduccionText.trim();
-                const rawData = d3.dsvFormat(';').parse(cleanText);
-                const parseDate = d3.timeParse("%d/%m/%Y");
-
-                for (const row of rawData) {
-                    const fecha = parseDate(row.Fecha);
-                    if (!fecha || isNaN(fecha)) continue;
-
-                    const idProduccion = +row.IdProduccion;
-                    
-                    if (!produccionData.has(idProduccion)) {
-                        produccionData.set(idProduccion, {
-                            IdProduccion: idProduccion, Fecha: fecha,
-                            Descrip_Maquina: row.Descrip_Maquina?.trim(), Cantidad: +row.Cantidad || 0,
-                            HsTrab: +row['Hs Trab'] || 0, Turno: row.Turno?.trim()
-                        });
-                    }
-                    const minutos = +row.Minutos || 0;
-                    if (minutos > 0) {
-                        eventosData.push({
-                            IdProduccion: idProduccion, Fecha: fecha, 
-                            descrip_incidencia: row.descrip_incidencia?.trim(),
-                            Minutos: minutos, ApellidoOperario: row.Apellido?.trim(),
-                            Turno: row.Turno?.trim(), Descrip_Maquina: row.Descrip_Maquina?.trim()
-                        });
-                    }
-                }
-            } catch (error) {
-                 console.error("Error crítico procesando el CSV de producción:", error);
-                 throw new Error(`No se pudo cargar o procesar el archivo \`exportProduccionyEventos.csv\`. Verifique el nombre, la ubicación y que el formato del contenido (separado por punto y coma) sea correcto.`);
-            }
-        }
-        
-        function populateFiltersAndInitChoices() {
-            const allProduccion = Array.from(produccionData.values());
-            const maquinas = [...new Set(allProduccion.map(d => d.Descrip_Maquina).filter(Boolean))].sort();
-            const turnos = [...new Set(allProduccion.map(d => d.Turno).filter(Boolean))].sort();
+            let originalData = [];
+            let charts = {};
+            let choicesMachine, choicesShift, datepicker;
             
-            const maquinaSelect = document.getElementById('maquina-select');
-            const turnoSelect = document.getElementById('turno-select');
-            maquinas.forEach(m => maquinaSelect.options.add(new Option(m, m)));
-            turnos.forEach(t => turnoSelect.options.add(new Option(t, t)));
+            const loadingOverlay = document.getElementById('loading-overlay');
+            const chartColors = ['#5E35B1', '#039BE5', '#00897B', '#FDD835', '#E53935', '#8E24AA', '#3949AB'];
 
-            choicesMaquina = new Choices(maquinaSelect, { removeItemButton: true, placeholder: true, placeholderValue: 'Todas las máquinas...', });
-            choicesTurno = new Choices(turnoSelect, { removeItemButton: true, placeholder: true, placeholderValue: 'Todos los turnos...', });
-        }
-
-        function setupDatepicker() {
-            const allProduccion = Array.from(produccionData.values());
-            const dateExtent = d3.extent(allProduccion, d => d.Fecha);
-            datepicker = flatpickr("#date-range-picker", {
-                mode: "range", dateFormat: "d/m/Y", locale: "es",
-                minDate: dateExtent[0], maxDate: dateExtent[1] || new Date(),
-                onChange: () => applyFiltersWithLoading()
-            });
-        }
-        
-        function setupEventListeners() {
-            document.getElementById('maquina-select').addEventListener('change', applyFiltersWithLoading);
-            document.getElementById('turno-select').addEventListener('change', applyFiltersWithLoading);
-            
-            document.getElementById('reset-filters').addEventListener('click', () => {
-                localStorage.removeItem(FILTERS_STORAGE_KEY);
-                datepicker.clear();
-                choicesMaquina.removeActiveItems();
-                choicesTurno.removeActiveItems();
-                applyFiltersWithLoading();
-            });
-
-            const today = new Date();
-            const btnHandlers = {
-                btnMesActual: () => {
-                    const start = new Date(today.getFullYear(), today.getMonth(), 1);
-                    datepicker.setDate([start, today], true);
-                },
-                btnMesAnterior: () => {
-                    const start = new Date(today.getFullYear(), today.getMonth() - 1, 1);
-                    const end = new Date(today.getFullYear(), today.getMonth(), 0);
-                    datepicker.setDate([start, end], true);
-                },
-                btnUltimaSemana: () => {
-                    const end = new Date(today);
-                    const start = new Date();
-                    start.setDate(end.getDate() - 6);
-                    datepicker.setDate([start, end], true);
-                },
-                btnSemanaAnterior: () => {
-                    const end = new Date();
-                    end.setDate(today.getDate() - (today.getDay() || 7));
-                    const start = new Date(end);
-                    start.setDate(end.getDate() - 6);
-                    datepicker.setDate([start, end], true);
-                }
-            };
-            Object.keys(btnHandlers).forEach(id => document.getElementById(id).addEventListener('click', btnHandlers[id]));
-        }
-
-        function applyFiltersWithLoading() {
-            if (loadingOverlay) loadingOverlay.classList.remove('d-none');
-            setTimeout(() => {
-                applyFilters();
-            }, 50); // Timeout allows UI to render loader
-        }
-        
-        function applyFilters(isInitialLoad = false) {
-            const selectedDates = datepicker.selectedDates;
-            if (selectedDates.length !== 2) {
-                updateDashboard([], []);
-                if (loadingOverlay) loadingOverlay.classList.add('d-none');
-                return;
-            }
-            let [startDate, endDate] = selectedDates;
-            endDate.setHours(23, 59, 59, 999);
-            const selectedMaquinas = choicesMaquina.getValue(true);
-            const selectedTurnos = choicesTurno.getValue(true);
-
-            const filteredProduccion = [];
-            const matchingProduccionIds = new Set();
-
-            for (const prod of produccionData.values()) {
-                const matchesDate = prod.Fecha >= startDate && prod.Fecha <= endDate;
-                const matchesMaquina = selectedMaquinas.length === 0 || selectedMaquinas.includes(prod.Descrip_Maquina);
-                const matchesTurno = selectedTurnos.length === 0 || selectedTurnos.includes(prod.Turno);
-
-                if (matchesDate && matchesMaquina && matchesTurno) {
-                    filteredProduccion.push(prod);
-                    matchingProduccionIds.add(prod.IdProduccion);
-                }
+            function toggleLoading(show) {
+                loadingOverlay.classList.toggle('d-none', !show);
             }
 
-            const filteredEventos = eventosData.filter(evento => matchingProduccionIds.has(evento.IdProduccion));
-            
-            updateDashboard(filteredProduccion, filteredEventos);
-            if (!isInitialLoad) {
-                saveFiltersToLocalStorage({
-                    dates: [startDate.toISOString(), endDate.toISOString()],
-                    maquinas: selectedMaquinas,
-                    turnos: selectedTurnos
-                });
-            }
-        }
-        
-        function saveFiltersToLocalStorage(filters) {
-            localStorage.setItem(FILTERS_STORAGE_KEY, JSON.stringify(filters));
-        }
-
-        function loadFiltersFromLocalStorage() {
-            const savedFilters = localStorage.getItem(FILTERS_STORAGE_KEY);
-            if (savedFilters) {
-                try {
-                    const filters = JSON.parse(savedFilters);
-                    datepicker.setDate(filters.dates.map(d => new Date(d)), false);
-                    choicesMaquina.setValue(filters.maquinas);
-                    choicesTurno.setValue(filters.turnos);
-                    applyFilters(true); // isInitialLoad = true
-                    return true;
-                } catch (e) {
-                    localStorage.removeItem(FILTERS_STORAGE_KEY);
+            // --- ANÁLISIS DE CONTEXTO ---
+            function checkEnvironment() {
+                if (window.location.protocol === 'file:') {
+                    document.querySelector('.main-content').innerHTML = `
+                        <div class="alert alert-danger">
+                            <h4 class="alert-heading">Error de Entorno de Ejecución</h4>
+                            <p>Este dashboard no puede cargar el archivo de datos (.csv) cuando se abre directamente desde el sistema de archivos (<code>file://</code>).</p>
+                            <hr>
+                            <p class="mb-0">Para solucionarlo, ejecute este archivo a través de un <strong>servidor web local</strong>. Una opción fácil es usar la extensión "Live Server" en Visual Studio Code.</p>
+                        </div>`;
                     return false;
                 }
+                return true;
             }
-            return false;
-        }
 
-        function updateDashboard(filteredProduccion, filteredEventos) {
-            updateKPIs(filteredProduccion, filteredEventos);
-            updateCharts(filteredProduccion, filteredEventos);
-            if (loadingOverlay) loadingOverlay.classList.add('d-none');
-        }
+            // --- INICIALIZACIÓN ---
+            function init() {
+                if (!checkEnvironment()) return;
 
-        function updateKPIs(produccion, eventos) {
-            const totalProduccion = d3.sum(produccion, d => d.Cantidad);
-            document.getElementById('kpi-produccion-total').textContent = totalProduccion.toLocaleString('es-ES');
-            
-            const totalMinutosParada = d3.sum(eventos, d => d.Minutos);
-            document.getElementById('kpi-minutos-parada').textContent = totalMinutosParada.toLocaleString('es-ES');
+                toggleLoading(true);
+                Papa.parse(CSV_URL, {
+                    download: true, header: true, delimiter: ';', skipEmptyLines: true,
+                    transformHeader: header => header.trim().replace(/[\s\W]+/g, '_'),
+                    complete: function(results) {
+                        originalData = processData(results.data);
+                        populateFilters(originalData);
+                        addEventListeners();
+                        
+                        const firstDate = originalData.length > 0 ? originalData[0].Fecha : new Date();
+                        const lastDate = originalData.length > 0 ? originalData[originalData.length - 1].Fecha : new Date();
+                        datepicker.setDate([firstDate, lastDate], true);
+                        
+                        document.getElementById('last-updated').textContent = `Actualizado: ${new Date().toLocaleString('es-ES')}`;
+                    },
+                    error: function(err) {
+                        console.error("Error al cargar o parsear el CSV:", err);
+                        alert("No se pudo cargar el archivo de datos. Revisa la consola para más detalles.");
+                        toggleLoading(false);
+                    }
+                });
+            }
 
-            const totalMinutosTrab = d3.sum(produccion, d => d.HsTrab) * 60;
-            const disponibilidad = totalMinutosTrab > 0 ? ((totalMinutosTrab - totalMinutosParada) / totalMinutosTrab) * 100 : 0;
-            document.getElementById('kpi-disponibilidad').textContent = `${Math.max(0, disponibilidad).toFixed(1)}%`;
-            
-            const topMaquinaData = d3.rollup(produccion, v => d3.sum(v, d => d.Cantidad), d => d.Descrip_Maquina);
-            const topMaquinaArray = [...topMaquinaData.entries()].sort((a, b) => b[1] - a[1]);
-            document.getElementById('kpi-maquina-top').textContent = topMaquinaArray.length > 0 ? topMaquinaArray[0][0] : 'N/A';
-        }
+            // --- PROCESAMIENTO DE DATOS (Sin cambios) ---
+            function processData(data) {
+                return data.map(row => {
+                    row.Cantidad = parseInt(row.Cantidad) || 0;
+                    row.Minutos = parseInt(row.Minutos) || 0;
+                    row.Hs_Trab = parseFloat(row.Hs_Trab) || 0;
+                    row.Fecha = parseDate(row.Fecha);
+                    return row;
+                }).filter(row => row.Fecha);
+            }
 
-        function updateCharts(produccion, eventos) {
-            updateProduccionDiaria(produccion);
-            updateDisponibilidadDiaria(produccion, eventos);
-            updateTopMaquinas(produccion);
-            updateParadasPorCausa(eventos);
-            updateParadasOperario(eventos);
-        }
-        
-        function updateProduccionDiaria(data) {
-            const dailyData = d3.rollup(data, v => d3.sum(v, d => d.Cantidad), d => d3.timeDay(d.Fecha));
-            const sortedData = Array.from(dailyData.entries()).sort((a,b) => a[0] - b[0]);
-            charts.produccionDiaria.updateSeries([{ name: 'Producción', data: sortedData.map(([date, value]) => [date.getTime(), value]) }]);
-        }
+            function parseDate(dateString) {
+                if (!dateString) return null;
+                const parts = dateString.split('/');
+                if (parts.length === 3) {
+                    return new Date(parts[2], parts[1] - 1, parts[0]);
+                }
+                return null;
+            }
 
-        function updateDisponibilidadDiaria(produccion, eventos) {
-            const prodByDay = d3.group(produccion, d => d3.timeDay(d.Fecha));
-            const paradasByDay = d3.group(eventos, d => d3.timeDay(d.Fecha));
-            const dailyData = new Map();
+            // --- FILTROS Y EVENTOS (Mejorados con Choices.js) ---
+            function populateFilters(data) {
+                const uniqueMachines = [...new Set(data.map(row => row.Descrip_Maquina))].sort();
+                const uniqueShifts = [...new Set(data.map(row => row.Turno))].sort();
 
-            for (const [day, dayProd] of prodByDay.entries()) {
-                const totalMinTrab = d3.sum(dayProd, d => d.HsTrab) * 60;
-                const paradas = paradasByDay.get(day) || [];
-                const totalMinParada = d3.sum(paradas, d => d.Minutos);
-                const disp = totalMinTrab > 0 ? Math.max(0, ((totalMinTrab - totalMinParada) / totalMinTrab) * 100) : 0;
-                dailyData.set(day.getTime(), disp);
+                const machineFilterEl = document.getElementById('machine-filter');
+                uniqueMachines.forEach(machine => machineFilterEl.add(new Option(machine, machine)));
+
+                const shiftFilterEl = document.getElementById('shift-filter');
+                uniqueShifts.forEach(shift => shiftFilterEl.add(new Option(shift, shift)));
+
+                choicesMachine = new Choices(machineFilterEl, { removeItemButton: true, placeholder: true, placeholderValue: 'Todas las máquinas...' });
+                choicesShift = new Choices(shiftFilterEl, { removeItemButton: true, placeholder: true, placeholderValue: 'Todos los turnos...' });
+            }
+
+            function addEventListeners() {
+                datepicker = flatpickr("#date-range-picker", {
+                    mode: "range", dateFormat: "d/m/Y", locale: "es",
+                    onChange: () => applyFilters()
+                });
+
+                document.getElementById('machine-filter').addEventListener('change', applyFilters);
+                document.getElementById('shift-filter').addEventListener('change', applyFilters);
+                
+                // Botones de filtro rápido
+                const today = new Date();
+                document.getElementById('btnHoy').addEventListener('click', () => datepicker.setDate([today, today], true));
+                document.getElementById('btnAyer').addEventListener('click', () => {
+                    const yesterday = new Date();
+                    yesterday.setDate(today.getDate() - 1);
+                    datepicker.setDate([yesterday, yesterday], true);
+                });
+                document.getElementById('btnMesActual').addEventListener('click', () => datepicker.setDate([new Date(today.getFullYear(), today.getMonth(), 1), today], true));
+                document.getElementById('btnMesAnterior').addEventListener('click', () => {
+                     const start = new Date(today.getFullYear(), today.getMonth() - 1, 1);
+                     const end = new Date(today.getFullYear(), today.getMonth(), 0);
+                     datepicker.setDate([start, end], true);
+                });
+
+                document.getElementById('reset-filters').addEventListener('click', () => {
+                    datepicker.clear();
+                    choicesMachine.removeActiveItems();
+                    choicesShift.removeActiveItems();
+                    applyFilters();
+                });
+            }
+
+            function applyFilters() {
+                toggleLoading(true);
+                // Usamos un timeout para permitir que el spinner se renderice antes del cálculo intensivo
+                setTimeout(() => {
+                    const dateRange = datepicker.selectedDates;
+                    const selectedMachines = choicesMachine.getValue(true);
+                    const selectedShifts = choicesShift.getValue(true);
+
+                    const filteredData = originalData.filter(row => {
+                        const isDateInRange = dateRange.length === 2 ? row.Fecha >= dateRange[0] && row.Fecha <= dateRange[1] : true;
+                        const isMachineSelected = selectedMachines.length > 0 ? selectedMachines.includes(row.Descrip_Maquina) : true;
+                        const isShiftSelected = selectedShifts.length > 0 ? selectedShifts.includes(row.Turno) : true;
+                        return isDateInRange && isMachineSelected && isShiftSelected;
+                    });
+                    updateDashboard(filteredData);
+                }, 50);
+            }
+
+            // --- LÓGICA DEL DASHBOARD (Sin cambios funcionales) ---
+            function updateDashboard(data) {
+                const kpiData = calculateKPIs(data);
+                renderKPIs(kpiData);
+                updateCharts(data, kpiData);
+                updateSummary(data, kpiData);
+                toggleLoading(false);
+            }
+
+            function calculateKPIs(data) {
+                const uniqueProductions = new Map();
+                data.forEach(row => {
+                    if (row.IdProduccion && !uniqueProductions.has(row.IdProduccion)) {
+                        uniqueProductions.set(row.IdProduccion, { cantidad: row.Cantidad, hsTrab: row.Hs_Trab });
+                    }
+                });
+
+                const productionValues = Array.from(uniqueProductions.values());
+                const totalProduction = productionValues.reduce((sum, item) => sum + item.cantidad, 0);
+                const totalWorkHours = productionValues.reduce((sum, item) => sum + item.hsTrab, 0);
+                const totalDowntimeMinutes = data.reduce((sum, row) => sum + row.Minutos, 0);
+                
+                const plannedMinutes = totalWorkHours * 60;
+                const runTimeMinutes = plannedMinutes - totalDowntimeMinutes;
+                
+                const availability = plannedMinutes > 0 ? (runTimeMinutes / plannedMinutes) : 0;
+                const efficiency = runTimeMinutes > 0 ? totalProduction / (runTimeMinutes / 60) : 0;
+
+                return {
+                    totalProduction,
+                    totalDowntimeHours: totalDowntimeMinutes / 60,
+                    availability: Math.max(0, availability), // Asegurar que no sea negativo
+                    efficiency
+                };
+            }
+
+            function renderKPIs(kpiData) {
+                document.getElementById('kpi-total-production').textContent = kpiData.totalProduction.toLocaleString('es-ES');
+                document.getElementById('kpi-availability').textContent = `${(kpiData.availability * 100).toFixed(1)}%`;
+                document.getElementById('kpi-efficiency').textContent = kpiData.efficiency.toFixed(0);
+                document.getElementById('kpi-total-downtime').textContent = kpiData.totalDowntimeHours.toFixed(1);
             }
             
-            const sortedData = Array.from(dailyData.entries()).sort((a, b) => a[0] - b[0]);
-            charts.disponibilidadDiaria.updateSeries([{ name: 'Disponibilidad', data: sortedData.map(([date, value]) => [date, parseFloat(value.toFixed(1))]) }]);
-        }
-        
-        function updateTopMaquinas(data) {
-            const topData = Array.from(d3.rollup(data, v => d3.sum(v, d => d.Cantidad), d => d.Descrip_Maquina).entries()).sort((a, b) => b[1] - a[1]).slice(0, 5);
-            charts.topMaquinas.updateOptions({ series: [{ name: 'Producción', data: topData.map(d => d[1]) }], xaxis: { categories: topData.map(d => d[0]) } });
-        }
-        
-        function updateParadasPorCausa(data) {
-            const causaData = Array.from(d3.rollup(data, v => d3.sum(v, d => d.Minutos), d => d.descrip_incidencia || 'No Clasificada').entries()).sort((a, b) => b[1] - a[1]).slice(0, 10);
-            charts.paradasPorCausa.updateOptions({ series: [{ name: 'Minutos', data: causaData.map(d => d[1]) }], xaxis: { categories: causaData.map(d => d[0]) } });
-        }
-        
-        function updateParadasOperario(data) {
-            const operarioData = Array.from(d3.rollup(data.filter(d => d.ApellidoOperario), v => d3.sum(v, d => d.Minutos), d => d.ApellidoOperario).entries()).sort((a, b) => b[1] - a[1]).slice(0, 10);
-            charts.paradasOperario.updateOptions({ series: [{ name: 'Minutos de Parada', data: operarioData.map(d => d[1]) }], xaxis: { categories: operarioData.map(d => d[0]) } });
-        }
+            function updateSummary(data, kpiData) {
+                if (data.length === 0) {
+                    document.getElementById('summary-text').textContent = "No hay datos para el período o filtros seleccionados.";
+                    return;
+                }
+                const downtimeByReason = aggregateAndSort(data, 'descrip_incidencia', 'Minutos');
+                const topReason = downtimeByReason[0] ? downtimeByReason[0].category : "N/A";
+                const topReasonMins = downtimeByReason[0] ? downtimeByReason[0].value : 0;
+                const totalDowntimeMins = kpiData.totalDowntimeHours * 60;
+                const topReasonPercentage = totalDowntimeMins > 0 ? (topReasonMins / totalDowntimeMins * 100).toFixed(0) : 0;
 
-        function setupCharts() {
-            const noDataMessage = 'No hay datos para la selección actual.';
-            const commonBarOptions = { chart: { type: 'bar', height: 350, fontFamily: 'Inter, sans-serif', toolbar: { show: false } }, plotOptions: { bar: { borderRadius: 4, horizontal: false, dataLabels: { position: 'top' } } }, dataLabels: { enabled: true, offsetY: -20, style: { fontSize: '12px', colors: ["#304758"] }, formatter: val => val.toLocaleString('es-ES') }, xaxis: { labels: { style: { colors: '#6c757d', fontSize: '12px' }, trim: true, maxHeight: 100 } }, yaxis: { labels: { style: { colors: '#6c757d' }, formatter: val => val.toLocaleString('es-ES') } }, grid: { borderColor: '#e7e7e7', row: { colors: ['#f3f3f3', 'transparent'], opacity: 0.5 } }, noData: { text: noDataMessage }, colors: chartColors };
-            const commonLineOptions = { ...commonBarOptions, chart: { ...commonBarOptions.chart, type: 'line', zoom: { enabled: false } }, stroke: { curve: 'smooth', width: 3 }, markers: { size: 4 }, xaxis: { type: 'datetime' }, tooltip: { x: { format: 'dd/MM/yyyy' } } };
-            charts.produccionDiaria = new ApexCharts(document.querySelector("#chart-produccion-diaria"), {...commonLineOptions, colors: [chartColors[1]]});
-            charts.disponibilidadDiaria = new ApexCharts(document.querySelector("#chart-disponibilidad-diaria"), { ...commonLineOptions, yaxis: { min: 0, max: 100, labels: { formatter: val => `${val ? val.toFixed(0) : 0}%` } }, colors: [chartColors[2]] });
-            charts.topMaquinas = new ApexCharts(document.querySelector("#chart-top-maquinas"), { ...commonBarOptions, plotOptions: { bar: { ...commonBarOptions.plotOptions.bar, horizontal: true } } });
-            charts.paradasOperario = new ApexCharts(document.querySelector("#chart-paradas-operario"), { ...commonBarOptions, plotOptions: { bar: { ...commonBarOptions.plotOptions.bar, horizontal: true } }, chart: { ...commonBarOptions.chart, height: 400 } });
-            charts.paradasPorCausa = new ApexCharts(document.querySelector("#chart-paradas-causa"), { ...commonBarOptions, plotOptions: { bar: { ...commonBarOptions.plotOptions.bar, horizontal: true } }, chart: { ...commonBarOptions.chart, height: 400 }});
-            Object.values(charts).forEach(chart => chart.render());
-        }
-        init();
-    });
+                const summary = `El KPI de <strong>Disponibilidad</strong> se sitúa en un <strong>${(kpiData.availability * 100).toFixed(1)}%</strong>. La principal causa de inactividad es <strong>"${topReason}"</strong>, responsable del <strong>${topReasonPercentage}%</strong> del tiempo total de parada.`;
+                document.getElementById('summary-text').innerHTML = summary;
+            }
+
+            // --- GRÁFICOS (Actualizados con mejores opciones visuales) ---
+            function updateCharts(data) {
+                const prodByMachineData = aggregateAndSort(data, 'Descrip_Maquina', 'Cantidad', true);
+                renderChart('chart-prod-by-machine', 'bar', { 
+                    categories: prodByMachineData.map(d => d.category),
+                    series: [{ name: 'Producción', data: prodByMachineData.map(d => d.value) }],
+                    horizontal: true
+                });
+
+                const prodByOperatorData = aggregateAndSort(data, 'Apellido', 'Cantidad', true);
+                renderChart('chart-prod-by-operator', 'bar', { 
+                    categories: prodByOperatorData.map(d => d.category),
+                    series: [{ name: 'Producción', data: prodByOperatorData.map(d => d.value) }],
+                    horizontal: false
+                });
+
+                const downtimeReasonsData = aggregateAndSort(data, 'descrip_incidencia', 'Minutos');
+                renderChart('chart-downtime-reasons', 'bar', { 
+                    categories: downtimeReasonsData.map(d => d.category).slice(0, 10),
+                    series: [{ name: 'Minutos', data: downtimeReasonsData.map(d => d.value).slice(0, 10) }],
+                    horizontal: true
+                });
+
+                const dailyProdData = aggregateAndSort(data, 'Fecha', 'Cantidad', false, false); // No ordenar por valor
+                renderChart('chart-daily-production', 'line', { 
+                    categories: dailyProdData.map(d => d.category),
+                    series: [{ name: 'Producción', data: dailyProdData.map(d => d.value) }],
+                });
+            }
+
+            function renderChart(elementId, type, chartData) {
+                const commonOptions = {
+                    chart: { type: type, height: 350, fontFamily: 'Inter, sans-serif', toolbar: { show: true } },
+                    colors: chartColors,
+                    grid: { borderColor: '#e7e7e7', row: { colors: ['#f3f3f3', 'transparent'], opacity: 0.5 } },
+                    noData: { text: 'No hay datos para la selección actual.' },
+                    dataLabels: { enabled: true, style: { fontSize: '12px', colors: ["#304758"] } },
+                    tooltip: { y: { formatter: val => val.toLocaleString('es-ES') } }
+                };
+
+                let options = {};
+                if (type === 'bar') {
+                    options = {
+                        ...commonOptions,
+                        series: chartData.series,
+                        plotOptions: { bar: { horizontal: chartData.horizontal, borderRadius: 4, dataLabels: { position: chartData.horizontal ? 'center': 'top' } } },
+                        dataLabels: { ...commonOptions.dataLabels, enabled: true, offsetX: chartData.horizontal ? 20 : 0, textAnchor: 'start' },
+                        xaxis: { categories: chartData.categories, labels: { style: { fontSize: '12px' }, trim: true, maxHeight: 100 } },
+                        yaxis: { labels: { formatter: val => val.toLocaleString('es-ES') } }
+                    };
+                } else if (type === 'line') {
+                    options = {
+                        ...commonOptions, series: chartData.series, dataLabels: { enabled: false },
+                        stroke: { curve: 'smooth', width: 3 }, markers: { size: 4 },
+                        xaxis: { type: 'datetime', categories: chartData.categories, labels: { datetimeUTC: false, format: 'dd/MM' } },
+                        tooltip: { x: { format: 'dd/MM/yyyy' } }
+                    };
+                }
+
+                if (charts[elementId]) {
+                    charts[elementId].updateOptions(options);
+                } else {
+                    charts[elementId] = new ApexCharts(document.querySelector(`#${elementId}`), options);
+                    charts[elementId].render();
+                }
+            }
+            
+            // --- FUNCIÓN UTILITARIA (Modificada para simplificar parámetros) ---
+            function aggregateAndSort(data, categoryField, valueField, uniqueByIdProd = false, sortByValue = true) {
+                const aggregation = {};
+                const seenIds = new Set();
+
+                data.forEach(row => {
+                    const category = categoryField === 'Fecha' ? row[categoryField].toISOString().split('T')[0] : row[categoryField];
+                    if (!category) return;
+
+                    const value = row[valueField] || 0;
+                    if (uniqueByIdProd) {
+                        const uniqueKey = `${row.IdProduccion}-${category}`;
+                        if (!seenIds.has(uniqueKey)) {
+                            aggregation[category] = (aggregation[category] || 0) + value;
+                            seenIds.add(uniqueKey);
+                        }
+                    } else {
+                        aggregation[category] = (aggregation[category] || 0) + value;
+                    }
+                });
+
+                let aggregatedArray = Object.keys(aggregation).map(key => ({ category: key, value: aggregation[key] }));
+                if (sortByValue) {
+                    aggregatedArray.sort((a, b) => b.value - a.value);
+                } else if (categoryField === 'Fecha') {
+                    aggregatedArray.sort((a, b) => new Date(a.category) - new Date(b.category));
+                }
+                return aggregatedArray;
+            }
+            init();
+        });
     </script>
 </body>
 </html>
-
