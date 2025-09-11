@@ -1,13 +1,13 @@
 Código;Incidencia;Categoría OEE sugerida
-00;Tiempo de proceso;Tiempo planificado (no pérdida)
-01;Arranque/Puesta a punto;Setup/Cambio formato
-02;Limpieza;Microparadas/Performance
-04;Regulación de mantenimiento;Mantenimiento
-05;Falla Mecánica;Mantenimiento
-06;Falla Eléctrica;Mantenimiento
-07;Falla Neumática;Mantenimiento
-08;Mantenimiento preventivo;	Mantenimiento
-09;Falta de papel/insumo;Otros (Materiales)
+0;Tiempo de proceso;Tiempo planificado (no pérdida)
+1;Arranque/Puesta a punto;Setup/Cambio formato
+2;Limpieza;Microparadas/Performance
+4;Regulación de mantenimiento;Mantenimiento
+5;Falla Mecánica;Mantenimiento
+6;Falla Eléctrica;Mantenimiento
+7;Falla Neumática;Mantenimiento
+8;Mantenimiento preventivo;	Mantenimiento
+9;Falta de papel/insumo;Otros (Materiales)
 10;Cambio de Bobina;Setup/Cambio formato
 11;Cambio de Medida;Setup/Cambio formato
 12;Formación/Capacitación/Reunión;Otros
