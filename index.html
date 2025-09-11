@@ -3,7 +3,7 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Dashboard Industrial v2.2</title>
+    <title>Dashboard Industrial v2.3</title>
     <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.3/dist/css/bootstrap.min.css" rel="stylesheet">
     <link rel="preconnect" href="https://fonts.googleapis.com">
     <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
@@ -93,7 +93,6 @@
         .kpi-value { font-size: 2.2rem; font-weight: 700; color: var(--text-color-dark); }
         .text-muted { color: var(--text-color-light) !important; }
         
-        /* Choices.js Dark Theme */
         body[data-theme="dark"] .choices__inner { background-color: #333; border-color: #555; }
         body[data-theme="dark"] .choices__list--dropdown { background-color: #333; border-color: #555; }
         body[data-theme="dark"] .choices__list--dropdown .choices__item { color: #e0e0e0; }
@@ -115,11 +114,11 @@
                 <label class="form-label fw-bold">Rango de Fechas</label>
                 <input type="text" id="date-range-picker" class="form-control mb-2" placeholder="Seleccione un rango...">
                  <div class="btn-group w-100" role="group">
-                    <button type="button" class="btn btn-sm btn-outline-secondary" id="btnHoy">Hoy</button>
-                    <button type="button" class="btn btn-sm btn-outline-secondary" id="btnAyer">Ayer</button>
+                    <button type="button" class="btn btn-sm btn-outline-secondary" id="btnSemanaActual">Sem. Act.</button>
+                    <button type="button" class="btn btn-sm btn-outline-secondary" id="btnSemanaAnterior">Sem. Ant.</button>
                 </div>
                  <div class="btn-group w-100 mt-1" role="group">
-                    <button type="button" class="btn btn-sm btn-outline-secondary" id="btnMesActual">Mes Actual</button>
+                    <button type="button" class="btn btn-sm btn-outline-secondary" id="btnMesActual">Mes Act.</button>
                     <button type="button" class="btn btn-sm btn-outline-secondary" id="btnMesAnterior">Mes Ant.</button>
                 </div>
             </div>
@@ -166,8 +165,7 @@
             <div class="col-lg-12 mb-4"><div class="card"><div class="card-header">Producción Diaria</div><div class="card-body"><div id="chart-daily-production"></div></div></div></div>
             <div class="col-lg-6 mb-4"><div class="card"><div class="card-header">Producción por Máquina</div><div class="card-body"><div id="chart-prod-by-machine"></div></div></div></div>
             <div class="col-lg-6 mb-4"><div class="card"><div class="card-header">Producción por Operario</div><div class="card-body"><div id="chart-prod-by-operator"></div></div></div></div>
-            <div class="col-lg-12 mb-4"><div class="card"><div class="card-header">Análisis de Paradas (Top 10 en Minutos)</div><div class="card-body"><div id="chart-downtime-reasons"></div></div></div></div>
-            <div class="col-lg-12 mb-4"><div class="card"><div class="card-header">Análisis de Pareto de Paradas</div><div class="card-body"><div id="chart-pareto-downtime"></div></div></div></div>
+            <div class="col-lg-12 mb-4"><div class="card"><div class="card-header">Análisis de Paradas: Tiempo vs. Frecuencia</div><div class="card-body"><div id="chart-downtime-combo"></div></div></div></div>
         </section>
     </main>
 
@@ -193,12 +191,8 @@
             function applyTheme(theme) {
                 document.body.setAttribute('data-theme', theme);
                 themeToggle.checked = theme === 'dark';
-                // Actualizar todos los gráficos existentes con el nuevo tema
                 Object.values(charts).forEach(chart => {
-                    chart.updateOptions({
-                        theme: { mode: theme },
-                        chart: { background: 'transparent' }
-                    });
+                    chart.updateOptions({ theme: { mode: theme }, chart: { background: 'transparent' } });
                 });
             }
 
@@ -219,7 +213,6 @@
             function init() {
                 initTheme();
                 toggleLoading(true);
-
                 Papa.parse(CSV_URL, {
                     download: true, header: true, delimiter: ';', skipEmptyLines: true,
                     transformHeader: header => header.trim().replace(/[\s\W]+/g, '_'),
@@ -228,10 +221,10 @@
                         populateFilters(originalData);
                         addEventListeners();
                         
-                        const dates = originalData.map(d => d.Fecha).filter(Boolean);
-                        const firstDate = dates.length > 0 ? new Date(Math.min(...dates)) : new Date();
-                        const lastDate = dates.length > 0 ? new Date(Math.max(...dates)) : new Date();
-                        datepicker.setDate([firstDate, lastDate], true);
+                        // Default date range: 1st of previous month to today
+                        const today = new Date();
+                        const startOfPreviousMonth = new Date(today.getFullYear(), today.getMonth() - 1, 1);
+                        datepicker.setDate([startOfPreviousMonth, today], true);
                         
                         document.getElementById('last-updated').textContent = `Actualizado: ${new Date().toLocaleString('es-ES')}`;
                     },
@@ -247,7 +240,7 @@
                 return data.map(row => {
                     row.Cantidad = parseInt(row.Cantidad) || 0;
                     row.Minutos = parseInt(row.Minutos) || 0;
-                    row.Frecuencia = parseInt(row.Frecuencia) || 1; 
+                    row.Frecuencia = parseInt(row.Frecuencia) || 0;
                     row.Hs_Trab = parseFloat(String(row.Hs_Trab).replace(',', '.')) || 0;
                     row.Fecha = parseDate(row.Fecha);
                     return row;
@@ -265,12 +258,12 @@
             }
 
             function populateFilters(data) {
-                const uniqueMachines = [...new Set(data.map(row => row.Descrip_Maquina))].sort();
-                const uniqueShifts = [...new Set(data.map(row => row.Turno))].sort();
+                const uniqueMachines = [...new Set(data.map(row => row.Descrip_Maquina))].filter(Boolean).sort();
+                const uniqueShifts = [...new Set(data.map(row => row.Turno))].filter(Boolean).sort();
                 const machineFilterEl = document.getElementById('machine-filter');
-                uniqueMachines.forEach(machine => machine && machineFilterEl.add(new Option(machine, machine)));
+                uniqueMachines.forEach(machine => machineFilterEl.add(new Option(machine, machine)));
                 const shiftFilterEl = document.getElementById('shift-filter');
-                uniqueShifts.forEach(shift => shift && shiftFilterEl.add(new Option(shift, shift)));
+                uniqueShifts.forEach(shift => shiftFilterEl.add(new Option(shift, shift)));
                 choicesMachine = new Choices(machineFilterEl, { removeItemButton: true, placeholder: true, placeholderValue: 'Todas las máquinas...' });
                 choicesShift = new Choices(shiftFilterEl, { removeItemButton: true, placeholder: true, placeholderValue: 'Todos los turnos...' });
             }
@@ -279,21 +272,37 @@
                 datepicker = flatpickr("#date-range-picker", { mode: "range", dateFormat: "d/m/Y", locale: "es", onChange: () => applyFilters() });
                 document.getElementById('machine-filter').addEventListener('change', applyFilters);
                 document.getElementById('shift-filter').addEventListener('change', applyFilters);
+                
                 const today = new Date();
-                const yesterday = new Date(); yesterday.setDate(today.getDate() - 1);
-                document.getElementById('btnHoy').addEventListener('click', () => datepicker.setDate([today, today], true));
-                document.getElementById('btnAyer').addEventListener('click', () => datepicker.setDate([yesterday, yesterday], true));
+                
+                // Botones Mes
                 document.getElementById('btnMesActual').addEventListener('click', () => datepicker.setDate([new Date(today.getFullYear(), today.getMonth(), 1), today], true));
                 document.getElementById('btnMesAnterior').addEventListener('click', () => {
                      const start = new Date(today.getFullYear(), today.getMonth() - 1, 1);
                      const end = new Date(today.getFullYear(), today.getMonth(), 0);
                      datepicker.setDate([start, end], true);
                 });
+                
+                // Botones Semana
+                document.getElementById('btnSemanaActual').addEventListener('click', () => {
+                    const firstDay = today.getDate() - today.getDay() + (today.getDay() === 0 ? -6 : 1);
+                    const start = new Date(today.setDate(firstDay));
+                    datepicker.setDate([start, new Date()], true);
+                });
+                 document.getElementById('btnSemanaAnterior').addEventListener('click', () => {
+                    const end = new Date();
+                    end.setDate(end.getDate() - end.getDay() - (end.getDay() === 0 ? 0 : 7) + 7);
+                    const start = new Date(end);
+                    start.setDate(start.getDate() - 6);
+                    datepicker.setDate([start, end], true);
+                });
+
                 document.getElementById('reset-filters').addEventListener('click', () => {
-                    datepicker.clear();
+                    const today = new Date();
+                    const startOfPreviousMonth = new Date(today.getFullYear(), today.getMonth() - 1, 1);
+                    datepicker.setDate([startOfPreviousMonth, today], true);
                     choicesMachine.removeActiveItems();
                     choicesShift.removeActiveItems();
-                    applyFilters();
                 });
             }
 
@@ -355,9 +364,9 @@
                 if (data.length === 0) {
                     document.getElementById('summary-text').textContent = "No hay datos para el período o filtros seleccionados."; return;
                 }
-                const downtimeByReason = aggregateAndSort(data, 'descrip_incidencia', 'Minutos');
-                const topReason = downtimeByReason[0] ? downtimeByReason[0].category : "N/A";
-                const topReasonMins = downtimeByReason[0] ? downtimeByReason[0].value : 0;
+                const downtimeByReason = aggregateDowntime(data).sort((a,b) => b.totalMinutes - a.totalMinutes);
+                const topReason = downtimeByReason[0] ? downtimeByReason[0].reason : "N/A";
+                const topReasonMins = downtimeByReason[0] ? downtimeByReason[0].totalMinutes : 0;
                 const totalDowntimeMins = kpiData.totalDowntimeHours * 60;
                 const topReasonPercentage = totalDowntimeMins > 0 ? (topReasonMins / totalDowntimeMins * 100).toFixed(0) : 0;
                 const summary = `El KPI de <strong>Disponibilidad</strong> se sitúa en un <strong>${(kpiData.availability * 100).toFixed(1)}%</strong>. La principal causa de inactividad es <strong>"${topReason}"</strong>, responsable del <strong>${topReasonPercentage}%</strong> del tiempo total de parada.`;
@@ -365,75 +374,69 @@
             }
 
             function updateCharts(data) {
+                const dailyProdData = aggregateDailyProduction(data);
+                renderChart('chart-daily-production', 'line', dailyProdData);
+                
+                const prodByMachineData = aggregateAndSort(data, 'Descrip_Maquina', 'Cantidad', true);
+                renderChart('chart-prod-by-machine', 'bar', { categories: prodByMachineData.map(d => d.category), series: [{ name: 'Producción', data: prodByMachineData.map(d => d.value) }], horizontal: true });
+                
+                const prodByOperatorData = aggregateAndSort(data, 'Apellido', 'Cantidad', true);
+                renderChart('chart-prod-by-operator', 'bar', { categories: prodByOperatorData.map(d => d.category), series: [{ name: 'Producción', data: prodByOperatorData.map(d => d.value) }], horizontal: false });
+                
+                const downtimeComboData = aggregateDowntime(data).sort((a,b) => b.totalMinutes - a.totalMinutes);
+                renderChart('chart-downtime-combo', 'combo', downtimeComboData);
+            }
+            
+            function renderChart(elementId, type, chartData) {
                 const currentTheme = localStorage.getItem('dashboardTheme') || 'light';
                 const textColor = currentTheme === 'dark' ? '#e0e0e0' : '#333';
                 const gridBorderColor = currentTheme === 'dark' ? '#444' : '#e7e7e7';
                 
-                // Producción Diaria (ahora como Barras)
-                const dailyProdData = aggregateAndSort(data, 'Fecha', 'Cantidad', false, false);
-                renderChart('chart-daily-production', 'bar', {
-                    categories: dailyProdData.map(d => new Date(d.category).getTime()),
-                    series: [{ name: 'Producción', data: dailyProdData.map(d => d.value) }],
-                }, { textColor, gridBorderColor });
-
-                // Otros gráficos
-                const prodByMachineData = aggregateAndSort(data, 'Descrip_Maquina', 'Cantidad', true);
-                renderChart('chart-prod-by-machine', 'bar', { categories: prodByMachineData.map(d => d.category), series: [{ name: 'Producción', data: prodByMachineData.map(d => d.value) }], horizontal: true }, { textColor, gridBorderColor });
-                const prodByOperatorData = aggregateAndSort(data, 'Apellido', 'Cantidad', true);
-                renderChart('chart-prod-by-operator', 'bar', { categories: prodByOperatorData.map(d => d.category), series: [{ name: 'Producción', data: prodByOperatorData.map(d => d.value) }], horizontal: false }, { textColor, gridBorderColor });
-                const downtimeReasonsData = aggregateAndSort(data, 'descrip_incidencia', 'Minutos');
-                renderChart('chart-downtime-reasons', 'bar', { categories: downtimeReasonsData.map(d => d.category).slice(0, 10), series: [{ name: 'Minutos', data: downtimeReasonsData.map(d => d.value).slice(0, 10) }], horizontal: true }, { textColor, gridBorderColor });
-                
-                // NUEVO: Gráfico de Pareto
-                const paretoData = prepareParetoData(downtimeReasonsData);
-                renderChart('chart-pareto-downtime', 'pareto', paretoData, { textColor, gridBorderColor });
-            }
-            
-            function renderChart(elementId, type, chartData, themeOptions) {
-                const currentTheme = localStorage.getItem('dashboardTheme') || 'light';
                 const commonOptions = {
-                    chart: { type: 'bar', height: 350, fontFamily: 'Inter, sans-serif', toolbar: { show: true }, background: 'transparent' },
+                    chart: { height: 350, fontFamily: 'Inter, sans-serif', toolbar: { show: true }, background: 'transparent' },
                     theme: { mode: currentTheme },
                     colors: chartColors,
-                    grid: { borderColor: themeOptions.gridBorderColor },
+                    grid: { borderColor: gridBorderColor },
                     noData: { text: 'No hay datos para la selección actual.' },
                 };
 
                 let options = {};
-                if (type === 'bar') {
-                     options = {
-                        ...commonOptions,
-                        series: chartData.series,
-                        plotOptions: { bar: { horizontal: chartData.horizontal || false, borderRadius: 4, dataLabels: { position: 'top' } } },
-                        dataLabels: { enabled: true, style: { fontSize: '12px', colors: chartData.horizontal ? ["#fff"] : [themeOptions.textColor] }, background: { enabled: true, foreColor: '#333' }, offsetY: -20, dropShadow: { enabled: true, top: 1, left: 1, blur: 1, color: '#000', opacity: 0.45 }},
-                        xaxis: { type: chartData.categories[0] > 1000000 ? 'datetime' : 'category', categories: chartData.categories, labels: { style: { colors: themeOptions.textColor, fontSize: '12px' }, trim: true, maxHeight: 100, datetimeUTC: false, format: 'dd MMM' } },
-                        yaxis: { labels: { style: { colors: themeOptions.textColor }, formatter: val => val.toLocaleString('es-ES') } },
-                        tooltip: { theme: currentTheme, x: { format: chartData.categories[0] > 1000000 ? 'dd/MM/yyyy' : undefined }, y: { formatter: val => val.toLocaleString('es-ES') } }
-                    };
-                    if (chartData.horizontal) { // Ajuste para etiquetas en barras horizontales
-                        options.dataLabels.style.colors = ["#fff"];
-                        options.dataLabels.background.enabled = false;
-                        options.dataLabels.offsetX = -10;
-                    }
-                } else if (type === 'pareto') {
+                if (type === 'line') {
                     options = {
-                        chart: { type: 'line', height: 350, fontFamily: 'Inter, sans-serif', toolbar: { show: true }, background: 'transparent' },
-                        theme: { mode: currentTheme },
-                        series: chartData.series,
-                        xaxis: { categories: chartData.categories, labels: { style: { colors: themeOptions.textColor } } },
-                        yaxis: [
-                            { title: { text: "Minutos Totales", style: { color: themeOptions.textColor } }, labels: { style: { colors: themeOptions.textColor } } },
-                            { opposite: true, max: 100, title: { text: "Porcentaje Acumulado (%)", style: { color: themeOptions.textColor } }, labels: { style: { colors: themeOptions.textColor } } }
+                        ...commonOptions, chart: {...commonOptions.chart, type: 'line'}, series: chartData.series,
+                        stroke: { curve: 'smooth', width: 3 },
+                        markers: { size: 5 },
+                        dataLabels: { enabled: true, style: { colors: ["#000000"] }, background: { enabled: true, foreColor: '#000', borderRadius: 2, padding: 4, opacity: 0.8, borderColor: '#87CEFA', borderWidth: 1 } },
+                        xaxis: { type: 'datetime', categories: chartData.categories, labels: { style: { colors: textColor }, datetimeUTC: false, format: 'dd MMM' } },
+                        yaxis: { labels: { style: { colors: textColor }, formatter: val => val.toLocaleString('es-ES') } },
+                        tooltip: { theme: currentTheme, x: { format: 'dd/MM/yyyy' }, y: { formatter: val => val ? val.toLocaleString('es-ES') : val } }
+                    };
+                } else if (type === 'bar') {
+                     options = {
+                        ...commonOptions, chart: {...commonOptions.chart, type: 'bar'}, series: chartData.series,
+                        plotOptions: { bar: { horizontal: chartData.horizontal || false, borderRadius: 4, dataLabels: { position: 'top' } } },
+                        dataLabels: { enabled: true, style: { fontSize: '12px' }, offsetY: -20, dropShadow: { enabled: true, top: 1, left: 1, blur: 1, color: '#000', opacity: 0.45 }},
+                        xaxis: { categories: chartData.categories, labels: { style: { colors: textColor, fontSize: '12px' }, trim: true, maxHeight: 100 } },
+                        yaxis: { labels: { style: { colors: textColor }, formatter: val => val.toLocaleString('es-ES') } },
+                        tooltip: { theme: currentTheme, y: { formatter: val => val.toLocaleString('es-ES') } }
+                    };
+                    if (chartData.horizontal) { options.dataLabels.style.colors = ["#fff"]; options.dataLabels.offsetX = -10; } 
+                    else { options.dataLabels.style.colors = [textColor]; }
+                } else if (type === 'combo') {
+                    options = {
+                        ...commonOptions, chart: {...commonOptions.chart, type: 'line', stacked: false},
+                        series: [
+                            { name: 'Tiempo (Horas)', type: 'column', data: chartData.map(d => (d.totalMinutes / 60).toFixed(2)) },
+                            { name: 'Frecuencia', type: 'line', data: chartData.map(d => d.totalFrequency) }
                         ],
-                        tooltip: { theme: currentTheme, shared: false, intersect: true,
-                            y: {
-                                formatter: function (val, { seriesIndex }) {
-                                    return seriesIndex === 0 ? val.toLocaleString('es-ES') + " min" : val.toFixed(1) + "%";
-                                }
-                            }
-                        },
-                        grid: { borderColor: themeOptions.gridBorderColor },
-                        noData: { text: 'No hay datos para la selección actual.' },
+                        stroke: { width: [0, 4] },
+                        xaxis: { categories: chartData.map(d => d.reason), labels: { style: { colors: textColor }, trim: true, rotate: -45, maxHeight: 120 } },
+                        yaxis: [
+                            { seriesName: 'Tiempo (Horas)', axisTicks: { show: true }, axisBorder: { show: true, color: chartColors[0] }, labels: { style: { colors: chartColors[0] } }, title: { text: "Tiempo Total (Horas)", style: { color: chartColors[0] } }},
+                            { seriesName: 'Frecuencia', opposite: true, axisTicks: { show: true }, axisBorder: { show: true, color: chartColors[1] }, labels: { style: { colors: chartColors[1] } }, title: { text: "Frecuencia (Nro. de Veces)", style: { color: chartColors[1] } }}
+                        ],
+                        tooltip: { theme: currentTheme, fixed: { enabled: true, position: 'topLeft', offsetY: 30, offsetX: 60 }},
+                        legend: { horizontalAlign: 'left', offsetX: 40 }
                     };
                 }
 
@@ -445,10 +448,29 @@
                 }
             }
             
-            function aggregateAndSort(data, categoryField, valueField, uniqueByIdProd = false, sortByValue = true) {
+            // FIX: Función de agregación específica y correcta para producción diaria
+            function aggregateDailyProduction(data) {
+                const aggregation = {};
+                const seenProdIds = new Set();
+                data.forEach(row => {
+                    const dateCategory = row.Fecha.toISOString().split('T')[0];
+                    const uniqueKey = `${dateCategory}-${row.IdProduccion}`;
+                    if (row.IdProduccion && !seenProdIds.has(uniqueKey)) {
+                        aggregation[dateCategory] = (aggregation[dateCategory] || 0) + row.Cantidad;
+                        seenProdIds.add(uniqueKey);
+                    }
+                });
+                const sorted = Object.keys(aggregation).sort((a, b) => new Date(a) - new Date(b));
+                return {
+                    series: [{ name: 'Producción', data: sorted.map(key => aggregation[key]) }],
+                    categories: sorted.map(key => new Date(key).getTime())
+                };
+            }
+
+            function aggregateAndSort(data, categoryField, valueField, uniqueByIdProd = false) {
                 const aggregation = {}; const seenIds = new Set();
                 data.forEach(row => {
-                    const category = categoryField === 'Fecha' ? row[categoryField].toISOString().split('T')[0] : row[categoryField];
+                    const category = row[categoryField];
                     if (!category) return;
                     const value = row[valueField] || 0;
                     if (uniqueByIdProd) {
@@ -457,25 +479,26 @@
                     } else { aggregation[category] = (aggregation[category] || 0) + value; }
                 });
                 let aggregatedArray = Object.keys(aggregation).map(key => ({ category: key, value: aggregation[key] }));
-                if (sortByValue) { aggregatedArray.sort((a, b) => b.value - a.value); }
-                else if (categoryField === 'Fecha') { aggregatedArray.sort((a, b) => new Date(a.category) - new Date(b.category)); }
-                return aggregatedArray;
+                return aggregatedArray.sort((a, b) => b.value - a.value);
             }
-            
-            function prepareParetoData(downtimeData) {
-                const totalDowntime = downtimeData.reduce((sum, item) => sum + item.value, 0);
-                let cumulativePercentage = 0;
-                const paretoLine = downtimeData.map(item => {
-                    cumulativePercentage += (item.value / totalDowntime) * 100;
-                    return cumulativePercentage;
+
+            // NUEVA FUNCIÓN: Agrega datos para el gráfico de Tiempo vs Frecuencia
+            function aggregateDowntime(data) {
+                const aggregation = {};
+                data.forEach(row => {
+                    const reason = row.descrip_incidencia;
+                    if (!reason) return;
+                    if (!aggregation[reason]) {
+                        aggregation[reason] = { totalMinutes: 0, totalFrequency: 0 };
+                    }
+                    aggregation[reason].totalMinutes += row.Minutos || 0;
+                    aggregation[reason].totalFrequency += row.Frecuencia || 0;
                 });
-                return {
-                    series: [
-                        { name: 'Minutos Totales', type: 'bar', data: downtimeData.map(d => d.value), color: '#5E35B1' },
-                        { name: '% Acumulado', type: 'line', data: paretoLine, color: '#E53935' }
-                    ],
-                    categories: downtimeData.map(d => d.category)
-                };
+                return Object.keys(aggregation).map(reason => ({
+                    reason: reason,
+                    totalMinutes: aggregation[reason].totalMinutes,
+                    totalFrequency: aggregation[reason].totalFrequency
+                }));
             }
 
             init();
