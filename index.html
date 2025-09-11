@@ -143,12 +143,10 @@
     <main class="main-content">
         <h1 class="h2 mb-4">Dashboard de Análisis de Producción</h1>
 
-        <!-- Contenedor de Carga -->
         <div id="loading-spinner" class="spinner-border text-primary" role="status">
             <span class="visually-hidden">Cargando...</span>
         </div>
 
-        <!-- KPIs Principales -->
         <div class="row g-4 mb-4">
             <div class="col-lg-3 col-md-6">
                 <div class="kpi-card">
@@ -176,7 +174,6 @@
             </div>
         </div>
 
-        <!-- Gráficos -->
         <div class="row g-4">
             <div class="col-xl-6">
                 <div class="chart-card">
@@ -205,7 +202,6 @@
         </div>
     </main>
 
-    <!-- Librerías de JavaScript -->
     <script src="https://cdn.jsdelivr.net/npm/d3@7"></script>
     <script src="https://cdn.jsdelivr.net/npm/apexcharts"></script>
     <script src="https://cdn.jsdelivr.net/npm/flatpickr"></script>
@@ -213,43 +209,58 @@
 
     <script>
         document.addEventListener('DOMContentLoaded', function () {
-            // --- ESTADO Y VARIABLES GLOBALES ---
             let originalData = [];
             let charts = {};
             const spinner = document.getElementById('loading-spinner');
             const CSV_URL = 'https://raw.githubusercontent.com/gabyto11/control/main/exportProduccionyEventos.csv';
 
-            // --- INICIALIZACIÓN ---
+            // --- INICIALIZACIÓN CON FETCH ---
             async function init() {
                 spinner.style.display = 'block';
                 try {
-                    const rawData = await d3.dsv(";", CSV_URL);
+                    // Paso 1: Usar fetch para obtener el archivo como texto. Es más robusto.
+                    const response = await fetch(CSV_URL);
+                    if (!response.ok) {
+                        throw new Error(`Error de red: ${response.status} ${response.statusText}`);
+                    }
+                    const csvText = await response.text();
                     
+                    // Paso 2: Usar d3 para parsear el texto obtenido.
+                    const parser = d3.dsvFormat(";");
+                    const rawData = parser.parse(csvText);
+
+                    if (rawData.length === 0) {
+                        throw new Error("El archivo CSV está vacío o no se pudo interpretar.");
+                    }
+                    
+                    // Paso 3: Procesar y limpiar los datos.
                     originalData = rawData.map(d => {
                         const [day, month, year] = d.Fecha.split('/');
+                        // Se usa Date.UTC para evitar problemas de zona horaria
+                        const fechaObj = new Date(Date.UTC(year, month - 1, day));
+                        
                         return {
                             ...d,
                             Cantidad: +d.Cantidad || 0,
                             Minutos: +d.Minutos || 0,
                             Objetivo: +d.Objetivo || 0,
-                            FechaObj: new Date(`${year}-${month}-${day}`),
+                            FechaObj: fechaObj,
                             Operario: `${d.Operario} ${d.Apellido}`.trim(),
                         };
                     }).filter(d => d.FechaObj instanceof Date && !isNaN(d.FechaObj));
 
                     populateFilters(originalData);
-                    setupFilters();
+                    setupEventListeners();
                     updateDashboard(originalData);
 
                 } catch (error) {
-                    console.error("Error loading or processing data:", error);
-                    alert("No se pudo cargar el archivo CSV desde GitHub. Verifique la URL y la consola.");
+                    console.error("Fallo crítico en la inicialización:", error);
+                    alert(`Error al cargar los datos: ${error.message}. Por favor, revisa la consola del navegador.`);
                 } finally {
                     spinner.style.display = 'none';
                 }
             }
             
-            // --- POBLAR FILTROS ---
             function populateFilters(data) {
                 const machines = [...new Set(data.map(d => d.Descrip_Maquina))].sort();
                 const operators = [...new Set(data.map(d => d.Operario))].sort();
@@ -265,9 +276,8 @@
                 shifts.forEach(s => shiftFilter.innerHTML += `<option value="${s}">${s}</option>`);
             }
 
-            // --- CONFIGURACIÓN DE FILTROS ---
-            function setupFilters() {
-                const datePicker = flatpickr("#date-range-picker", {
+            function setupEventListeners() {
+                flatpickr("#date-range-picker", {
                     mode: "range",
                     dateFormat: "d/m/Y",
                     locale: "es",
@@ -276,7 +286,7 @@
                 document.getElementById('apply-filters').addEventListener('click', applyFilters);
 
                 document.getElementById('reset-filters').addEventListener('click', () => {
-                    datePicker.clear();
+                    document.getElementById('date-range-picker')._flatpickr.clear();
                     document.getElementById('machine-filter').value = 'all';
                     document.getElementById('operator-filter').value = 'all';
                     document.getElementById('shift-filter').value = 'all';
@@ -284,7 +294,6 @@
                 });
             }
 
-            // --- LÓGICA DE FILTRADO ---
             function applyFilters() {
                 const dateRange = document.getElementById('date-range-picker')._flatpickr.selectedDates;
                 const selectedMachine = document.getElementById('machine-filter').value;
@@ -295,7 +304,8 @@
 
                 if (dateRange.length === 2) {
                     const [start, end] = dateRange;
-                    end.setHours(23, 59, 59, 999);
+                    // Asegurarse que el final del día está incluido en el rango
+                    end.setUTCHours(23, 59, 59, 999);
                     filteredData = filteredData.filter(d => d.FechaObj >= start && d.FechaObj <= end);
                 }
                 if (selectedMachine !== 'all') {
@@ -311,21 +321,17 @@
                 updateDashboard(filteredData);
             }
 
-            // --- ACTUALIZACIÓN DEL DASHBOARD ---
             function updateDashboard(data) {
                 // Para cálculos de producción, usamos solo registros únicos por IdProduccion
                 const uniqueProductions = Array.from(new Map(data.map(item => [item.IdProduccion, item])).values());
                 
                 updateKPIs(data, uniqueProductions);
-                // Para downtime, usamos todos los datos porque cada fila es un evento
                 createOrUpdateDowntimeChart(data);
-                // Para producción, usamos los datos únicos
                 createOrUpdateProductionByMachineChart(uniqueProductions);
                 createOrUpdateProductionOverTimeChart(uniqueProductions);
                 createOrUpdateOperatorPerformanceChart(uniqueProductions);
             }
 
-            // --- ACTUALIZACIÓN DE KPIs ---
             function updateKPIs(allData, uniqueProductions) {
                 const totalProduction = d3.sum(uniqueProductions, d => d.Cantidad);
                 const totalObjective = d3.sum(uniqueProductions, d => d.Objetivo);
@@ -338,7 +344,7 @@
                 document.getElementById('kpi-target-efficiency').textContent = `${efficiency.toFixed(1)}%`;
             }
 
-            // --- LÓGICA DE GRÁFICOS ---
+            // --- Lógica de Gráficos (sin cambios) ---
             
             function createOrUpdateDowntimeChart(data) {
                 const downtimeData = aggregateData(data, 'descrip_incidencia', 'Minutos', 'sum').slice(0, 10);
@@ -361,7 +367,6 @@
                     series: [{ name: 'Unidades', data: machineData.map(d => d.value) }],
                     chart: { type: 'bar', height: 350, toolbar: { show: true } },
                     plotOptions: { bar: { columnWidth: '50%', distributed: true } },
-                    dataLabels: { enabled: false },
                     legend: { show: false },
                     xaxis: { categories: machineData.map(d => d.category), labels: { rotate: -45, trim: true, style: { fontSize: '10px' } } },
                     yaxis: { title: { text: 'Unidades Producidas' } },
@@ -376,9 +381,8 @@
                 const options = {
                     series: [{ name: 'Producción', data: timeData.map(d => d.value) }],
                     chart: { type: 'area', height: 350, zoom: { enabled: true } },
-                    dataLabels: { enabled: false },
                     stroke: { curve: 'smooth' },
-                    xaxis: { type: 'datetime', categories: timeData.map(d => new Date(d.category).getTime()), labels: { datetimeUTC: false, format: 'dd MMM' } },
+                    xaxis: { type: 'datetime', categories: timeData.map(d => new Date(d.category).getTime()), labels: { datetimeUTC: false, format: 'dd MMM \'yy' } },
                     tooltip: { x: { format: 'dd/MM/yyyy' } },
                 };
                 renderChart('production-over-time-chart', options);
@@ -390,14 +394,12 @@
                 const options = {
                     series: [{ name: 'Unidades Producidas', data: operatorData.map(d => d.value) }],
                     chart: { type: 'bar', height: 350 },
-                    plotOptions: { bar: { borderRadius: 4, horizontal: false } },
                     xaxis: { categories: operatorData.map(d => d.category), labels: { style: { fontSize: '10px' } } },
                     yaxis: { title: { text: 'Unidades Producidas' } },
                 };
                 renderChart('operator-performance-chart', options);
             }
             
-            // --- FUNCIÓN UTILITARIA PARA RENDERIZAR GRÁFICOS ---
             function renderChart(elementId, options) {
                 if (charts[elementId]) {
                     charts[elementId].updateOptions(options, true, true);
@@ -408,7 +410,6 @@
                 }
             }
             
-            // --- FUNCIÓN UTILITARIA DE AGREGACIÓN ---
             function aggregateData(data, categoryField, valueField, method = 'sum', sortByValue = true) {
                 const aggregation = d3.rollup(data, 
                     v => d3[method](v, d => d[valueField]), 
@@ -424,10 +425,8 @@
                 return aggregatedArray.filter(d => d.category && d.category !== "undefined");
             }
 
-            // --- Iniciar la aplicación ---
             init();
         });
     </script>
 </body>
 </html>
-
