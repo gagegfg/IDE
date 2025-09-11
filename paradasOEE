@@ -1,4 +1,4 @@
-Código;Incidencia;Categoría OEE sugerida
+NroIncidencia;descrip_incidencia;Categoría OEE sugerida
 0;Tiempo de proceso;Tiempo planificado (no pérdida)
 1;Arranque/Puesta a punto;Setup/Cambio formato
 2;Limpieza;Microparadas/Performance
