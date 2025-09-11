@@ -3,7 +3,7 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Dashboard de Producción v2 - Molderil</title>
+    <title>Dashboard de Producción v3 - Molderil</title>
     <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.3/dist/css/bootstrap.min.css" rel="stylesheet">
     <link rel="preconnect" href="https://fonts.googleapis.com">
     <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
@@ -95,9 +95,12 @@
             <label class="form-label fw-bold">Rango de Fechas</label>
             <input type="text" id="date-range-picker" class="form-control mb-2" placeholder="Seleccione un rango...">
             <div class="btn-group w-100" role="group">
-                <button type="button" class="btn btn-sm btn-outline-secondary" id="btnHoy">Hoy</button>
-                <button type="button" class="btn btn-sm btn-outline-secondary" id="btn7Dias">7 Días</button>
-                <button type="button" class="btn btn-sm btn-outline-secondary" id="btnEsteMes">Este Mes</button>
+                <button type="button" class="btn btn-sm btn-outline-secondary" id="btnUltimaSemana">Últ. Semana</button>
+                <button type="button" class="btn btn-sm btn-outline-secondary" id="btnSemanaAnterior">Sem. Ant.</button>
+            </div>
+             <div class="btn-group w-100 mt-1" role="group">
+                <button type="button" class="btn btn-sm btn-outline-secondary" id="btnMesActual">Mes Actual</button>
+                <button type="button" class="btn btn-sm btn-outline-secondary" id="btnMesAnterior">Mes Ant.</button>
             </div>
         </div>
 
@@ -123,30 +126,10 @@
 
         <!-- KPIs Principales -->
         <div class="row g-4 mb-4">
-            <div class="col-xl-3 col-md-6">
-                <div class="card kpi-card"><div class="card-body">
-                    <div id="kpi-produccion-total" class="kpi-value">...</div>
-                    <div class="kpi-label">Producción Total</div>
-                </div></div>
-            </div>
-            <div class="col-xl-3 col-md-6">
-                <div class="card kpi-card"><div class="card-body">
-                    <div id="kpi-disponibilidad" class="kpi-value">...</div>
-                    <div class="kpi-label">% Disponibilidad</div>
-                </div></div>
-            </div>
-            <div class="col-xl-3 col-md-6">
-                <div class="card kpi-card"><div class="card-body">
-                    <div id="kpi-minutos-parada" class="kpi-value">...</div>
-                    <div class="kpi-label">Minutos Totales Parada</div>
-                </div></div>
-            </div>
-            <div class="col-xl-3 col-md-6">
-                <div class="card kpi-card"><div class="card-body">
-                    <div id="kpi-maquina-top" class="kpi-value">...</div>
-                    <div class="kpi-label">Máquina Top (Prod.)</div>
-                </div></div>
-            </div>
+            <div class="col-xl-3 col-md-6"><div class="card kpi-card"><div class="card-body"><div id="kpi-produccion-total" class="kpi-value">...</div><div class="kpi-label">Producción Total</div></div></div></div>
+            <div class="col-xl-3 col-md-6"><div class="card kpi-card"><div class="card-body"><div id="kpi-disponibilidad" class="kpi-value">...</div><div class="kpi-label">% Disponibilidad</div></div></div></div>
+            <div class="col-xl-3 col-md-6"><div class="card kpi-card"><div class="card-body"><div id="kpi-minutos-parada" class="kpi-value">...</div><div class="kpi-label">Minutos Totales Parada</div></div></div></div>
+            <div class="col-xl-3 col-md-6"><div class="card kpi-card"><div class="card-body"><div id="kpi-maquina-top" class="kpi-value">...</div><div class="kpi-label">Máquina Top (Prod.)</div></div></div></div>
         </div>
 
         <!-- Gráficos -->
@@ -170,6 +153,7 @@
     document.addEventListener('DOMContentLoaded', function () {
         const CSV_PRODUCCION_URL = 'exportProduccionyEventos.csv';
         const CSV_OEE_URL = 'paradasOEE.txt';
+        const FILTERS_STORAGE_KEY = 'molderilDashboardFilters';
 
         let masterData = [];
         let oeeCategories = new Map();
@@ -183,8 +167,10 @@
                 setupCharts();
                 setupDatepicker();
                 setupEventListeners();
-                // Trigger initial data load
-                document.getElementById('btnEsteMes').click();
+                
+                if (!loadFiltersFromLocalStorage()) {
+                    document.getElementById('btnMesActual').click();
+                }
             } else {
                 document.querySelector('.main-content').innerHTML = `<div class="alert alert-danger">Error: No se pudieron cargar los datos de producción. Revise la consola para más detalles.</div>`;
             }
@@ -194,9 +180,8 @@
             try {
                 const data = await d3.dsv(';', CSV_OEE_URL);
                 data.forEach(row => {
-                    // Limpiamos el nombre de la incidencia para que coincida con el de producción.
-                    const incidencia = row.Incidencia.trim();
-                    const categoria = row['Categoría OEE sugerida'].trim();
+                    const incidencia = row.Incidencia?.trim();
+                    const categoria = row['Categoría OEE sugerida']?.trim();
                     if(incidencia && categoria) {
                         oeeCategories.set(incidencia, categoria);
                     }
@@ -212,122 +197,190 @@
                 const parseDate = d3.timeParse("%d/%m/%Y");
                 
                 masterData = rawData.map(row => {
-                    const descripIncidencia = row.descrip_incidencia.trim();
+                    const descripIncidencia = row.descrip_incidencia?.trim() || '';
                     return {
                         IdProduccion: +row.IdProduccion,
                         Fecha: parseDate(row.Fecha),
-                        Descrip_Maquina: row.Descrip_Maquina.trim(),
+                        Descrip_Maquina: row.Descrip_Maquina?.trim(),
                         Cantidad: +row.Cantidad || 0,
                         descrip_incidencia: descripIncidencia,
                         Minutos: +row.Minutos || 0,
-                        Turno: row.Turno.trim(),
-                        ApellidoOperario: row.Apellido.trim(),
+                        Turno: row.Turno?.trim(),
+                        ApellidoOperario: row.Apellido?.trim(),
                         HsTrab: +row['Hs Trab'] || 0,
                         oeeCategory: oeeCategories.get(descripIncidencia) || 'No Clasificada'
                     }
-                }).filter(d => d.Fecha instanceof Date && !isNaN(d.Fecha));
+                }).filter(d => d.Fecha instanceof Date && !isNaN(d.Fecha) && d.Descrip_Maquina && d.Turno);
             } catch (error) {
                 console.error("Error cargando el CSV de producción:", error);
             }
+        }
+        
+        function populateFilters() {
+            const createCheckboxes = (containerId, items) => {
+                const container = document.getElementById(containerId);
+                let itemsHTML = `
+                    <div class="form-check">
+                        <input class="form-check-input" type="checkbox" value="select-all" id="${containerId}-select-all">
+                        <label class="form-check-label fw-bold" for="${containerId}-select-all">Seleccionar Todos</label>
+                    </div><hr class="my-1">`;
+                itemsHTML += items.map(item => `
+                    <div class="form-check">
+                        <input class="form-check-input filter-item" type="checkbox" value="${item}" id="${containerId}-${item.replace(/\s+/g, '')}">
+                        <label class="form-check-label" for="${containerId}-${item.replace(/\s+/g, '')}">${item}</label>
+                    </div>
+                `).join('');
+                container.innerHTML = itemsHTML;
+            };
+            
+            const maquinas = [...new Set(masterData.map(d => d.Descrip_Maquina))].sort();
+            const turnos = [...new Set(masterData.map(d => d.Turno))].sort();
+            createCheckboxes('maquina-filters', maquinas);
+            createCheckboxes('turno-filters', turnos);
         }
 
         function setupDatepicker() {
             const dateExtent = d3.extent(masterData, d => d.Fecha);
             datepicker = flatpickr("#date-range-picker", {
-                mode: "range",
-                dateFormat: "d/m/Y",
-                locale: "es",
-                minDate: dateExtent[0],
-                maxDate: dateExtent[1],
+                mode: "range", dateFormat: "d/m/Y", locale: "es",
+                minDate: dateExtent[0], maxDate: dateExtent[1],
                 onChange: () => applyFilters()
             });
         }
         
-        function populateFilters() {
-            const maquinas = [...new Set(masterData.map(d => d.Descrip_Maquina))].sort();
-            const turnos = [...new Set(masterData.map(d => d.Turno))].sort();
-
-            const createCheckboxes = (containerId, items) => {
-                const container = document.getElementById(containerId);
-                container.innerHTML = items.map(item => `
-                    <div class="form-check">
-                        <input class="form-check-input" type="checkbox" value="${item}" id="${containerId}-${item.replace(/\s+/g, '')}">
-                        <label class="form-check-label" for="${containerId}-${item.replace(/\s+/g, '')}">${item}</label>
-                    </div>
-                `).join('');
-            };
-            
-            createCheckboxes('maquina-filters', maquinas);
-            createCheckboxes('turno-filters', turnos);
-        }
-        
         function setupEventListeners() {
-            document.querySelectorAll('#maquina-filters input, #turno-filters input').forEach(el => {
-                el.addEventListener('change', applyFilters);
+            // Checkbox filters
+            document.querySelectorAll('.filter-options').forEach(container => {
+                container.addEventListener('change', (e) => {
+                    const selectAll = container.querySelector('input[value="select-all"]');
+                    const items = container.querySelectorAll('.filter-item');
+                    if (e.target === selectAll) {
+                        items.forEach(item => item.checked = selectAll.checked);
+                    } else {
+                        selectAll.checked = [...items].every(item => item.checked);
+                    }
+                    applyFilters();
+                });
             });
             
             document.getElementById('reset-filters').addEventListener('click', () => {
+                localStorage.removeItem(FILTERS_STORAGE_KEY);
                 datepicker.clear();
-                document.querySelectorAll('#maquina-filters input, #turno-filters input').forEach(el => el.checked = false);
+                document.querySelectorAll('.filter-options input').forEach(el => el.checked = false);
                 applyFilters();
             });
 
+            // Date presets
             const today = new Date();
-            const sevenDaysAgo = new Date(); sevenDaysAgo.setDate(today.getDate() - 6);
-            const startOfMonth = new Date(today.getFullYear(), today.getMonth(), 1);
-
-            document.getElementById('btnHoy').addEventListener('click', () => datepicker.setDate([today, today], true));
-            document.getElementById('btn7Dias').addEventListener('click', () => datepicker.setDate([sevenDaysAgo, today], true));
-            document.getElementById('btnEsteMes').addEventListener('click', () => datepicker.setDate([startOfMonth, today], true));
+            document.getElementById('btnMesActual').addEventListener('click', () => {
+                const start = new Date(today.getFullYear(), today.getMonth(), 1);
+                datepicker.setDate([start, today], true);
+            });
+            document.getElementById('btnMesAnterior').addEventListener('click', () => {
+                const start = new Date(today.getFullYear(), today.getMonth() - 1, 1);
+                const end = new Date(today.getFullYear(), today.getMonth(), 0);
+                datepicker.setDate([start, end], true);
+            });
+            document.getElementById('btnUltimaSemana').addEventListener('click', () => {
+                const end = new Date(today);
+                const start = new Date();
+                start.setDate(end.getDate() - 6);
+                datepicker.setDate([start, end], true);
+            });
+            document.getElementById('btnSemanaAnterior').addEventListener('click', () => {
+                const end = new Date();
+                end.setDate(today.getDate() - today.getDay() - 1); // Last Saturday
+                const start = new Date(end);
+                start.setDate(end.getDate() - 6); // 7 days before
+                datepicker.setDate([start, end], true);
+            });
         }
-
+        
         function applyFilters() {
             const selectedDates = datepicker.selectedDates;
             if (selectedDates.length !== 2) {
-                updateDashboard([]); // Limpia el dashboard si no hay un rango válido
+                updateDashboard([]);
                 return;
             }
 
             let [startDate, endDate] = selectedDates;
             endDate.setHours(23, 59, 59, 999);
 
-            const getSelected = (containerId) => 
-                [...document.querySelectorAll(`#${containerId} input:checked`)].map(el => el.value);
-
+            const getSelected = (containerId) => [...document.querySelectorAll(`#${containerId} .filter-item:checked`)].map(el => el.value);
             const selectedMaquinas = getSelected('maquina-filters');
             const selectedTurnos = getSelected('turno-filters');
 
-            const filteredData = masterData.filter(d => {
-                const dateMatch = d.Fecha >= startDate && d.Fecha <= endDate;
-                const maquinaMatch = selectedMaquinas.length === 0 || selectedMaquinas.includes(d.Descrip_Maquina);
-                const turnoMatch = selectedTurnos.length === 0 || selectedTurnos.includes(d.Turno);
-                return dateMatch && maquinaMatch && turnoMatch;
-            });
+            const filteredData = masterData.filter(d => 
+                (d.Fecha >= startDate && d.Fecha <= endDate) &&
+                (selectedMaquinas.length === 0 || selectedMaquinas.includes(d.Descrip_Maquina)) &&
+                (selectedTurnos.length === 0 || selectedTurnos.includes(d.Turno))
+            );
             
             updateDashboard(filteredData);
+            saveFiltersToLocalStorage({
+                dates: [startDate.toISOString(), endDate.toISOString()],
+                maquinas: selectedMaquinas,
+                turnos: selectedTurnos
+            });
+        }
+        
+        function saveFiltersToLocalStorage(filters) {
+            localStorage.setItem(FILTERS_STORAGE_KEY, JSON.stringify(filters));
+        }
+
+        function loadFiltersFromLocalStorage() {
+            const savedFilters = localStorage.getItem(FILTERS_STORAGE_KEY);
+            if (savedFilters) {
+                try {
+                    const filters = JSON.parse(savedFilters);
+                    datepicker.setDate(filters.dates.map(d => new Date(d)), false);
+                    
+                    const setCheckboxes = (containerId, values) => {
+                        values.forEach(val => {
+                            const checkbox = document.querySelector(`#${containerId} input[value="${val}"]`);
+                            if(checkbox) checkbox.checked = true;
+                        });
+                        // Update select all state
+                        const container = document.getElementById(containerId);
+                        container.querySelector('input[value="select-all"]').checked = [...container.querySelectorAll('.filter-item')].every(item => item.checked);
+                    };
+
+                    setCheckboxes('maquina-filters', filters.maquinas);
+                    setCheckboxes('turno-filters', filters.turnos);
+                    
+                    applyFilters();
+                    return true;
+                } catch (e) {
+                    console.error("Error loading filters from localStorage", e);
+                    localStorage.removeItem(FILTERS_STORAGE_KEY);
+                    return false;
+                }
+            }
+            return false;
         }
 
         function updateDashboard(data) {
             updateKPIs(data);
+            Object.values(charts).forEach(chart => {
+                if (!chart.w.globals.noData) { // Check if chart is initialized
+                     chart.updateOptions({ noData: { text: data.length === 0 ? 'No hay datos para la selección actual.' : 'Cargando...' } });
+                }
+            });
             updateCharts(data);
         }
 
         function updateKPIs(data) {
-            // Producción Total (contando cada IdProduccion una sola vez)
             const uniqueProduccion = Array.from(d3.group(data, d => d.IdProduccion).values(), arr => arr[0]);
             const totalProduccion = d3.sum(uniqueProduccion, d => d.Cantidad);
             document.getElementById('kpi-produccion-total').textContent = totalProduccion.toLocaleString('es-ES');
 
-            // Minutos de Parada
             const totalMinutosParada = d3.sum(data, d => d.Minutos);
             document.getElementById('kpi-minutos-parada').textContent = totalMinutosParada.toLocaleString('es-ES');
-
-            // Disponibilidad
-            const totalHsTrab = d3.sum(uniqueProduccion, d => d.HsTrab);
-            const disponibilidad = totalHsTrab > 0 ? ((totalHsTrab - totalMinutosParada) / totalHsTrab) * 100 : 0;
+            
+            const totalMinutosTrab = d3.sum(uniqueProduccion, d => d.HsTrab) * 60; // Convert hours to minutes
+            const disponibilidad = totalMinutosTrab > 0 ? ((totalMinutosTrab - totalMinutosParada) / totalMinutosTrab) * 100 : 0;
             document.getElementById('kpi-disponibilidad').textContent = `${disponibilidad.toFixed(1)}%`;
 
-            // Máquina Top
             const topMaquinaData = d3.rollup(uniqueProduccion, v => d3.sum(v, d => d.Cantidad), d => d.Descrip_Maquina);
             const topMaquina = [...topMaquinaData.entries()].sort((a, b) => b[1] - a[1])[0];
             document.getElementById('kpi-maquina-top').textContent = topMaquina ? topMaquina[0] : 'N/A';
@@ -342,108 +395,49 @@
         }
         
         function updateProduccionDiaria(data) {
-            const dailyData = d3.rollup(data, v => {
-                const uniqueIds = new Set(v.map(d => d.IdProduccion));
-                return d3.sum(v.filter(d => {
-                    if (uniqueIds.has(d.IdProduccion)) {
-                        uniqueIds.delete(d.IdProduccion);
-                        return true;
-                    }
-                    return false;
-                }), d => d.Cantidad);
+             const dailyData = d3.rollup(data, v => {
+                return d3.sum(Array.from(d3.group(v, d=>d.IdProduccion).values(), arr => arr[0]), d=>d.Cantidad);
             }, d => d3.timeDay(d.Fecha));
-
             const sortedData = Array.from(dailyData.entries()).sort((a,b) => a[0] - b[0]);
-            
-            charts.produccionDiaria.updateSeries([{
-                name: 'Producción',
-                data: sortedData.map(([date, value]) => [date.getTime(), value])
-            }]);
+            charts.produccionDiaria.updateSeries([ { name: 'Producción', data: sortedData.map(([date, value]) => [date.getTime(), value]) }]);
         }
 
         function updateDisponibilidadDiaria(data) {
             const dailyData = d3.rollup(data, v => {
-                const uniqueProduccion = Array.from(d3.group(v, d => d.IdProduccion).values(), arr => arr[0]);
-                const totalHsTrab = d3.sum(uniqueProduccion, d => d.HsTrab);
-                const totalMinutosParada = d3.sum(v, d => d.Minutos);
-                return totalHsTrab > 0 ? ((totalHsTrab - totalMinutosParada) / totalHsTrab) * 100 : 0;
+                const uniqueProd = Array.from(d3.group(v, d => d.IdProduccion).values(), arr => arr[0]);
+                const totalMinTrab = d3.sum(uniqueProd, d => d.HsTrab) * 60;
+                const totalMinParada = d3.sum(v, d => d.Minutos);
+                return totalMinTrab > 0 ? ((totalMinTrab - totalMinParada) / totalMinTrab) * 100 : 0;
             }, d => d3.timeDay(d.Fecha));
-            
             const sortedData = Array.from(dailyData.entries()).sort((a, b) => a[0] - b[0]);
-            
-            charts.disponibilidadDiaria.updateSeries([{
-                name: 'Disponibilidad',
-                data: sortedData.map(([date, value]) => [date.getTime(), parseFloat(value.toFixed(1))])
-            }]);
+            charts.disponibilidadDiaria.updateSeries([{ name: 'Disponibilidad', data: sortedData.map(([date, value]) => [date.getTime(), parseFloat(value.toFixed(1))]) }]);
         }
         
         function updateTopMaquinas(data) {
             const uniqueProduccion = Array.from(d3.group(data, d => d.IdProduccion).values(), arr => arr[0]);
             const topData = Array.from(d3.rollup(uniqueProduccion, v => d3.sum(v, d => d.Cantidad), d => d.Descrip_Maquina).entries())
                 .sort((a, b) => b[1] - a[1]).slice(0, 5);
-            
-            charts.topMaquinas.updateOptions({
-                series: [{ name: 'Producción', data: topData.map(d => d[1]) }],
-                xaxis: { categories: topData.map(d => d[0]) }
-            });
+            charts.topMaquinas.updateOptions({ series: [{ name: 'Producción', data: topData.map(d => d[1]) }], xaxis: { categories: topData.map(d => d[0]) } });
         }
         
         function updateParadasOEE(data) {
-            const oeeData = Array.from(d3.rollup(data.filter(d => d.Minutos > 0), v => d3.sum(v, d => d.Minutos), d => d.oeeCategory).entries())
-                .sort((a, b) => b[1] - a[1]);
-
-            charts.paradasOEE.updateOptions({
-                series: oeeData.map(d => d[1]),
-                labels: oeeData.map(d => d[0])
-            });
+            const oeeData = Array.from(d3.rollup(data.filter(d => d.Minutos > 0), v => d3.sum(v, d => d.Minutos), d => d.oeeCategory).entries()).sort((a, b) => b[1] - a[1]);
+            charts.paradasOEE.updateOptions({ series: oeeData.map(d => d[1]), labels: oeeData.map(d => d[0]) });
         }
         
         function updateParadasOperario(data) {
-            const operarioData = Array.from(d3.rollup(data.filter(d => d.Minutos > 0 && d.ApellidoOperario), v => d3.sum(v, d => d.Minutos), d => d.ApellidoOperario).entries())
-                .sort((a, b) => b[1] - a[1]);
-            
-            charts.paradasOperario.updateOptions({
-                series: [{ name: 'Minutos de Parada', data: operarioData.map(d => d[1]) }],
-                xaxis: { categories: operarioData.map(d => d[0]) }
-            });
+            const operarioData = Array.from(d3.rollup(data.filter(d => d.Minutos > 0 && d.ApellidoOperario), v => d3.sum(v, d => d.Minutos), d => d.ApellidoOperario).entries()).sort((a, b) => b[1] - a[1]);
+            charts.paradasOperario.updateOptions({ series: [{ name: 'Minutos de Parada', data: operarioData.map(d => d[1]) }], xaxis: { categories: operarioData.map(d => d[0]) } });
         }
 
         function setupCharts() {
-            const commonBarOptions = {
-                chart: { type: 'bar', height: 350, fontFamily: 'Inter, sans-serif' },
-                plotOptions: { bar: { borderRadius: 4, horizontal: false, dataLabels: { position: 'top' } } },
-                dataLabels: { enabled: true, offsetY: -20, style: { fontSize: '12px', colors: ["#304758"] }, formatter: val => val.toLocaleString('es-ES') },
-                xaxis: { labels: { style: { colors: '#6c757d', fontSize: '12px' } } },
-                yaxis: { labels: { style: { colors: '#6c757d' }, formatter: val => val.toLocaleString('es-ES') } },
-                grid: { borderColor: '#e7e7e7', row: { colors: ['#f3f3f3', 'transparent'], opacity: 0.5 } },
-                noData: { text: 'No hay datos para el rango seleccionado.' }
-            };
-            const commonLineOptions = {
-                ...commonBarOptions, chart: { ...commonBarOptions.chart, type: 'line', zoom: { enabled: false } },
-                stroke: { curve: 'smooth', width: 3 }, markers: { size: 5 }, xaxis: { type: 'datetime' },
-                tooltip: { x: { format: 'dd/MM/yyyy' } }
-            };
-
+            const commonBarOptions = { chart: { type: 'bar', height: 350, fontFamily: 'Inter, sans-serif' }, plotOptions: { bar: { borderRadius: 4, horizontal: false, dataLabels: { position: 'top' } } }, dataLabels: { enabled: true, offsetY: -20, style: { fontSize: '12px', colors: ["#304758"] }, formatter: val => val.toLocaleString('es-ES') }, xaxis: { labels: { style: { colors: '#6c757d', fontSize: '12px' } } }, yaxis: { labels: { style: { colors: '#6c757d' }, formatter: val => val.toLocaleString('es-ES') } }, grid: { borderColor: '#e7e7e7', row: { colors: ['#f3f3f3', 'transparent'], opacity: 0.5 } }, noData: { text: 'Cargando...' } };
+            const commonLineOptions = { ...commonBarOptions, chart: { ...commonBarOptions.chart, type: 'line', zoom: { enabled: false } }, stroke: { curve: 'smooth', width: 3 }, markers: { size: 5 }, xaxis: { type: 'datetime' }, tooltip: { x: { format: 'dd/MM/yyyy' } } };
             charts.produccionDiaria = new ApexCharts(document.querySelector("#chart-produccion-diaria"), commonLineOptions);
-            charts.disponibilidadDiaria = new ApexCharts(document.querySelector("#chart-disponibilidad-diaria"), {
-                ...commonLineOptions,
-                yaxis: { min: 0, max: 100, labels: { formatter: val => `${val}%` } },
-                colors: ['#28a745']
-            });
-            charts.topMaquinas = new ApexCharts(document.querySelector("#chart-top-maquinas"), {
-                ...commonBarOptions, plotOptions: { bar: { ...commonBarOptions.plotOptions.bar, horizontal: true } }
-            });
-             charts.paradasOperario = new ApexCharts(document.querySelector("#chart-paradas-operario"), {
-                ...commonBarOptions, chart: { ...commonBarOptions.chart, height: 400 }
-            });
-            charts.paradasOEE = new ApexCharts(document.querySelector("#chart-paradas-oee"), {
-                chart: { type: 'donut', height: 350, fontFamily: 'Inter, sans-serif' },
-                labels: [], series: [],
-                responsive: [{ breakpoint: 480, options: { chart: { width: 200 }, legend: { position: 'bottom' } } }],
-                noData: { text: 'No hay datos de paradas para mostrar.' },
-                legend: { position: 'bottom' }
-            });
-
+            charts.disponibilidadDiaria = new ApexCharts(document.querySelector("#chart-disponibilidad-diaria"), { ...commonLineOptions, yaxis: { min: 0, max: 100, labels: { formatter: val => `${val.toFixed(0)}%` } }, colors: ['#28a745'] });
+            charts.topMaquinas = new ApexCharts(document.querySelector("#chart-top-maquinas"), { ...commonBarOptions, plotOptions: { bar: { ...commonBarOptions.plotOptions.bar, horizontal: true } } });
+            charts.paradasOperario = new ApexCharts(document.querySelector("#chart-paradas-operario"), { ...commonBarOptions, chart: { ...commonBarOptions.chart, height: 400 } });
+            charts.paradasOEE = new ApexCharts(document.querySelector("#chart-paradas-oee"), { chart: { type: 'donut', height: 350, fontFamily: 'Inter, sans-serif' }, labels: [], series: [], responsive: [{ breakpoint: 480, options: { chart: { width: 200 }, legend: { position: 'bottom' } } }], noData: { text: 'Cargando...' }, legend: { position: 'bottom' } });
             Object.values(charts).forEach(chart => chart.render());
         }
         init();
@@ -451,4 +445,3 @@
     </script>
 </body>
 </html>
-
