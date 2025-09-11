@@ -173,33 +173,55 @@
       // 'CODIGO_RECHAZO': 'Calidad' // Futuro: Si un código representa rechazos, se agrega aquí.
     };
 
+    // --- DATOS DE MUESTRA (FALLBACK) ---
+    const SAMPLE_DATA_CSV = `Fecha;IdProduccion;Cantidad;Hs_Trab;Descrip_Maquina;Turno;IdIncidencia;descrip_incidencia;Minutos
+01/09/2025;PROD001;1500;8;Máquina A;Mañana;01;Arranque / Puesta a punto;30
+01/09/2025;PROD001;1500;8;Máquina A;Mañana;05;Falla Mecánica;45
+01/09/2025;PROD002;2200;8;Máquina B;Mañana;16;Relevo;15
+02/09/2025;PROD003;1800;8;Máquina A;Tarde;02;Limpieza;15
+02/09/2025;PROD004;2500;8;Máquina B;Tarde;10;Cambio de Bobina;25
+03/09/2025;PROD005;1900;8;Máquina A;Noche;08;Mantenimiento preventivo;60
+03/09/2025;PROD006;2300;8;Máquina B;Noche;20;Corte de energía;60
+04/09/2025;PROD007;1750;8;Máquina A;Mañana;14;Incidencia Papel;20`;
+
     function classifyOEE(row) {
       const code = row.IdIncidencia || row.NroIncidencia || '';
       return codigoCategoria[code] || 'Otros';
     }
     
     // --- CARGA Y PROCESAMIENTO DE DATOS ---
-    async function loadCSV() {
+    async function loadData() {
       const url = "exportProduccionyEventos.csv";
       try {
         const response = await fetch(url);
-        if (!response.ok) throw new Error(`HTTP error! status: ${response.status}`);
+        if (!response.ok) throw new Error(`Error HTTP: ${response.status}`);
         const text = await response.text();
-        Papa.parse(text, {
-          header: true,
-          skipEmptyLines: true,
-          delimiter: ';',
-          complete: (results) => {
-            const processedData = processData(results.data);
-            const benchmarks = calculateBenchmarks(processedData);
-            onDataLoaded(processedData, benchmarks);
-          },
-          error: (err) => { console.error("Error al parsear el CSV:", err); alert("No se pudo procesar el archivo CSV."); }
-        });
+        console.log("CSV cargado correctamente desde el archivo.");
+        parseCSV(text);
       } catch (error) {
-        console.error("Error al cargar el archivo CSV:", error);
-        alert("No se pudo cargar el archivo de datos. Asegúrate que 'exportProduccionyEventos.csv' esté en el mismo repositorio.");
+        console.warn(`Advertencia: No se pudo cargar '${url}'. Se utilizarán datos de muestra.`, error);
+        document.getElementById("last-updated").innerHTML = `<span class="text-warning fw-bold">Error al cargar. Usando datos de muestra.</span>`;
+        parseCSV(SAMPLE_DATA_CSV);
       }
+    }
+
+    function parseCSV(csvText) {
+        Papa.parse(csvText, {
+            header: true,
+            skipEmptyLines: true,
+            delimiter: ';',
+            complete: (results) => {
+                if (results.data.length === 0) {
+                    console.error("El CSV está vacío o en un formato incorrecto.");
+                    document.getElementById("last-updated").innerHTML = `<span class="text-danger fw-bold">Error: El archivo CSV está vacío.</span>`;
+                    return;
+                }
+                const processedData = processData(results.data);
+                const benchmarks = calculateBenchmarks(processedData);
+                onDataLoaded(processedData, benchmarks);
+            },
+            error: (err) => { console.error("Error al parsear el CSV:", err); alert("No se pudo procesar el archivo CSV."); }
+        });
     }
 
     function processData(data) {
@@ -232,8 +254,9 @@
     }
     
     function onDataLoaded(data, benchmarks) {
-      document.getElementById("last-updated").innerText = "Actualizado: " + new Date().toLocaleString('es-AR', { dateStyle: 'short', timeStyle: 'short' });
-      
+      if (!document.getElementById("last-updated").textContent.includes("Error")) {
+          document.getElementById("last-updated").innerText = "Actualizado: " + new Date().toLocaleString('es-AR', { dateStyle: 'short', timeStyle: 'short' });
+      }
       renderOverview(data);
       renderOeeTab(data, benchmarks);
       renderParadasTab(data);
@@ -362,6 +385,7 @@
     }
 
     function renderRawDataTable(data) {
+        if (!data || data.length === 0) return;
         const columns = Object.keys(data[0]).map(key => ({ title: key, data: key }));
         $('#raw-table').DataTable({
             data: data, columns: columns, responsive: true, destroy: true,
@@ -417,7 +441,7 @@
     }
     
     // --- INICIALIZACIÓN ---
-    document.addEventListener("DOMContentLoaded", loadCSV);
+    document.addEventListener("DOMContentLoaded", loadData);
     $("#btn-toggle-theme").on("click", () => {
         $("body").toggleClass("dark-mode");
         Object.values(charts).forEach(chart => chart.updateOptions({ theme: { mode: $("body").hasClass("dark-mode") ? 'dark' : 'light' } }));
@@ -425,3 +449,4 @@
   </script>
 </body>
 </html>
+
