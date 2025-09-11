@@ -3,7 +3,7 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Dashboard Industrial v2.1</title>
+    <title>Dashboard Industrial v2.2</title>
     <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.3/dist/css/bootstrap.min.css" rel="stylesheet">
     <link rel="preconnect" href="https://fonts.googleapis.com">
     <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
@@ -13,21 +13,37 @@
     <style>
         :root {
             --sidebar-width: 320px;
-            --primary-color: #5E35B1; /* Deep Purple */
-            --secondary-color: #039BE5; /* Light Blue */
-            --accent-color: #00897B; /* Teal */
-            --danger-color: #E53935; /* Red */
-            --light-bg: #f4f6f9;
-            --dark-text: #333;
-            --light-text: #777;
+            --primary-color: #5E35B1;
+            --secondary-color: #039BE5;
+            --accent-color: #00897B;
+            --danger-color: #E53935;
+            
+            /* Light Theme */
+            --bg-color: #f4f6f9;
+            --sidebar-bg: #ffffff;
+            --card-bg: #ffffff;
+            --text-color-dark: #333;
+            --text-color-light: #777;
+            --border-color: #e0e0e0;
             --card-shadow: 0 8px 24px rgba(149, 157, 165, 0.2);
-            --border-radius: 0.75rem;
         }
+
+        body[data-theme="dark"] {
+            --bg-color: #121212;
+            --sidebar-bg: #1e1e1e;
+            --card-bg: #1e1e1e;
+            --text-color-dark: #e0e0e0;
+            --text-color-light: #a0a0a0;
+            --border-color: #333;
+            --card-shadow: 0 8px 24px rgba(0, 0, 0, 0.3);
+        }
+
         body {
             font-family: 'Inter', sans-serif;
-            background-color: var(--light-bg);
-            color: var(--dark-text);
+            background-color: var(--bg-color);
+            color: var(--text-color-dark);
             display: flex;
+            transition: background-color 0.3s, color 0.3s;
         }
         .sidebar {
             width: var(--sidebar-width);
@@ -35,14 +51,15 @@
             position: fixed;
             top: 0;
             left: 0;
-            background-color: #ffffff;
-            border-right: 1px solid #e0e0e0;
+            background-color: var(--sidebar-bg);
+            border-right: 1px solid var(--border-color);
             padding: 1.5rem;
             overflow-y: auto;
             z-index: 1000;
             box-shadow: 0 0 15px rgba(0,0,0,0.05);
             display: flex;
             flex-direction: column;
+            transition: background-color 0.3s, border-color 0.3s;
         }
         .filter-section { flex-grow: 1; }
         .main-content {
@@ -52,33 +69,40 @@
             position: relative;
         }
         #loading-overlay {
-            position: absolute; top: 0; left: 0; right: 0; bottom: 0;
-            background-color: rgba(244, 246, 249, 0.8);
+            position: fixed; top: 0; left: var(--sidebar-width); right: 0; bottom: 0;
+            background-color: rgba(0, 0, 0, 0.5);
             z-index: 9999;
             display: flex; align-items: center; justify-content: center;
             transition: opacity 0.3s;
         }
         #loading-overlay.d-none { opacity: 0; pointer-events: none; }
         .card {
-            border: none;
+            border: 1px solid var(--border-color);
             border-radius: var(--border-radius);
             box-shadow: var(--card-shadow);
-            transition: transform 0.2s ease, box-shadow 0.2s ease;
+            background-color: var(--card-bg);
+            transition: transform 0.2s ease, box-shadow 0.2s ease, background-color 0.3s, border-color 0.3s;
         }
         .card:hover { transform: translateY(-5px); }
         .card-header {
-            background-color: transparent; border-bottom: 1px solid #eee;
+            background-color: transparent; border-bottom: 1px solid var(--border-color);
             font-weight: 600; font-size: 1rem; padding: 1rem 1.25rem;
+            color: var(--text-color-dark);
+            transition: border-color 0.3s, color 0.3s;
         }
-        .kpi-value { font-size: 2.2rem; font-weight: 700; color: var(--dark-text); }
-        .choices__inner { border-radius: 0.375rem; border-color: #ced4da; }
-        .choices__list--multiple .choices__item { background-color: var(--primary-color); border-color: var(--primary-color); }
-        #reset-filters { background-color: var(--danger-color); border-color: var(--danger-color); }
+        .kpi-value { font-size: 2.2rem; font-weight: 700; color: var(--text-color-dark); }
+        .text-muted { color: var(--text-color-light) !important; }
+        
+        /* Choices.js Dark Theme */
+        body[data-theme="dark"] .choices__inner { background-color: #333; border-color: #555; }
+        body[data-theme="dark"] .choices__list--dropdown { background-color: #333; border-color: #555; }
+        body[data-theme="dark"] .choices__list--dropdown .choices__item { color: #e0e0e0; }
         
         @media (max-width: 992px) {
             body { display: block; }
-            .sidebar { position: relative; width: 100%; height: auto; border-right: none; border-bottom: 1px solid #e0e0e0; }
+            .sidebar { position: relative; width: 100%; height: auto; border-right: none; border-bottom: 1px solid var(--border-color); }
             .main-content { margin-left: 0; width: 100%; padding: 1.5rem; }
+            #loading-overlay { left: 0; }
         }
     </style>
 </head>
@@ -110,12 +134,16 @@
         </div>
         <div>
             <button id="reset-filters" class="btn btn-danger w-100 mt-3">Limpiar Filtros</button>
+            <div class="form-check form-switch mt-4 d-flex justify-content-center">
+                <input class="form-check-input" type="checkbox" role="switch" id="theme-toggle">
+                <label class="form-check-label ms-2" for="theme-toggle">Modo Oscuro</label>
+            </div>
             <p id="last-updated" class="text-muted text-center mt-3 small">Actualizado: Cargando...</p>
         </div>
     </nav>
 
     <main class="main-content">
-        <div id="loading-overlay" class="d-none">
+        <div id="loading-overlay">
             <div class="spinner-border text-primary" role="status" style="width: 3rem; height: 3rem;"></div>
         </div>
         
@@ -124,92 +152,22 @@
         </header>
 
         <section class="row mb-4 g-4">
-            <div class="col-lg-3 col-md-6">
-                <div class="card p-3">
-                    <div class="card-body text-center">
-                        <h5 class="card-title text-muted">Producción Total</h5>
-                        <p class="kpi-value" id="kpi-total-production">--</p>
-                    </div>
-                </div>
-            </div>
-            <div class="col-lg-3 col-md-6">
-                <div class="card p-3">
-                    <div class="card-body text-center">
-                        <h5 class="card-title text-muted">Disponibilidad</h5>
-                        <p class="kpi-value" id="kpi-availability">--</p>
-                    </div>
-                </div>
-            </div>
-            <div class="col-lg-3 col-md-6">
-                <div class="card p-3">
-                    <div class="card-body text-center">
-                        <h5 class="card-title text-muted">Eficiencia (Pzas/Hr)</h5>
-                        <p class="kpi-value" id="kpi-efficiency">--</p>
-                    </div>
-                </div>
-            </div>
-            <div class="col-lg-3 col-md-6">
-                <div class="card p-3">
-                     <div class="card-body text-center">
-                        <h5 class="card-title text-muted">Horas de Parada</h5>
-                        <p class="kpi-value" id="kpi-total-downtime">--</p>
-                    </div>
-                </div>
-            </div>
+            <div class="col-lg-3 col-md-6"><div class="card p-3"><div class="card-body text-center"><h5 class="card-title text-muted">Producción Total</h5><p class="kpi-value" id="kpi-total-production">--</p></div></div></div>
+            <div class="col-lg-3 col-md-6"><div class="card p-3"><div class="card-body text-center"><h5 class="card-title text-muted">Disponibilidad</h5><p class="kpi-value" id="kpi-availability">--</p></div></div></div>
+            <div class="col-lg-3 col-md-6"><div class="card p-3"><div class="card-body text-center"><h5 class="card-title text-muted">Eficiencia (Pzas/Hr)</h5><p class="kpi-value" id="kpi-efficiency">--</p></div></div></div>
+            <div class="col-lg-3 col-md-6"><div class="card p-3"><div class="card-body text-center"><h5 class="card-title text-muted">Horas de Parada</h5><p class="kpi-value" id="kpi-total-downtime">--</p></div></div></div>
         </section>
         
         <section class="row mb-4 g-4">
-            <div class="col-12">
-                <div class="card">
-                    <div class="card-header">Análisis Inteligente</div>
-                    <div class="card-body">
-                        <p id="summary-text" class="fs-5">Calculando...</p>
-                    </div>
-                </div>
-            </div>
+            <div class="col-12"><div class="card"><div class="card-header">Análisis Inteligente</div><div class="card-body"><p id="summary-text" class="fs-5">Calculando...</p></div></div></div>
         </section>
 
         <section class="row g-4">
-            <div class="col-lg-12 mb-4">
-                <div class="card">
-                    <div class="card-header">Producción Diaria</div>
-                    <div class="card-body">
-                        <div id="chart-daily-production"></div>
-                    </div>
-                </div>
-            </div>
-            <div class="col-lg-6 mb-4">
-                <div class="card">
-                    <div class="card-header">Producción por Máquina</div>
-                    <div class="card-body">
-                        <div id="chart-prod-by-machine"></div>
-                    </div>
-                </div>
-            </div>
-            <div class="col-lg-6 mb-4">
-                <div class="card">
-                     <div class="card-header">Producción por Operario</div>
-                     <div class="card-body">
-                        <div id="chart-prod-by-operator"></div>
-                    </div>
-                </div>
-            </div>
-            <div class="col-lg-12 mb-4">
-                <div class="card">
-                    <div class="card-header">Análisis de Paradas (Top 10 en Minutos)</div>
-                     <div class="card-body">
-                        <div id="chart-downtime-reasons"></div>
-                    </div>
-                </div>
-            </div>
-            <div class="col-lg-12 mb-4">
-                <div class="card">
-                    <div class="card-header">Análisis de Impacto vs. Frecuencia de Paradas</div>
-                     <div class="card-body">
-                        <div id="chart-impact-frequency"></div>
-                    </div>
-                </div>
-            </div>
+            <div class="col-lg-12 mb-4"><div class="card"><div class="card-header">Producción Diaria</div><div class="card-body"><div id="chart-daily-production"></div></div></div></div>
+            <div class="col-lg-6 mb-4"><div class="card"><div class="card-header">Producción por Máquina</div><div class="card-body"><div id="chart-prod-by-machine"></div></div></div></div>
+            <div class="col-lg-6 mb-4"><div class="card"><div class="card-header">Producción por Operario</div><div class="card-body"><div id="chart-prod-by-operator"></div></div></div></div>
+            <div class="col-lg-12 mb-4"><div class="card"><div class="card-header">Análisis de Paradas (Top 10 en Minutos)</div><div class="card-body"><div id="chart-downtime-reasons"></div></div></div></div>
+            <div class="col-lg-12 mb-4"><div class="card"><div class="card-header">Análisis de Pareto de Paradas</div><div class="card-body"><div id="chart-pareto-downtime"></div></div></div></div>
         </section>
     </main>
 
@@ -229,25 +187,39 @@
             let choicesMachine, choicesShift, datepicker;
             
             const loadingOverlay = document.getElementById('loading-overlay');
+            const themeToggle = document.getElementById('theme-toggle');
             const chartColors = ['#5E35B1', '#039BE5', '#00897B', '#FDD835', '#E53935', '#8E24AA', '#3949AB'];
+
+            function applyTheme(theme) {
+                document.body.setAttribute('data-theme', theme);
+                themeToggle.checked = theme === 'dark';
+                // Actualizar todos los gráficos existentes con el nuevo tema
+                Object.values(charts).forEach(chart => {
+                    chart.updateOptions({
+                        theme: { mode: theme },
+                        chart: { background: 'transparent' }
+                    });
+                });
+            }
+
+            function initTheme() {
+                const savedTheme = localStorage.getItem('dashboardTheme') || 'light';
+                applyTheme(savedTheme);
+                themeToggle.addEventListener('change', () => {
+                    const newTheme = themeToggle.checked ? 'dark' : 'light';
+                    localStorage.setItem('dashboardTheme', newTheme);
+                    applyTheme(newTheme);
+                });
+            }
 
             function toggleLoading(show) {
                 loadingOverlay.classList.toggle('d-none', !show);
             }
 
-            function checkEnvironment() {
-                if (window.location.protocol === 'file:') {
-                    document.querySelector('.main-content').innerHTML = `
-                        <div class="alert alert-danger"><h4 class="alert-heading">Error de Entorno de Ejecución</h4><p>Este dashboard no puede cargar el archivo de datos (.csv) cuando se abre directamente desde el sistema de archivos (<code>file://</code>).</p><hr><p class="mb-0">Para solucionarlo, ejecute este archivo a través de un <strong>servidor web local</strong>. Una opción fácil es usar la extensión "Live Server" en Visual Studio Code.</p></div>`;
-                    return false;
-                }
-                return true;
-            }
-
             function init() {
-                if (!checkEnvironment()) return;
-
+                initTheme();
                 toggleLoading(true);
+
                 Papa.parse(CSV_URL, {
                     download: true, header: true, delimiter: ';', skipEmptyLines: true,
                     transformHeader: header => header.trim().replace(/[\s\W]+/g, '_'),
@@ -256,7 +228,6 @@
                         populateFilters(originalData);
                         addEventListeners();
                         
-                        // Set default date range to all available data
                         const dates = originalData.map(d => d.Fecha).filter(Boolean);
                         const firstDate = dates.length > 0 ? new Date(Math.min(...dates)) : new Date();
                         const lastDate = dates.length > 0 ? new Date(Math.max(...dates)) : new Date();
@@ -264,7 +235,7 @@
                         
                         document.getElementById('last-updated').textContent = `Actualizado: ${new Date().toLocaleString('es-ES')}`;
                     },
-                    error: function(err) {
+                    error: err => {
                         console.error("Error al cargar o parsear el CSV:", err);
                         alert("No se pudo cargar el archivo de datos. Revisa la consola para más detalles.");
                         toggleLoading(false);
@@ -276,8 +247,7 @@
                 return data.map(row => {
                     row.Cantidad = parseInt(row.Cantidad) || 0;
                     row.Minutos = parseInt(row.Minutos) || 0;
-                    row.Frecuencia = parseInt(row.Frecuencia) || 0;
-                    // FIX: Reemplazar coma por punto para el parseo a float y asegurar que es un string antes.
+                    row.Frecuencia = parseInt(row.Frecuencia) || 1; 
                     row.Hs_Trab = parseFloat(String(row.Hs_Trab).replace(',', '.')) || 0;
                     row.Fecha = parseDate(row.Fecha);
                     return row;
@@ -288,13 +258,8 @@
                 if (!dateString) return null;
                 const parts = dateString.split('/');
                 if (parts.length === 3) {
-                    // Formato DD/MM/YYYY
-                    const day = parseInt(parts[0], 10);
-                    const month = parseInt(parts[1], 10) - 1; // Meses en JS son 0-indexados
-                    const year = parseInt(parts[2], 10);
-                    if (!isNaN(day) && !isNaN(month) && !isNaN(year)) {
-                        return new Date(year, month, day);
-                    }
+                    const day = parseInt(parts[0], 10), month = parseInt(parts[1], 10) - 1, year = parseInt(parts[2], 10);
+                    if (!isNaN(day) && !isNaN(month) && !isNaN(year)) return new Date(year, month, day);
                 }
                 return null;
             }
@@ -302,30 +267,20 @@
             function populateFilters(data) {
                 const uniqueMachines = [...new Set(data.map(row => row.Descrip_Maquina))].sort();
                 const uniqueShifts = [...new Set(data.map(row => row.Turno))].sort();
-                
                 const machineFilterEl = document.getElementById('machine-filter');
                 uniqueMachines.forEach(machine => machine && machineFilterEl.add(new Option(machine, machine)));
-                
                 const shiftFilterEl = document.getElementById('shift-filter');
                 uniqueShifts.forEach(shift => shift && shiftFilterEl.add(new Option(shift, shift)));
-
                 choicesMachine = new Choices(machineFilterEl, { removeItemButton: true, placeholder: true, placeholderValue: 'Todas las máquinas...' });
                 choicesShift = new Choices(shiftFilterEl, { removeItemButton: true, placeholder: true, placeholderValue: 'Todos los turnos...' });
             }
 
             function addEventListeners() {
-                datepicker = flatpickr("#date-range-picker", {
-                    mode: "range", dateFormat: "d/m/Y", locale: "es",
-                    onChange: () => applyFilters()
-                });
-
+                datepicker = flatpickr("#date-range-picker", { mode: "range", dateFormat: "d/m/Y", locale: "es", onChange: () => applyFilters() });
                 document.getElementById('machine-filter').addEventListener('change', applyFilters);
                 document.getElementById('shift-filter').addEventListener('change', applyFilters);
-                
                 const today = new Date();
-                const yesterday = new Date();
-                yesterday.setDate(today.getDate() - 1);
-
+                const yesterday = new Date(); yesterday.setDate(today.getDate() - 1);
                 document.getElementById('btnHoy').addEventListener('click', () => datepicker.setDate([today, today], true));
                 document.getElementById('btnAyer').addEventListener('click', () => datepicker.setDate([yesterday, yesterday], true));
                 document.getElementById('btnMesActual').addEventListener('click', () => datepicker.setDate([new Date(today.getFullYear(), today.getMonth(), 1), today], true));
@@ -334,7 +289,6 @@
                      const end = new Date(today.getFullYear(), today.getMonth(), 0);
                      datepicker.setDate([start, end], true);
                 });
-
                 document.getElementById('reset-filters').addEventListener('click', () => {
                     datepicker.clear();
                     choicesMachine.removeActiveItems();
@@ -349,23 +303,19 @@
                     const dateRange = datepicker.selectedDates;
                     const selectedMachines = choicesMachine.getValue(true);
                     const selectedShifts = choicesShift.getValue(true);
-
                     const filteredData = originalData.filter(row => {
                         const rowDate = row.Fecha;
-                        // Ignorar el tiempo para la comparación de fechas
                         const startDate = dateRange[0] ? new Date(dateRange[0].setHours(0,0,0,0)) : null;
                         const endDate = dateRange[1] ? new Date(dateRange[1].setHours(23,59,59,999)) : null;
-
                         const isDateInRange = dateRange.length === 2 ? rowDate >= startDate && rowDate <= endDate : true;
                         const isMachineSelected = selectedMachines.length > 0 ? selectedMachines.includes(row.Descrip_Maquina) : true;
                         const isShiftSelected = selectedShifts.length > 0 ? selectedShifts.includes(row.Turno) : true;
-                        
                         return isDateInRange && isMachineSelected && isShiftSelected;
                     });
                     updateDashboard(filteredData);
                 }, 50);
             }
-
+            
             function updateDashboard(data) {
                 const kpiData = calculateKPIs(data);
                 renderKPIs(kpiData);
@@ -378,29 +328,19 @@
                 const uniqueProductions = new Map();
                 data.forEach(row => {
                     if (row.IdProduccion && !uniqueProductions.has(row.IdProduccion)) {
-                        uniqueProductions.set(row.IdProduccion, { 
-                            cantidad: row.Cantidad, 
-                            // FIX: Hs_Trab ya son minutos, se usa directamente.
-                            hsTrab: row.Hs_Trab 
-                        });
+                        uniqueProductions.set(row.IdProduccion, { cantidad: row.Cantidad, hsTrab: row.Hs_Trab });
                     }
                 });
-
                 const productionValues = Array.from(uniqueProductions.values());
                 const totalProduction = productionValues.reduce((sum, item) => sum + item.cantidad, 0);
                 const plannedMinutes = productionValues.reduce((sum, item) => sum + item.hsTrab, 0); 
-                
                 const totalDowntimeMinutes = data.reduce((sum, row) => sum + row.Minutos, 0);
                 const runTimeMinutes = plannedMinutes - totalDowntimeMinutes;
-                
                 const availability = plannedMinutes > 0 ? (runTimeMinutes / plannedMinutes) : 0;
                 const efficiency = runTimeMinutes > 0 ? totalProduction / (runTimeMinutes / 60) : 0;
-
                 return {
-                    totalProduction,
-                    totalDowntimeHours: totalDowntimeMinutes / 60,
-                    availability: Math.max(0, availability),
-                    efficiency
+                    totalProduction, totalDowntimeHours: totalDowntimeMinutes / 60,
+                    availability: Math.max(0, availability), efficiency
                 };
             }
 
@@ -413,122 +353,89 @@
             
             function updateSummary(data, kpiData) {
                 if (data.length === 0) {
-                    document.getElementById('summary-text').textContent = "No hay datos para el período o filtros seleccionados.";
-                    return;
+                    document.getElementById('summary-text').textContent = "No hay datos para el período o filtros seleccionados."; return;
                 }
                 const downtimeByReason = aggregateAndSort(data, 'descrip_incidencia', 'Minutos');
                 const topReason = downtimeByReason[0] ? downtimeByReason[0].category : "N/A";
                 const topReasonMins = downtimeByReason[0] ? downtimeByReason[0].value : 0;
                 const totalDowntimeMins = kpiData.totalDowntimeHours * 60;
                 const topReasonPercentage = totalDowntimeMins > 0 ? (topReasonMins / totalDowntimeMins * 100).toFixed(0) : 0;
-
                 const summary = `El KPI de <strong>Disponibilidad</strong> se sitúa en un <strong>${(kpiData.availability * 100).toFixed(1)}%</strong>. La principal causa de inactividad es <strong>"${topReason}"</strong>, responsable del <strong>${topReasonPercentage}%</strong> del tiempo total de parada.`;
                 document.getElementById('summary-text').innerHTML = summary;
             }
 
             function updateCharts(data) {
-                // Gráfico de Producción por Máquina
-                const prodByMachineData = aggregateAndSort(data, 'Descrip_Maquina', 'Cantidad', true);
-                renderChart('chart-prod-by-machine', 'bar', { 
-                    categories: prodByMachineData.map(d => d.category),
-                    series: [{ name: 'Producción', data: prodByMachineData.map(d => d.value) }],
-                    horizontal: true
-                });
-
-                // Gráfico de Producción por Operario
-                const prodByOperatorData = aggregateAndSort(data, 'Apellido', 'Cantidad', true);
-                renderChart('chart-prod-by-operator', 'bar', { 
-                    categories: prodByOperatorData.map(d => d.category),
-                    series: [{ name: 'Producción', data: prodByOperatorData.map(d => d.value) }],
-                    horizontal: false
-                });
+                const currentTheme = localStorage.getItem('dashboardTheme') || 'light';
+                const textColor = currentTheme === 'dark' ? '#e0e0e0' : '#333';
+                const gridBorderColor = currentTheme === 'dark' ? '#444' : '#e7e7e7';
                 
-                // Gráfico de Razones de Parada (Top 10)
-                const downtimeReasonsData = aggregateAndSort(data, 'descrip_incidencia', 'Minutos');
-                renderChart('chart-downtime-reasons', 'bar', { 
-                    categories: downtimeReasonsData.map(d => d.category).slice(0, 10),
-                    series: [{ name: 'Minutos', data: downtimeReasonsData.map(d => d.value).slice(0, 10) }],
-                    horizontal: true
-                });
-
-                // Gráfico de Producción Diaria
+                // Producción Diaria (ahora como Barras)
                 const dailyProdData = aggregateAndSort(data, 'Fecha', 'Cantidad', false, false);
-                renderChart('chart-daily-production', 'line', { 
+                renderChart('chart-daily-production', 'bar', {
                     categories: dailyProdData.map(d => new Date(d.category).getTime()),
                     series: [{ name: 'Producción', data: dailyProdData.map(d => d.value) }],
-                });
-                
-                // NUEVO: Gráfico de Impacto vs Frecuencia
-                const impactFrequencyData = aggregateImpactFrequency(data);
-                renderChart('chart-impact-frequency', 'scatter', impactFrequencyData);
-            }
+                }, { textColor, gridBorderColor });
 
-            function renderChart(elementId, type, chartData) {
+                // Otros gráficos
+                const prodByMachineData = aggregateAndSort(data, 'Descrip_Maquina', 'Cantidad', true);
+                renderChart('chart-prod-by-machine', 'bar', { categories: prodByMachineData.map(d => d.category), series: [{ name: 'Producción', data: prodByMachineData.map(d => d.value) }], horizontal: true }, { textColor, gridBorderColor });
+                const prodByOperatorData = aggregateAndSort(data, 'Apellido', 'Cantidad', true);
+                renderChart('chart-prod-by-operator', 'bar', { categories: prodByOperatorData.map(d => d.category), series: [{ name: 'Producción', data: prodByOperatorData.map(d => d.value) }], horizontal: false }, { textColor, gridBorderColor });
+                const downtimeReasonsData = aggregateAndSort(data, 'descrip_incidencia', 'Minutos');
+                renderChart('chart-downtime-reasons', 'bar', { categories: downtimeReasonsData.map(d => d.category).slice(0, 10), series: [{ name: 'Minutos', data: downtimeReasonsData.map(d => d.value).slice(0, 10) }], horizontal: true }, { textColor, gridBorderColor });
+                
+                // NUEVO: Gráfico de Pareto
+                const paretoData = prepareParetoData(downtimeReasonsData);
+                renderChart('chart-pareto-downtime', 'pareto', paretoData, { textColor, gridBorderColor });
+            }
+            
+            function renderChart(elementId, type, chartData, themeOptions) {
+                const currentTheme = localStorage.getItem('dashboardTheme') || 'light';
                 const commonOptions = {
-                    chart: { 
-                        type: type, height: 350, fontFamily: 'Inter, sans-serif', 
-                        toolbar: { show: true },
-                        // FIX: Deshabilitar zoom con scroll, permitir pan y zoom por selección
-                        zoom: { enabled: true, },
-                    },
+                    chart: { type: 'bar', height: 350, fontFamily: 'Inter, sans-serif', toolbar: { show: true }, background: 'transparent' },
+                    theme: { mode: currentTheme },
                     colors: chartColors,
-                    grid: { borderColor: '#e7e7e7', row: { colors: ['#f3f3f3', 'transparent'], opacity: 0.5 } },
+                    grid: { borderColor: themeOptions.gridBorderColor },
                     noData: { text: 'No hay datos para la selección actual.' },
                 };
 
                 let options = {};
                 if (type === 'bar') {
-                    options = {
-                        ...commonOptions, series: chartData.series,
-                        plotOptions: { bar: { horizontal: chartData.horizontal, borderRadius: 4, dataLabels: { position: 'top' } } },
-                        // FIX: Contraste de texto en barras.
-                        dataLabels: { 
-                            enabled: true, 
-                            style: { fontSize: '12px', colors: ["#fff"] },
-                            dropShadow: { enabled: true, top: 1, left: 1, blur: 1, color: '#000', opacity: 0.45 }
-                        },
-                        xaxis: { categories: chartData.categories, labels: { style: { fontSize: '12px' }, trim: true, maxHeight: 100 } },
-                        yaxis: { labels: { formatter: val => val.toLocaleString('es-ES') } },
-                        tooltip: { y: { formatter: val => val.toLocaleString('es-ES') } }
-                    };
-                } else if (type === 'line') {
-                    options = {
-                        ...commonOptions, series: chartData.series,
-                        // FIX: Mostrar valores en puntos y líneas rectas.
-                        stroke: { curve: 'straight', width: 3 }, 
-                        markers: { size: 5 },
-                        dataLabels: { enabled: true, background: { enabled: true, borderRadius: 2, padding: 4, opacity: 0.8 }, style: {colors: ['#333']}},
-                        xaxis: { type: 'datetime', categories: chartData.categories, labels: { datetimeUTC: false, format: 'dd MMM' } },
-                        tooltip: { x: { format: 'dd/MM/yyyy' }, y: { formatter: val => val ? val.toLocaleString('es-ES') : val } }
-                    };
-                } else if (type === 'scatter') {
-                    options = {
+                     options = {
                         ...commonOptions,
                         series: chartData.series,
-                        xaxis: {
-                            tickAmount: 10,
-                            title: { text: 'Frecuencia (Nro. de Veces)', style: { fontWeight: 600 } },
-                            labels: { formatter: val => parseInt(val) }
-                        },
-                        yaxis: {
-                            tickAmount: 7,
-                            title: { text: 'Duración Total (Minutos)', style: { fontWeight: 600 } },
-                        },
-                        tooltip: {
-                            custom: function({ seriesIndex, dataPointIndex, w }) {
-                                const reason = w.config.series[seriesIndex].data[dataPointIndex].reason;
-                                const freq = w.config.series[seriesIndex].data[dataPointIndex].x;
-                                const duration = w.config.series[seriesIndex].data[dataPointIndex].y;
-                                return `<div class="p-2">
-                                    <strong>${reason}</strong><hr class="my-1">
-                                    <div>Frecuencia: ${freq} veces</div>
-                                    <div>Duración: ${duration} min</div>
-                                </div>`;
+                        plotOptions: { bar: { horizontal: chartData.horizontal || false, borderRadius: 4, dataLabels: { position: 'top' } } },
+                        dataLabels: { enabled: true, style: { fontSize: '12px', colors: chartData.horizontal ? ["#fff"] : [themeOptions.textColor] }, background: { enabled: true, foreColor: '#333' }, offsetY: -20, dropShadow: { enabled: true, top: 1, left: 1, blur: 1, color: '#000', opacity: 0.45 }},
+                        xaxis: { type: chartData.categories[0] > 1000000 ? 'datetime' : 'category', categories: chartData.categories, labels: { style: { colors: themeOptions.textColor, fontSize: '12px' }, trim: true, maxHeight: 100, datetimeUTC: false, format: 'dd MMM' } },
+                        yaxis: { labels: { style: { colors: themeOptions.textColor }, formatter: val => val.toLocaleString('es-ES') } },
+                        tooltip: { theme: currentTheme, x: { format: chartData.categories[0] > 1000000 ? 'dd/MM/yyyy' : undefined }, y: { formatter: val => val.toLocaleString('es-ES') } }
+                    };
+                    if (chartData.horizontal) { // Ajuste para etiquetas en barras horizontales
+                        options.dataLabels.style.colors = ["#fff"];
+                        options.dataLabels.background.enabled = false;
+                        options.dataLabels.offsetX = -10;
+                    }
+                } else if (type === 'pareto') {
+                    options = {
+                        chart: { type: 'line', height: 350, fontFamily: 'Inter, sans-serif', toolbar: { show: true }, background: 'transparent' },
+                        theme: { mode: currentTheme },
+                        series: chartData.series,
+                        xaxis: { categories: chartData.categories, labels: { style: { colors: themeOptions.textColor } } },
+                        yaxis: [
+                            { title: { text: "Minutos Totales", style: { color: themeOptions.textColor } }, labels: { style: { colors: themeOptions.textColor } } },
+                            { opposite: true, max: 100, title: { text: "Porcentaje Acumulado (%)", style: { color: themeOptions.textColor } }, labels: { style: { colors: themeOptions.textColor } } }
+                        ],
+                        tooltip: { theme: currentTheme, shared: false, intersect: true,
+                            y: {
+                                formatter: function (val, { seriesIndex }) {
+                                    return seriesIndex === 0 ? val.toLocaleString('es-ES') + " min" : val.toFixed(1) + "%";
+                                }
                             }
-                        }
+                        },
+                        grid: { borderColor: themeOptions.gridBorderColor },
+                        noData: { text: 'No hay datos para la selección actual.' },
                     };
                 }
-
 
                 if (charts[elementId]) {
                     charts[elementId].updateOptions(options);
@@ -539,61 +446,35 @@
             }
             
             function aggregateAndSort(data, categoryField, valueField, uniqueByIdProd = false, sortByValue = true) {
-                const aggregation = {};
-                const seenIds = new Set();
+                const aggregation = {}; const seenIds = new Set();
                 data.forEach(row => {
                     const category = categoryField === 'Fecha' ? row[categoryField].toISOString().split('T')[0] : row[categoryField];
                     if (!category) return;
-                    
                     const value = row[valueField] || 0;
-
                     if (uniqueByIdProd) {
                         const uniqueKey = `${row.IdProduccion}-${category}`;
-                        if (!seenIds.has(uniqueKey)) {
-                            aggregation[category] = (aggregation[category] || 0) + value;
-                            seenIds.add(uniqueKey);
-                        }
-                    } else {
-                        aggregation[category] = (aggregation[category] || 0) + value;
-                    }
+                        if (!seenIds.has(uniqueKey)) { aggregation[category] = (aggregation[category] || 0) + value; seenIds.add(uniqueKey); }
+                    } else { aggregation[category] = (aggregation[category] || 0) + value; }
                 });
-
                 let aggregatedArray = Object.keys(aggregation).map(key => ({ category: key, value: aggregation[key] }));
-
-                if (sortByValue) {
-                    aggregatedArray.sort((a, b) => b.value - a.value);
-                } else if (categoryField === 'Fecha') {
-                    aggregatedArray.sort((a, b) => new Date(a.category) - new Date(b.category));
-                }
+                if (sortByValue) { aggregatedArray.sort((a, b) => b.value - a.value); }
+                else if (categoryField === 'Fecha') { aggregatedArray.sort((a, b) => new Date(a.category) - new Date(b.category)); }
                 return aggregatedArray;
             }
-
-            // NUEVA FUNCIÓN: Agrega datos para el gráfico de Impacto vs Frecuencia
-            function aggregateImpactFrequency(data) {
-                const aggregation = {};
-                data.forEach(row => {
-                    const reason = row.descrip_incidencia;
-                    if (!reason) return;
-
-                    if (!aggregation[reason]) {
-                        aggregation[reason] = { frequency: 0, duration: 0 };
-                    }
-                    // Suma la frecuencia y los minutos de cada evento de parada
-                    aggregation[reason].frequency += row.Frecuencia || 0;
-                    aggregation[reason].duration += row.Minutos || 0;
+            
+            function prepareParetoData(downtimeData) {
+                const totalDowntime = downtimeData.reduce((sum, item) => sum + item.value, 0);
+                let cumulativePercentage = 0;
+                const paretoLine = downtimeData.map(item => {
+                    cumulativePercentage += (item.value / totalDowntime) * 100;
+                    return cumulativePercentage;
                 });
-
-                const chartData = Object.keys(aggregation).map(reason => ({
-                    reason: reason,
-                    x: aggregation[reason].frequency, // Eje X: Frecuencia
-                    y: aggregation[reason].duration   // Eje Y: Duración
-                }));
-                
                 return {
-                    series: [{
-                        name: 'Paradas',
-                        data: chartData
-                    }]
+                    series: [
+                        { name: 'Minutos Totales', type: 'bar', data: downtimeData.map(d => d.value), color: '#5E35B1' },
+                        { name: '% Acumulado', type: 'line', data: paretoLine, color: '#E53935' }
+                    ],
+                    categories: downtimeData.map(d => d.category)
                 };
             }
 
