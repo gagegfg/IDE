@@ -166,7 +166,7 @@
             </div>
              <div class="col-lg-3 col-md-6">
                 <div class="kpi-card">
-                    <div class="kpi-title">Eficiencia vs Objetivo</div>
+                    <div class="kpi-title">Cumplimiento Objetivo</div>
                     <div id="kpi-target-efficiency" class="kpi-value">0%</div>
                 </div>
             </div>
@@ -211,57 +211,56 @@
             let charts = {};
             const spinner = document.getElementById('loading-spinner');
             
-// --- DATOS CSV EMBEBIDOS DIRECTAMENTE EN EL CÓDIGO ---
 const csvDataString = `IdProduccion;Fecha;Turno;Objetivo;Encargado;Máquina_Prod;Descrip_Maquina;Operario;Apellido;Cantidad;Hs Trab;Hs Descanso;Observaciones;IdIncidencia;NroIncidencia;descrip_incidencia;Frecuencia;Minutos;SinOperario
-189796;01/08/2025;06-14;4000;18;9;Pan Dulcera 9;189;Avendaño;41000;400;;;298720;10;Cambio de Bobina;2;20;False
-189796;01/08/2025;06-14;4000;18;9;Pan Dulcera 9;189;Avendaño;41000;400;;;298721;14;Incidencia Papel;2;20;False
-189796;01/08/2025;06-14;4000;18;9;Pan Dulcera 9;189;Avendaño;41000;400;;;298722;2;Limpieza en Proceso;2;40;False
+189796;01/08/2025;06-14;40000;18;9;Pan Dulcera 9;189;Avendaño;41000;400;;;298720;10;Cambio de Bobina;2;20;False
+189796;01/08/2025;06-14;40000;18;9;Pan Dulcera 9;189;Avendaño;41000;400;;;298721;14;Incidencia Papel;2;20;False
+189796;01/08/2025;06-14;40000;18;9;Pan Dulcera 9;189;Avendaño;41000;400;;;298722;2;Limpieza en Proceso;2;40;False
 189797;01/08/2025;06-14;0;18;10;Pan Dulcera 10;211;Alvarez;25500;310;;;298723;4;Ajuste de mantenimiento;1;30;False
 189797;01/08/2025;06-14;0;18;10;Pan Dulcera 10;211;Alvarez;25500;310;;;298724;14;Incidencia Papel;1;15;False
 189797;01/08/2025;06-14;0;18;10;Pan Dulcera 10;211;Alvarez;25500;310;;;298725;10;Cambio de Bobina;1;10;False
 189797;01/08/2025;06-14;0;18;10;Pan Dulcera 10;211;Alvarez;25500;310;;;298726;2;Limpieza en Proceso;1;15;False
 189798;01/08/2025;06-14;0;18;11;Pan Dulcera 11;397;Calidad;4500;275;;;298727;4;Ajuste de mantenimiento;2;60;False
 189798;01/08/2025;06-14;0;18;11;Pan Dulcera 11;397;Calidad;4500;275;;;298728;2;Limpieza en Proceso;1;30;False
-189799;01/08/2025;14-22;4000;18;13;Pan Dulcera 13;331;Torrez Pantoja;41400;410;;;298729;4;Ajuste de mantenimiento;2;30;False
-189799;01/08/2025;14-22;4000;18;13;Pan Dulcera 13;331;Torrez Pantoja;41400;410;;;298730;2;Limpieza en Proceso;1;30;False
-189799;01/08/2025;14-22;4000;18;13;Pan Dulcera 13;331;Torrez Pantoja;41400;410;;;298731;10;Cambio de Bobina;1;10;False
-189800;01/08/2025;14-22;4000;18;9;Pan Dulcera 9;109;Pacheco;25000;255;;;298732;4;Ajuste de mantenimiento;2;120;False
-189800;01/08/2025;14-22;4000;18;9;Pan Dulcera 9;109;Pacheco;25000;255;;;298733;2;Limpieza en Proceso;2;30;False
-189801;01/08/2025;14-22;4000;18;10;Pan Dulcera 10;241;Villaroel;42500;430;;;298734;14;Incidencia Papel;2;20;False
-189801;01/08/2025;14-22;4000;18;10;Pan Dulcera 10;241;Villaroel;42500;430;;;298735;10;Cambio de Bobina;2;20;False
-189802;01/08/2025;22-06;4000;18;11;Pan Dulcera 11;345;Rojas;48000;480;;;298736;14;Incidencia Papel;2;20;False
-189802;01/08/2025;22-06;4000;18;11;Pan Dulcera 11;345;Rojas;48000;480;;;298737;10;Cambio de Bobina;2;20;False
-189803;01/08/2025;22-06;4000;18;13;Pan Dulcera 13;396;Calidad;13000;460;;;298738;14;Incidencia Papel;1;15;False
-189803;01/08/2025;22-06;4000;18;13;Pan Dulcera 13;396;Calidad;13000;460;;;298739;2;Limpieza en Proceso;1;15;False
-189803;01/08/2025;22-06;4000;18;13;Pan Dulcera 13;396;Calidad;13000;460;;;298740;4;Ajuste de mantenimiento;1;30;False
-189804;01/08/2025;22-06;4000;18;9;Pan Dulcera 9;385;Acuña;45000;450;;;298741;14;Incidencia Papel;2;20;False
-189804;01/08/2025;22-06;4000;18;9;Pan Dulcera 9;385;Acuña;45000;450;;;298742;10;Cambio de Bobina;2;20;False
-189805;02/08/2025;06-14;4000;;9;Pan Dulcera 9;189;Avendaño;41000;400;;;298743;10;Cambio de Bobina;2;20;False
-189805;02/08/2025;06-14;4000;;9;Pan Dulcera 9;189;Avendaño;41000;400;;;298744;14;Incidencia Papel;2;20;False
-189805;02/08/2025;06-14;4000;;9;Pan Dulcera 9;189;Avendaño;41000;400;;;298745;2;Limpieza en Proceso;2;40;False
+189799;01/08/2025;14-22;40000;18;13;Pan Dulcera 13;331;Torrez Pantoja;41400;410;;;298729;4;Ajuste de mantenimiento;2;30;False
+189799;01/08/2025;14-22;40000;18;13;Pan Dulcera 13;331;Torrez Pantoja;41400;410;;;298730;2;Limpieza en Proceso;1;30;False
+189799;01/08/2025;14-22;40000;18;13;Pan Dulcera 13;331;Torrez Pantoja;41400;410;;;298731;10;Cambio de Bobina;1;10;False
+189800;01/08/2025;14-22;40000;18;9;Pan Dulcera 9;109;Pacheco;25000;255;;;298732;4;Ajuste de mantenimiento;2;120;False
+189800;01/08/2025;14-22;40000;18;9;Pan Dulcera 9;109;Pacheco;25000;255;;;298733;2;Limpieza en Proceso;2;30;False
+189801;01/08/2025;14-22;40000;18;10;Pan Dulcera 10;241;Villaroel;42500;430;;;298734;14;Incidencia Papel;2;20;False
+189801;01/08/2025;14-22;40000;18;10;Pan Dulcera 10;241;Villaroel;42500;430;;;298735;10;Cambio de Bobina;2;20;False
+189802;01/08/2025;22-06;40000;18;11;Pan Dulcera 11;345;Rojas;48000;480;;;298736;14;Incidencia Papel;2;20;False
+189802;01/08/2025;22-06;40000;18;11;Pan Dulcera 11;345;Rojas;48000;480;;;298737;10;Cambio de Bobina;2;20;False
+189803;01/08/2025;22-06;40000;18;13;Pan Dulcera 13;396;Calidad;13000;460;;;298738;14;Incidencia Papel;1;15;False
+189803;01/08/2025;22-06;40000;18;13;Pan Dulcera 13;396;Calidad;13000;460;;;298739;2;Limpieza en Proceso;1;15;False
+189803;01/08/2025;22-06;40000;18;13;Pan Dulcera 13;396;Calidad;13000;460;;;298740;4;Ajuste de mantenimiento;1;30;False
+189804;01/08/2025;22-06;40000;18;9;Pan Dulcera 9;385;Acuña;45000;450;;;298741;14;Incidencia Papel;2;20;False
+189804;01/08/2025;22-06;40000;18;9;Pan Dulcera 9;385;Acuña;45000;450;;;298742;10;Cambio de Bobina;2;20;False
+189805;02/08/2025;06-14;40000;;9;Pan Dulcera 9;189;Avendaño;41000;400;;;298743;10;Cambio de Bobina;2;20;False
+189805;02/08/2025;06-14;40000;;9;Pan Dulcera 9;189;Avendaño;41000;400;;;298744;14;Incidencia Papel;2;20;False
+189805;02/08/2025;06-14;40000;;9;Pan Dulcera 9;189;Avendaño;41000;400;;;298745;2;Limpieza en Proceso;2;40;False
 189806;02/08/2025;06-14;0;;10;Pan Dulcera 10;211;Alvarez;25500;310;;;298746;4;Ajuste de mantenimiento;1;30;False
 189806;02/08/2025;06-14;0;;10;Pan Dulcera 10;211;Alvarez;25500;310;;;298747;14;Incidencia Papel;1;15;False
 189806;02/08/2025;06-14;0;;10;Pan Dulcera 10;211;Alvarez;25500;310;;;298748;10;Cambio de Bobina;1;10;False
 189806;02/08/2025;06-14;0;;10;Pan Dulcera 10;211;Alvarez;25500;310;;;298749;2;Limpieza en Proceso;1;15;False
 189807;02/08/2025;06-14;0;;11;Pan Dulcera 11;397;Calidad;4500;275;;;298750;4;Ajuste de mantenimiento;2;60;False
 189807;02/08/2025;06-14;0;;11;Pan Dulcera 11;397;Calidad;4500;275;;;298751;2;Limpieza en Proceso;1;30;False
-189808;02/08/2025;14-22;4000;;13;Pan Dulcera 13;331;Torrez Pantoja;41400;410;;;298752;4;Ajuste de mantenimiento;2;30;False
-189808;02/08/2025;14-22;4000;;13;Pan Dulcera 13;331;Torrez Pantoja;41400;410;;;298753;2;Limpieza en Proceso;1;30;False
-189808;02/08/2025;14-22;4000;;13;Pan Dulcera 13;331;Torrez Pantoja;41400;410;;;298754;10;Cambio de Bobina;1;10;False
-189809;02/08/2025;14-22;4000;;9;Pan Dulcera 9;109;Pacheco;25000;255;;;298755;4;Ajuste de mantenimiento;2;120;False
-189809;02/08/2025;14-22;4000;;9;Pan Dulcera 9;109;Pacheco;25000;255;;;298756;2;Limpieza en Proceso;2;30;False
-189810;02/08/2025;14-22;4000;;10;Pan Dulcera 10;241;Villaroel;42500;430;;;298757;14;Incidencia Papel;2;20;False
-189810;02/08/2025;14-22;4000;;10;Pan Dulcera 10;241;Villaroel;42500;430;;;298758;10;Cambio de Bobina;2;20;False
-189811;02/08/2025;22-06;4000;;11;Pan Dulcera 11;345;Rojas;48000;480;;;298759;14;Incidencia Papel;2;20;False
-189811;02/08/2025;22-06;4000;;11;Pan Dulcera 11;345;Rojas;48000;480;;;298760;10;Cambio de Bobina;2;20;False
-189812;02/08/2025;22-06;4000;;13;Pan Dulcera 13;396;Calidad;13000;460;;;298761;14;Incidencia Papel;1;15;False
-189812;02/08/2025;22-06;4000;;13;Pan Dulcera 13;396;Calidad;13000;460;;;298762;2;Limpieza en Proceso;1;15;False
-189812;02/08/2025;22-06;4000;;13;Pan Dulcera 13;396;Calidad;13000;460;;;298763;4;Ajuste de mantenimiento;1;30;False
-189813;02/08/2025;22-06;4000;;9;Pan Dulcera 9;385;Acuña;45000;450;;;298764;14;Incidencia Papel;2;20;False
-189813;02/08/2025;22-06;4000;;9;Pan Dulcera 9;385;Acuña;45000;450;;;298765;10;Cambio de Bobina;2;20;False
-190058;30/08/2025;06-14;4000;0;9;Pan Dulcera 9;189;Avendaño;41000;400;;;299634;10;Cambio de Bobina;2;20;False
-190058;30/08/2025;06-14;4000;0;9;Pan Dulcera 9;189;Avendaño;41000;400;;;299635;14;Incidencia Papel;2;20;False
-190058;30/08/2025;06-14;4000;0;9;Pan Dulcera 9;189;Avendaño;41000;400;;;299636;2;Limpieza en Proceso;2;40;False
+189808;02/08/2025;14-22;40000;;13;Pan Dulcera 13;331;Torrez Pantoja;41400;410;;;298752;4;Ajuste de mantenimiento;2;30;False
+189808;02/08/2025;14-22;40000;;13;Pan Dulcera 13;331;Torrez Pantoja;41400;410;;;298753;2;Limpieza en Proceso;1;30;False
+189808;02/08/2025;14-22;40000;;13;Pan Dulcera 13;331;Torrez Pantoja;41400;410;;;298754;10;Cambio de Bobina;1;10;False
+189809;02/08/2025;14-22;40000;;9;Pan Dulcera 9;109;Pacheco;25000;255;;;298755;4;Ajuste de mantenimiento;2;120;False
+189809;02/08/2025;14-22;40000;;9;Pan Dulcera 9;109;Pacheco;25000;255;;;298756;2;Limpieza en Proceso;2;30;False
+189810;02/08/2025;14-22;40000;;10;Pan Dulcera 10;241;Villaroel;42500;430;;;298757;14;Incidencia Papel;2;20;False
+189810;02/08/2025;14-22;40000;;10;Pan Dulcera 10;241;Villaroel;42500;430;;;298758;10;Cambio de Bobina;2;20;False
+189811;02/08/2025;22-06;40000;;11;Pan Dulcera 11;345;Rojas;48000;480;;;298759;14;Incidencia Papel;2;20;False
+189811;02/08/2025;22-06;40000;;11;Pan Dulcera 11;345;Rojas;48000;480;;;298760;10;Cambio de Bobina;2;20;False
+189812;02/08/2025;22-06;40000;;13;Pan Dulcera 13;396;Calidad;13000;460;;;298761;14;Incidencia Papel;1;15;False
+189812;02/08/2025;22-06;40000;;13;Pan Dulcera 13;396;Calidad;13000;460;;;298762;2;Limpieza en Proceso;1;15;False
+189812;02/08/2025;22-06;40000;;13;Pan Dulcera 13;396;Calidad;13000;460;;;298763;4;Ajuste de mantenimiento;1;30;False
+189813;02/08/2025;22-06;40000;;9;Pan Dulcera 9;385;Acuña;45000;450;;;298764;14;Incidencia Papel;2;20;False
+189813;02/08/2025;22-06;40000;;9;Pan Dulcera 9;385;Acuña;45000;450;;;298765;10;Cambio de Bobina;2;20;False
+190058;30/08/2025;06-14;40000;0;9;Pan Dulcera 9;189;Avendaño;41000;400;;;299634;10;Cambio de Bobina;2;20;False
+190058;30/08/2025;06-14;40000;0;9;Pan Dulcera 9;189;Avendaño;41000;400;;;299635;14;Incidencia Papel;2;20;False
+190058;30/08/2025;06-14;40000;0;9;Pan Dulcera 9;189;Avendaño;41000;400;;;299636;2;Limpieza en Proceso;2;40;False
 190062;30/08/2025;06-14;0;;10;Pan Dulcera 10;211;Alvarez;25500;310;;;299637;4;Ajuste de mantenimiento;1;30;False
 190062;30/08/2025;06-14;0;;10;Pan Dulcera 10;211;Alvarez;25500;310;;;299638;14;Incidencia Papel;1;15;False
 190062;30/08/2025;06-14;0;;10;Pan Dulcera 10;211;Alvarez;25500;310;;;299639;10;Cambio de Bobina;1;10;False
@@ -271,23 +270,22 @@ const csvDataString = `IdProduccion;Fecha;Turno;Objetivo;Encargado;Máquina_Prod
 190070;30/08/2025;06-14;0;;13;Pan Dulcera 13;331;Torrez Pantoja;41400;410;;;299643;4;Ajuste de mantenimiento;2;30;False
 190070;30/08/2025;06-14;0;;13;Pan Dulcera 13;331;Torrez Pantoja;41400;410;;;299644;2;Limpieza en Proceso;1;30;False
 190070;30/08/2025;06-14;0;;13;Pan Dulcera 13;331;Torrez Pantoja;41400;410;;;299645;10;Cambio de Bobina;1;10;False
-190071;30/08/2025;14-22;4000;;9;Pan Dulcera 9;109;Pacheco;25000;255;;;299646;4;Ajuste de mantenimiento;2;120;False
-190071;30/08/2025;14-22;4000;;9;Pan Dulcera 9;109;Pacheco;25000;255;;;299647;2;Limpieza en Proceso;2;30;False
-190072;30/08/2025;14-22;4000;;10;Pan Dulcera 10;241;Villaroel;42500;430;;;299648;14;Incidencia Papel;2;20;False
-190072;30/08/2025;14-22;4000;;10;Pan Dulcera 10;241;Villaroel;42500;430;;;299649;10;Cambio de Bobina;2;20;False
-190073;30/08/2025;22-06;4000;;11;Pan Dulcera 11;345;Rojas;48000;480;;;299650;14;Incidencia Papel;2;20;False
-190073;30/08/2025;22-06;4000;;11;Pan Dulcera 11;345;Rojas;48000;480;;;299651;10;Cambio de Bobina;2;20;False
-190074;30/08/2025;22-06;4000;;13;Pan Dulcera 13;396;Calidad;13000;460;;;299652;14;Incidencia Papel;1;15;False
-190074;30/08/2025;22-06;4000;;13;Pan Dulcera 13;396;Calidad;13000;460;;;299653;2;Limpieza en Proceso;1;15;False
-190074;30/08/2025;22-06;4000;;13;Pan Dulcera 13;396;Calidad;13000;460;;;299654;4;Ajuste de mantenimiento;1;30;False
-190075;30/08/2025;22-06;4000;;9;Pan Dulcera 9;385;Acuña;45000;450;;;299655;14;Incidencia Papel;2;20;False
-190075;30/08/2025;22-06;4000;;9;Pan Dulcera 9;385;Acuña;45000;450;;;299656;10;Cambio de Bobina;2;20;False
+190071;30/08/2025;14-22;40000;;9;Pan Dulcera 9;109;Pacheco;25000;255;;;299646;4;Ajuste de mantenimiento;2;120;False
+190071;30/08/2025;14-22;40000;;9;Pan Dulcera 9;109;Pacheco;25000;255;;;299647;2;Limpieza en Proceso;2;30;False
+190072;30/08/2025;14-22;40000;;10;Pan Dulcera 10;241;Villaroel;42500;430;;;299648;14;Incidencia Papel;2;20;False
+190072;30/08/2025;14-22;40000;;10;Pan Dulcera 10;241;Villaroel;42500;430;;;299649;10;Cambio de Bobina;2;20;False
+190073;30/08/2025;22-06;40000;;11;Pan Dulcera 11;345;Rojas;48000;480;;;299650;14;Incidencia Papel;2;20;False
+190073;30/08/2025;22-06;40000;;11;Pan Dulcera 11;345;Rojas;48000;480;;;299651;10;Cambio de Bobina;2;20;False
+190074;30/08/2025;22-06;40000;;13;Pan Dulcera 13;396;Calidad;13000;460;;;299652;14;Incidencia Papel;1;15;False
+190074;30/08/2025;22-06;40000;;13;Pan Dulcera 13;396;Calidad;13000;460;;;299653;2;Limpieza en Proceso;1;15;False
+190074;30/08/2025;22-06;40000;;13;Pan Dulcera 13;396;Calidad;13000;460;;;299654;4;Ajuste de mantenimiento;1;30;False
+190075;30/08/2025;22-06;40000;;9;Pan Dulcera 9;385;Acuña;45000;450;;;299655;14;Incidencia Papel;2;20;False
+190075;30/08/2025;22-06;40000;;9;Pan Dulcera 9;385;Acuña;45000;450;;;299656;10;Cambio de Bobina;2;20;False
 `;
 
             function init() {
                 spinner.style.display = 'block';
                 try {
-                    // Ahora parseamos el string local en lugar de hacer un fetch
                     const parser = d3.dsvFormat(";");
                     const rawData = parser.parse(csvDataString);
 
@@ -329,23 +327,15 @@ const csvDataString = `IdProduccion;Fecha;Turno;Objetivo;Encargado;Máquina_Prod
 
                 const machineFilter = document.getElementById('machine-filter');
                 machines.forEach(m => machineFilter.innerHTML += `<option value="${m}">${m}</option>`);
-
                 const operatorFilter = document.getElementById('operator-filter');
                 operators.forEach(o => operatorFilter.innerHTML += `<option value="${o}">${o}</option>`);
-
                 const shiftFilter = document.getElementById('shift-filter');
                 shifts.forEach(s => shiftFilter.innerHTML += `<option value="${s}">${s}</option>`);
             }
 
             function setupEventListeners() {
-                flatpickr("#date-range-picker", {
-                    mode: "range",
-                    dateFormat: "d/m/Y",
-                    locale: "es",
-                });
-
+                flatpickr("#date-range-picker", { mode: "range", dateFormat: "d/m/Y", locale: "es" });
                 document.getElementById('apply-filters').addEventListener('click', applyFilters);
-
                 document.getElementById('reset-filters').addEventListener('click', () => {
                     document.getElementById('date-range-picker')._flatpickr.clear();
                     document.getElementById('machine-filter').value = 'all';
@@ -368,34 +358,35 @@ const csvDataString = `IdProduccion;Fecha;Turno;Objetivo;Encargado;Máquina_Prod
                     end.setUTCHours(23, 59, 59, 999);
                     filteredData = filteredData.filter(d => d.FechaObj >= start && d.FechaObj <= end);
                 }
-                if (selectedMachine !== 'all') {
-                    filteredData = filteredData.filter(d => d.Descrip_Maquina === selectedMachine);
-                }
-                if (selectedOperator !== 'all') {
-                    filteredData = filteredData.filter(d => d.Operario === selectedOperator);
-                }
-                if (selectedShift !== 'all') {
-                    filteredData = filteredData.filter(d => d.Turno === selectedShift);
-                }
+                if (selectedMachine !== 'all') filteredData = filteredData.filter(d => d.Descrip_Maquina === selectedMachine);
+                if (selectedOperator !== 'all') filteredData = filteredData.filter(d => d.Operario === selectedOperator);
+                if (selectedShift !== 'all') filteredData = filteredData.filter(d => d.Turno === selectedShift);
                 
                 updateDashboard(filteredData);
             }
 
             function updateDashboard(data) {
+                // Para cálculos de producción, es VITAL usar solo registros únicos por IdProduccion
+                // para no sumar la misma cantidad múltiples veces.
                 const uniqueProductions = Array.from(new Map(data.map(item => [item.IdProduccion, item])).values());
                 
                 updateKPIs(data, uniqueProductions);
-                createOrUpdateDowntimeChart(data);
-                createOrUpdateProductionByMachineChart(uniqueProductions);
-                createOrUpdateProductionOverTimeChart(uniqueProductions);
-                createOrUpdateOperatorPerformanceChart(uniqueProductions);
+                renderDowntimeChart(data);
+                renderProductionByMachineChart(uniqueProductions);
+                renderProductionOverTimeChart(uniqueProductions);
+                renderOperatorPerformanceChart(uniqueProductions);
             }
 
             function updateKPIs(allData, uniqueProductions) {
                 const totalProduction = d3.sum(uniqueProductions, d => d.Cantidad);
-                const totalObjective = d3.sum(uniqueProductions, d => d.Objetivo);
                 const totalDowntimeMinutes = d3.sum(allData, d => d.Minutos);
-                const efficiency = totalObjective > 0 ? (totalProduction / totalObjective) * 100 : 0;
+                
+                // --- LÓGICA DE EFICIENCIA CORREGIDA ---
+                // Solo consideramos producciones que tenían un objetivo definido (> 0)
+                const productionsWithTarget = uniqueProductions.filter(d => d.Objetivo > 0);
+                const targetProduction = d3.sum(productionsWithTarget, d => d.Cantidad);
+                const totalObjective = d3.sum(productionsWithTarget, d => d.Objetivo);
+                const efficiency = totalObjective > 0 ? (targetProduction / totalObjective) * 100 : 0;
 
                 document.getElementById('kpi-total-production').textContent = totalProduction.toLocaleString('es-AR');
                 document.getElementById('kpi-total-downtime').textContent = (totalDowntimeMinutes / 60).toFixed(1);
@@ -403,55 +394,59 @@ const csvDataString = `IdProduccion;Fecha;Turno;Objetivo;Encargado;Máquina_Prod
                 document.getElementById('kpi-target-efficiency').textContent = `${efficiency.toFixed(1)}%`;
             }
             
-            function createOrUpdateDowntimeChart(data) {
-                const downtimeData = aggregateData(data, 'descrip_incidencia', 'Minutos', 'sum').slice(0, 10);
+            function renderDowntimeChart(data) {
+                const downtimeData = d3.rollup(data.filter(d => d.descrip_incidencia), v => d3.sum(v, d => d.Minutos), d => d.descrip_incidencia);
+                const sortedDowntime = Array.from(downtimeData, ([category, value]) => ({ category, value })).sort((a,b) => b.value - a.value).slice(0, 10);
                 
                 const options = {
-                    series: [{ name: 'Minutos', data: downtimeData.map(d => d.value) }],
+                    series: [{ name: 'Minutos', data: sortedDowntime.map(d => d.value) }],
                     chart: { type: 'bar', height: 350, toolbar: { show: true } },
                     plotOptions: { bar: { borderRadius: 4, horizontal: true } },
                     dataLabels: { enabled: true, formatter: val => val.toFixed(0) },
-                    xaxis: { categories: downtimeData.map(d => d.category) },
+                    xaxis: { categories: sortedDowntime.map(d => d.category) },
                     tooltip: { y: { formatter: val => `${val.toLocaleString('es-AR')} minutos` } },
                 };
                 renderChart('downtime-chart', options);
             }
 
-            function createOrUpdateProductionByMachineChart(data) {
-                const machineData = aggregateData(data, 'Descrip_Maquina', 'Cantidad', 'sum');
+            function renderProductionByMachineChart(uniqueProductions) {
+                const machineData = d3.rollup(uniqueProductions, v => d3.sum(v, d => d.Cantidad), d => d.Descrip_Maquina);
+                const sortedMachineData = Array.from(machineData, ([category, value]) => ({ category, value })).sort((a,b) => b.value - a.value);
 
                 const options = {
-                    series: [{ name: 'Unidades', data: machineData.map(d => d.value) }],
+                    series: [{ name: 'Unidades', data: sortedMachineData.map(d => d.value) }],
                     chart: { type: 'bar', height: 350, toolbar: { show: true } },
                     plotOptions: { bar: { columnWidth: '50%', distributed: true } },
                     legend: { show: false },
-                    xaxis: { categories: machineData.map(d => d.category), labels: { rotate: -45, trim: true, style: { fontSize: '10px' } } },
+                    xaxis: { categories: sortedMachineData.map(d => d.category), labels: { rotate: -45, trim: true, style: { fontSize: '10px' } } },
                     yaxis: { title: { text: 'Unidades Producidas' } },
                 };
                 renderChart('production-by-machine-chart', options);
             }
             
-            function createOrUpdateProductionOverTimeChart(data) {
-                const timeData = aggregateData(data, 'FechaObj', 'Cantidad', 'sum', false);
-                timeData.sort((a,b) => new Date(a.category) - new Date(b.category));
+            function renderProductionOverTimeChart(uniqueProductions) {
+                // --- LÓGICA DE GRÁFICO DE TIEMPO CORREGIDA ---
+                const timeData = d3.rollup(uniqueProductions, v => d3.sum(v, d => d.Cantidad), d => d.FechaObj.toISOString().split('T')[0]);
+                const sortedTimeData = Array.from(timeData, ([date, value]) => ({ date, value })).sort((a, b) => new Date(a.date) - new Date(b.date));
 
                 const options = {
-                    series: [{ name: 'Producción', data: timeData.map(d => d.value) }],
+                    series: [{ name: 'Producción', data: sortedTimeData.map(d => d.value) }],
                     chart: { type: 'area', height: 350, zoom: { enabled: true } },
                     stroke: { curve: 'smooth' },
-                    xaxis: { type: 'datetime', categories: timeData.map(d => new Date(d.category).getTime()), labels: { datetimeUTC: false, format: 'dd MMM \'yy' } },
+                    xaxis: { type: 'datetime', categories: sortedTimeData.map(d => new Date(d.date).getTime()), labels: { datetimeUTC: false, format: 'dd MMM \'yy' } },
                     tooltip: { x: { format: 'dd/MM/yyyy' } },
                 };
                 renderChart('production-over-time-chart', options);
             }
 
-            function createOrUpdateOperatorPerformanceChart(data) {
-                const operatorData = aggregateData(data, 'Operario', 'Cantidad', 'sum').slice(0, 10);
+            function renderOperatorPerformanceChart(uniqueProductions) {
+                const operatorData = d3.rollup(uniqueProductions, v => d3.sum(v, d => d.Cantidad), d => d.Operario);
+                const sortedOperatorData = Array.from(operatorData, ([category, value]) => ({ category, value })).sort((a,b) => b.value - a.value).slice(0, 10);
 
                 const options = {
-                    series: [{ name: 'Unidades Producidas', data: operatorData.map(d => d.value) }],
+                    series: [{ name: 'Unidades Producidas', data: sortedOperatorData.map(d => d.value) }],
                     chart: { type: 'bar', height: 350 },
-                    xaxis: { categories: operatorData.map(d => d.category), labels: { style: { fontSize: '10px' } } },
+                    xaxis: { categories: sortedOperatorData.map(d => d.category), labels: { style: { fontSize: '10px' } } },
                     yaxis: { title: { text: 'Unidades Producidas' } },
                 };
                 renderChart('operator-performance-chart', options);
@@ -466,25 +461,9 @@ const csvDataString = `IdProduccion;Fecha;Turno;Objetivo;Encargado;Máquina_Prod
                     charts[elementId] = chart;
                 }
             }
-            
-            function aggregateData(data, categoryField, valueField, method = 'sum', sortByValue = true) {
-                const aggregation = d3.rollup(data, 
-                    v => d3[method](v, d => d[valueField]), 
-                    d => categoryField === 'FechaObj' ? d.FechaObj.toISOString().split('T')[0] : d[categoryField]
-                );
-                
-                let aggregatedArray = Array.from(aggregation, ([category, value]) => ({ category, value }));
-
-                if (sortByValue) {
-                    aggregatedArray.sort((a, b) => b.value - a.value);
-                }
-                
-                return aggregatedArray.filter(d => d.category && d.category.trim() !== "" && d.category !== "undefined");
-            }
 
             init();
         });
     </script>
 </body>
 </html>
-
