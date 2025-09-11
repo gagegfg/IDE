@@ -3,7 +3,7 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Dashboard Industrial v2.0</title>
+    <title>Dashboard Industrial v2.1</title>
     <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.3/dist/css/bootstrap.min.css" rel="stylesheet">
     <link rel="preconnect" href="https://fonts.googleapis.com">
     <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
@@ -196,9 +196,17 @@
             </div>
             <div class="col-lg-12 mb-4">
                 <div class="card">
-                    <div class="card-header">Análisis de Paradas (Minutos)</div>
+                    <div class="card-header">Análisis de Paradas (Top 10 en Minutos)</div>
                      <div class="card-body">
                         <div id="chart-downtime-reasons"></div>
+                    </div>
+                </div>
+            </div>
+            <div class="col-lg-12 mb-4">
+                <div class="card">
+                    <div class="card-header">Análisis de Impacto vs. Frecuencia de Paradas</div>
+                     <div class="card-body">
+                        <div id="chart-impact-frequency"></div>
                     </div>
                 </div>
             </div>
@@ -248,8 +256,10 @@
                         populateFilters(originalData);
                         addEventListeners();
                         
-                        const firstDate = originalData.length > 0 ? originalData[0].Fecha : new Date();
-                        const lastDate = originalData.length > 0 ? originalData[originalData.length - 1].Fecha : new Date();
+                        // Set default date range to all available data
+                        const dates = originalData.map(d => d.Fecha).filter(Boolean);
+                        const firstDate = dates.length > 0 ? new Date(Math.min(...dates)) : new Date();
+                        const lastDate = dates.length > 0 ? new Date(Math.max(...dates)) : new Date();
                         datepicker.setDate([firstDate, lastDate], true);
                         
                         document.getElementById('last-updated').textContent = `Actualizado: ${new Date().toLocaleString('es-ES')}`;
@@ -263,22 +273,28 @@
             }
 
             function processData(data) {
-                // Convertir la coma decimal a punto para el parsing correcto
                 return data.map(row => {
                     row.Cantidad = parseInt(row.Cantidad) || 0;
                     row.Minutos = parseInt(row.Minutos) || 0;
-                    // FIX: Reemplazar coma por punto para el parseo a float.
+                    row.Frecuencia = parseInt(row.Frecuencia) || 0;
+                    // FIX: Reemplazar coma por punto para el parseo a float y asegurar que es un string antes.
                     row.Hs_Trab = parseFloat(String(row.Hs_Trab).replace(',', '.')) || 0;
                     row.Fecha = parseDate(row.Fecha);
                     return row;
-                }).filter(row => row.Fecha);
+                }).filter(row => row.Fecha instanceof Date && !isNaN(row.Fecha));
             }
 
             function parseDate(dateString) {
                 if (!dateString) return null;
                 const parts = dateString.split('/');
                 if (parts.length === 3) {
-                    return new Date(parts[2], parts[1] - 1, parts[0]);
+                    // Formato DD/MM/YYYY
+                    const day = parseInt(parts[0], 10);
+                    const month = parseInt(parts[1], 10) - 1; // Meses en JS son 0-indexados
+                    const year = parseInt(parts[2], 10);
+                    if (!isNaN(day) && !isNaN(month) && !isNaN(year)) {
+                        return new Date(year, month, day);
+                    }
                 }
                 return null;
             }
@@ -286,10 +302,13 @@
             function populateFilters(data) {
                 const uniqueMachines = [...new Set(data.map(row => row.Descrip_Maquina))].sort();
                 const uniqueShifts = [...new Set(data.map(row => row.Turno))].sort();
+                
                 const machineFilterEl = document.getElementById('machine-filter');
-                uniqueMachines.forEach(machine => machineFilterEl.add(new Option(machine, machine)));
+                uniqueMachines.forEach(machine => machine && machineFilterEl.add(new Option(machine, machine)));
+                
                 const shiftFilterEl = document.getElementById('shift-filter');
-                uniqueShifts.forEach(shift => shiftFilterEl.add(new Option(shift, shift)));
+                uniqueShifts.forEach(shift => shift && shiftFilterEl.add(new Option(shift, shift)));
+
                 choicesMachine = new Choices(machineFilterEl, { removeItemButton: true, placeholder: true, placeholderValue: 'Todas las máquinas...' });
                 choicesShift = new Choices(shiftFilterEl, { removeItemButton: true, placeholder: true, placeholderValue: 'Todos los turnos...' });
             }
@@ -304,18 +323,18 @@
                 document.getElementById('shift-filter').addEventListener('change', applyFilters);
                 
                 const today = new Date();
+                const yesterday = new Date();
+                yesterday.setDate(today.getDate() - 1);
+
                 document.getElementById('btnHoy').addEventListener('click', () => datepicker.setDate([today, today], true));
-                document.getElementById('btnAyer').addEventListener('click', () => {
-                    const yesterday = new Date();
-                    yesterday.setDate(today.getDate() - 1);
-                    datepicker.setDate([yesterday, yesterday], true);
-                });
+                document.getElementById('btnAyer').addEventListener('click', () => datepicker.setDate([yesterday, yesterday], true));
                 document.getElementById('btnMesActual').addEventListener('click', () => datepicker.setDate([new Date(today.getFullYear(), today.getMonth(), 1), today], true));
                 document.getElementById('btnMesAnterior').addEventListener('click', () => {
                      const start = new Date(today.getFullYear(), today.getMonth() - 1, 1);
                      const end = new Date(today.getFullYear(), today.getMonth(), 0);
                      datepicker.setDate([start, end], true);
                 });
+
                 document.getElementById('reset-filters').addEventListener('click', () => {
                     datepicker.clear();
                     choicesMachine.removeActiveItems();
@@ -332,9 +351,15 @@
                     const selectedShifts = choicesShift.getValue(true);
 
                     const filteredData = originalData.filter(row => {
-                        const isDateInRange = dateRange.length === 2 ? row.Fecha >= dateRange[0] && row.Fecha <= dateRange[1] : true;
+                        const rowDate = row.Fecha;
+                        // Ignorar el tiempo para la comparación de fechas
+                        const startDate = dateRange[0] ? new Date(dateRange[0].setHours(0,0,0,0)) : null;
+                        const endDate = dateRange[1] ? new Date(dateRange[1].setHours(23,59,59,999)) : null;
+
+                        const isDateInRange = dateRange.length === 2 ? rowDate >= startDate && rowDate <= endDate : true;
                         const isMachineSelected = selectedMachines.length > 0 ? selectedMachines.includes(row.Descrip_Maquina) : true;
                         const isShiftSelected = selectedShifts.length > 0 ? selectedShifts.includes(row.Turno) : true;
+                        
                         return isDateInRange && isMachineSelected && isShiftSelected;
                     });
                     updateDashboard(filteredData);
@@ -344,31 +369,32 @@
             function updateDashboard(data) {
                 const kpiData = calculateKPIs(data);
                 renderKPIs(kpiData);
-                updateCharts(data, kpiData);
+                updateCharts(data);
                 updateSummary(data, kpiData);
                 toggleLoading(false);
             }
 
-            // --- LÓGICA DE CÁLCULO ACTUALIZADA ---
             function calculateKPIs(data) {
                 const uniqueProductions = new Map();
                 data.forEach(row => {
                     if (row.IdProduccion && !uniqueProductions.has(row.IdProduccion)) {
-                        uniqueProductions.set(row.IdProduccion, { cantidad: row.Cantidad, hsTrab: row.Hs_Trab });
+                        uniqueProductions.set(row.IdProduccion, { 
+                            cantidad: row.Cantidad, 
+                            // FIX: Hs_Trab ya son minutos, se usa directamente.
+                            hsTrab: row.Hs_Trab 
+                        });
                     }
                 });
 
                 const productionValues = Array.from(uniqueProductions.values());
                 const totalProduction = productionValues.reduce((sum, item) => sum + item.cantidad, 0);
-                
-                // FIX: Según tu aclaración, Hs_Trab ya son minutos, se elimina la multiplicación * 60.
                 const plannedMinutes = productionValues.reduce((sum, item) => sum + item.hsTrab, 0); 
                 
                 const totalDowntimeMinutes = data.reduce((sum, row) => sum + row.Minutos, 0);
                 const runTimeMinutes = plannedMinutes - totalDowntimeMinutes;
                 
                 const availability = plannedMinutes > 0 ? (runTimeMinutes / plannedMinutes) : 0;
-                const efficiency = runTimeMinutes > 0 ? totalProduction / (runTimeMinutes / 60) : 0; // Eficiencia sigue en Pzas/Hora
+                const efficiency = runTimeMinutes > 0 ? totalProduction / (runTimeMinutes / 60) : 0;
 
                 return {
                     totalProduction,
@@ -400,8 +426,8 @@
                 document.getElementById('summary-text').innerHTML = summary;
             }
 
-            // --- GRÁFICOS ACTUALIZADOS ---
             function updateCharts(data) {
+                // Gráfico de Producción por Máquina
                 const prodByMachineData = aggregateAndSort(data, 'Descrip_Maquina', 'Cantidad', true);
                 renderChart('chart-prod-by-machine', 'bar', { 
                     categories: prodByMachineData.map(d => d.category),
@@ -409,13 +435,15 @@
                     horizontal: true
                 });
 
+                // Gráfico de Producción por Operario
                 const prodByOperatorData = aggregateAndSort(data, 'Apellido', 'Cantidad', true);
                 renderChart('chart-prod-by-operator', 'bar', { 
                     categories: prodByOperatorData.map(d => d.category),
                     series: [{ name: 'Producción', data: prodByOperatorData.map(d => d.value) }],
                     horizontal: false
                 });
-
+                
+                // Gráfico de Razones de Parada (Top 10)
                 const downtimeReasonsData = aggregateAndSort(data, 'descrip_incidencia', 'Minutos');
                 renderChart('chart-downtime-reasons', 'bar', { 
                     categories: downtimeReasonsData.map(d => d.category).slice(0, 10),
@@ -423,11 +451,16 @@
                     horizontal: true
                 });
 
+                // Gráfico de Producción Diaria
                 const dailyProdData = aggregateAndSort(data, 'Fecha', 'Cantidad', false, false);
                 renderChart('chart-daily-production', 'line', { 
-                    categories: dailyProdData.map(d => d.category),
+                    categories: dailyProdData.map(d => new Date(d.category).getTime()),
                     series: [{ name: 'Producción', data: dailyProdData.map(d => d.value) }],
                 });
+                
+                // NUEVO: Gráfico de Impacto vs Frecuencia
+                const impactFrequencyData = aggregateImpactFrequency(data);
+                renderChart('chart-impact-frequency', 'scatter', impactFrequencyData);
             }
 
             function renderChart(elementId, type, chartData) {
@@ -435,14 +468,12 @@
                     chart: { 
                         type: type, height: 350, fontFamily: 'Inter, sans-serif', 
                         toolbar: { show: true },
-                        // FIX: Deshabilitar zoom con scroll, permitir pan
-                        zoom: { enabled: true },
-                        events: { mounted: (chart) => chart.toggleZoom(false) } // Previene el zoom al cargar
+                        // FIX: Deshabilitar zoom con scroll, permitir pan y zoom por selección
+                        zoom: { enabled: true, },
                     },
                     colors: chartColors,
                     grid: { borderColor: '#e7e7e7', row: { colors: ['#f3f3f3', 'transparent'], opacity: 0.5 } },
                     noData: { text: 'No hay datos para la selección actual.' },
-                    tooltip: { y: { formatter: val => val.toLocaleString('es-ES') } }
                 };
 
                 let options = {};
@@ -453,12 +484,12 @@
                         // FIX: Contraste de texto en barras.
                         dataLabels: { 
                             enabled: true, 
-                            style: { fontSize: '12px', colors: ["#fff"] }, // Color blanco
-                            // Sombra para mejor legibilidad
+                            style: { fontSize: '12px', colors: ["#fff"] },
                             dropShadow: { enabled: true, top: 1, left: 1, blur: 1, color: '#000', opacity: 0.45 }
                         },
                         xaxis: { categories: chartData.categories, labels: { style: { fontSize: '12px' }, trim: true, maxHeight: 100 } },
-                        yaxis: { labels: { formatter: val => val.toLocaleString('es-ES') } }
+                        yaxis: { labels: { formatter: val => val.toLocaleString('es-ES') } },
+                        tooltip: { y: { formatter: val => val.toLocaleString('es-ES') } }
                     };
                 } else if (type === 'line') {
                     options = {
@@ -466,11 +497,38 @@
                         // FIX: Mostrar valores en puntos y líneas rectas.
                         stroke: { curve: 'straight', width: 3 }, 
                         markers: { size: 5 },
-                        dataLabels: { enabled: true, background: { enabled: true, borderRadius: 2, padding: 4, opacity: 0.8 } },
-                        xaxis: { type: 'datetime', categories: chartData.categories, labels: { datetimeUTC: false, format: 'dd/MM' } },
-                        tooltip: { x: { format: 'dd/MM/yyyy' } }
+                        dataLabels: { enabled: true, background: { enabled: true, borderRadius: 2, padding: 4, opacity: 0.8 }, style: {colors: ['#333']}},
+                        xaxis: { type: 'datetime', categories: chartData.categories, labels: { datetimeUTC: false, format: 'dd MMM' } },
+                        tooltip: { x: { format: 'dd/MM/yyyy' }, y: { formatter: val => val ? val.toLocaleString('es-ES') : val } }
+                    };
+                } else if (type === 'scatter') {
+                    options = {
+                        ...commonOptions,
+                        series: chartData.series,
+                        xaxis: {
+                            tickAmount: 10,
+                            title: { text: 'Frecuencia (Nro. de Veces)', style: { fontWeight: 600 } },
+                            labels: { formatter: val => parseInt(val) }
+                        },
+                        yaxis: {
+                            tickAmount: 7,
+                            title: { text: 'Duración Total (Minutos)', style: { fontWeight: 600 } },
+                        },
+                        tooltip: {
+                            custom: function({ seriesIndex, dataPointIndex, w }) {
+                                const reason = w.config.series[seriesIndex].data[dataPointIndex].reason;
+                                const freq = w.config.series[seriesIndex].data[dataPointIndex].x;
+                                const duration = w.config.series[seriesIndex].data[dataPointIndex].y;
+                                return `<div class="p-2">
+                                    <strong>${reason}</strong><hr class="my-1">
+                                    <div>Frecuencia: ${freq} veces</div>
+                                    <div>Duración: ${duration} min</div>
+                                </div>`;
+                            }
+                        }
                     };
                 }
+
 
                 if (charts[elementId]) {
                     charts[elementId].updateOptions(options);
@@ -486,7 +544,9 @@
                 data.forEach(row => {
                     const category = categoryField === 'Fecha' ? row[categoryField].toISOString().split('T')[0] : row[categoryField];
                     if (!category) return;
+                    
                     const value = row[valueField] || 0;
+
                     if (uniqueByIdProd) {
                         const uniqueKey = `${row.IdProduccion}-${category}`;
                         if (!seenIds.has(uniqueKey)) {
@@ -499,6 +559,7 @@
                 });
 
                 let aggregatedArray = Object.keys(aggregation).map(key => ({ category: key, value: aggregation[key] }));
+
                 if (sortByValue) {
                     aggregatedArray.sort((a, b) => b.value - a.value);
                 } else if (categoryField === 'Fecha') {
@@ -506,6 +567,36 @@
                 }
                 return aggregatedArray;
             }
+
+            // NUEVA FUNCIÓN: Agrega datos para el gráfico de Impacto vs Frecuencia
+            function aggregateImpactFrequency(data) {
+                const aggregation = {};
+                data.forEach(row => {
+                    const reason = row.descrip_incidencia;
+                    if (!reason) return;
+
+                    if (!aggregation[reason]) {
+                        aggregation[reason] = { frequency: 0, duration: 0 };
+                    }
+                    // Suma la frecuencia y los minutos de cada evento de parada
+                    aggregation[reason].frequency += row.Frecuencia || 0;
+                    aggregation[reason].duration += row.Minutos || 0;
+                });
+
+                const chartData = Object.keys(aggregation).map(reason => ({
+                    reason: reason,
+                    x: aggregation[reason].frequency, // Eje X: Frecuencia
+                    y: aggregation[reason].duration   // Eje Y: Duración
+                }));
+                
+                return {
+                    series: [{
+                        name: 'Paradas',
+                        data: chartData
+                    }]
+                };
+            }
+
             init();
         });
     </script>
