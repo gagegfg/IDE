@@ -3,7 +3,7 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Dashboard de Producción v9 - Molderil</title>
+    <title>Dashboard de Producción v10 - Molderil</title>
     <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.3/dist/css/bootstrap.min.css" rel="stylesheet">
     <link rel="preconnect" href="https://fonts.googleapis.com">
     <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
@@ -141,13 +141,11 @@
     document.addEventListener('DOMContentLoaded', function () {
         // --- CONFIGURACIÓN ---
         const CSV_PRODUCCION_URL = 'exportProduccionyEventos.csv';
-        const CSV_OEE_URL = 'paradasOEE.txt';
         const FILTERS_STORAGE_KEY = 'molderilDashboardFilters';
 
         // --- ALMACENAMIENTO DE DATOS ---
         let produccionData = new Map();
         let eventosData = [];
-        let oeeCategories = new Map();
         let datepicker;
         let choicesMaquina, choicesTurno;
         const charts = {};
@@ -189,7 +187,7 @@
                     <div class="col-lg-6"><div class="card"><div class="card-header">Producción por Día</div><div class="card-body"><div id="chart-produccion-diaria"></div></div></div></div>
                     <div class="col-lg-6"><div class="card"><div class="card-header">Disponibilidad por Día</div><div class="card-body"><div id="chart-disponibilidad-diaria"></div></div></div></div>
                     <div class="col-lg-6"><div class="card"><div class="card-header">Top 5 Máquinas por Producción</div><div class="card-body"><div id="chart-top-maquinas"></div></div></div></div>
-                    <div class="col-lg-6"><div class="card"><div class="card-header">Paradas por Categoría OEE</div><div class="card-body"><div id="chart-paradas-oee"></div></div></div></div>
+                    <div class="col-lg-6"><div class="card"><div class="card-header">Top 10 Causas de Parada</div><div class="card-body"><div id="chart-paradas-causa"></div></div></div></div>
                     <div class="col-lg-12"><div class="card"><div class="card-header">Minutos de Parada por Operario</div><div class="card-body"><div id="chart-paradas-operario"></div></div></div></div>
                 </div>
             `;
@@ -200,14 +198,13 @@
             if (window.location.protocol === 'file:') {
                 displayError(
                     'Error de Entorno de Ejecución',
-                    'Este dashboard no puede cargar los archivos de datos (.csv, .txt) cuando se abre directamente desde el sistema de archivos (`file://`).',
+                    'Este dashboard no puede cargar los archivos de datos (.csv) cuando se abre directamente desde el sistema de archivos (`file://`).',
                     true // Indica que es un error técnico con solución guiada
                 );
                 return; // Detiene la ejecución para evitar más errores
             }
 
             try {
-                await loadOEEData();
                 await loadAndProcessProductionData();
 
                 if (produccionData.size > 0) {
@@ -228,30 +225,15 @@
                 displayError(error.name || 'Error Inesperado', error.message || 'Ocurrió un error al iniciar la aplicación.');
             }
         }
-
-        async function loadOEEData() {
-            try {
-                const response = await fetch(CSV_OEE_URL);
-                if (!response.ok) { throw new Error(`HTTP error! status: ${response.status}`); }
-                const rawOEEText = await response.text();
-                const data = d3.dsvFormat(';').parse(rawOEEText);
-                data.forEach(row => {
-                    const nroIncidencia = row.NroIncidencia?.trim();
-                    const categoria = row['Categoría OEE sugerida']?.trim();
-                    if (nroIncidencia && categoria) oeeCategories.set(nroIncidencia, categoria);
-                });
-            } catch (error) {
-                console.error("Error cargando el archivo de categorías OEE:", error);
-                throw new Error(`No se pudo cargar el archivo \`paradasOEE.txt\`. Verifique que el archivo exista en la misma carpeta que este HTML y que su nombre sea correcto.`);
-            }
-        }
         
         async function loadAndProcessProductionData() {
             try {
                 const response = await fetch(CSV_PRODUCCION_URL);
                 if (!response.ok) { throw new Error(`HTTP error! status: ${response.status}`); }
                 const rawProduccionText = await response.text();
-                const rawData = d3.dsvFormat(';').parse(rawProduccionText);
+                // Eliminar el BOM (Byte Order Mark) si existe al inicio del archivo
+                const cleanText = rawProduccionText.trim().charCodeAt(0) === 0xFEFF ? rawProduccionText.trim().substring(1) : rawProduccionText.trim();
+                const rawData = d3.dsvFormat(';').parse(cleanText);
                 const parseDate = d3.timeParse("%d/%m/%Y");
 
                 for (const row of rawData) {
@@ -270,7 +252,8 @@
                     const minutos = +row.Minutos || 0;
                     if (minutos > 0) {
                         eventosData.push({
-                            IdProduccion: idProduccion, Fecha: fecha, NroIncidencia: row.NroIncidencia?.trim(),
+                            IdProduccion: idProduccion, Fecha: fecha, 
+                            descrip_incidencia: row.descrip_incidencia?.trim(),
                             Minutos: minutos, ApellidoOperario: row.Apellido?.trim(),
                             Turno: row.Turno?.trim(), Descrip_Maquina: row.Descrip_Maquina?.trim()
                         });
@@ -284,8 +267,8 @@
         
         function populateFiltersAndInitChoices() {
             const allProduccion = Array.from(produccionData.values());
-            const maquinas = [...new Set(allProduccion.map(d => d.Descrip_Maquina))].sort();
-            const turnos = [...new Set(allProduccion.map(d => d.Turno))].sort();
+            const maquinas = [...new Set(allProduccion.map(d => d.Descrip_Maquina).filter(Boolean))].sort();
+            const turnos = [...new Set(allProduccion.map(d => d.Turno).filter(Boolean))].sort();
             
             const maquinaSelect = document.getElementById('maquina-select');
             const turnoSelect = document.getElementById('turno-select');
@@ -425,7 +408,7 @@
             updateProduccionDiaria(produccion);
             updateDisponibilidadDiaria(produccion, eventos);
             updateTopMaquinas(produccion);
-            updateParadasOEE(eventos);
+            updateParadasPorCausa(eventos);
             updateParadasOperario(eventos);
         }
         
@@ -457,10 +440,9 @@
             charts.topMaquinas.updateOptions({ series: [{ name: 'Producción', data: topData.map(d => d[1]) }], xaxis: { categories: topData.map(d => d[0]) } });
         }
         
-        function updateParadasOEE(data) {
-            const dataWithOEE = data.map(d => ({ ...d, oeeCategory: oeeCategories.get(d.NroIncidencia) || 'No Clasificada' }));
-            const oeeData = Array.from(d3.rollup(dataWithOEE, v => d3.sum(v, d => d.Minutos), d => d.oeeCategory).entries()).sort((a, b) => b[1] - a[1]);
-            charts.paradasOEE.updateOptions({ series: oeeData.map(d => d[1]), labels: oeeData.map(d => d[0]) });
+        function updateParadasPorCausa(data) {
+            const causaData = Array.from(d3.rollup(data, v => d3.sum(v, d => d.Minutos), d => d.descrip_incidencia || 'No Clasificada')).entries()).sort((a, b) => b[1] - a[1]).slice(0, 10);
+            charts.paradasPorCausa.updateOptions({ series: [{ name: 'Minutos', data: causaData.map(d => d[1]) }], xaxis: { categories: causaData.map(d => d[0]) } });
         }
         
         function updateParadasOperario(data) {
@@ -470,13 +452,13 @@
 
         function setupCharts() {
             const noDataMessage = 'No hay datos para la selección actual.';
-            const commonBarOptions = { chart: { type: 'bar', height: 350, fontFamily: 'Inter, sans-serif', toolbar: { show: false } }, plotOptions: { bar: { borderRadius: 4, horizontal: false, dataLabels: { position: 'top' } } }, dataLabels: { enabled: true, offsetY: -20, style: { fontSize: '12px', colors: ["#304758"] }, formatter: val => val.toLocaleString('es-ES') }, xaxis: { labels: { style: { colors: '#6c757d', fontSize: '12px' } } }, yaxis: { labels: { style: { colors: '#6c757d' }, formatter: val => val.toLocaleString('es-ES') } }, grid: { borderColor: '#e7e7e7', row: { colors: ['#f3f3f3', 'transparent'], opacity: 0.5 } }, noData: { text: noDataMessage }, colors: chartColors };
+            const commonBarOptions = { chart: { type: 'bar', height: 350, fontFamily: 'Inter, sans-serif', toolbar: { show: false } }, plotOptions: { bar: { borderRadius: 4, horizontal: false, dataLabels: { position: 'top' } } }, dataLabels: { enabled: true, offsetY: -20, style: { fontSize: '12px', colors: ["#304758"] }, formatter: val => val.toLocaleString('es-ES') }, xaxis: { labels: { style: { colors: '#6c757d', fontSize: '12px' }, trim: true, maxHeight: 100 } }, yaxis: { labels: { style: { colors: '#6c757d' }, formatter: val => val.toLocaleString('es-ES') } }, grid: { borderColor: '#e7e7e7', row: { colors: ['#f3f3f3', 'transparent'], opacity: 0.5 } }, noData: { text: noDataMessage }, colors: chartColors };
             const commonLineOptions = { ...commonBarOptions, chart: { ...commonBarOptions.chart, type: 'line', zoom: { enabled: false } }, stroke: { curve: 'smooth', width: 3 }, markers: { size: 4 }, xaxis: { type: 'datetime' }, tooltip: { x: { format: 'dd/MM/yyyy' } } };
             charts.produccionDiaria = new ApexCharts(document.querySelector("#chart-produccion-diaria"), {...commonLineOptions, colors: [chartColors[1]]});
             charts.disponibilidadDiaria = new ApexCharts(document.querySelector("#chart-disponibilidad-diaria"), { ...commonLineOptions, yaxis: { min: 0, max: 100, labels: { formatter: val => `${val ? val.toFixed(0) : 0}%` } }, colors: [chartColors[2]] });
             charts.topMaquinas = new ApexCharts(document.querySelector("#chart-top-maquinas"), { ...commonBarOptions, plotOptions: { bar: { ...commonBarOptions.plotOptions.bar, horizontal: true } } });
             charts.paradasOperario = new ApexCharts(document.querySelector("#chart-paradas-operario"), { ...commonBarOptions, plotOptions: { bar: { ...commonBarOptions.plotOptions.bar, horizontal: true } }, chart: { ...commonBarOptions.chart, height: 400 } });
-            charts.paradasOEE = new ApexCharts(document.querySelector("#chart-paradas-oee"), { chart: { type: 'donut', height: 350, fontFamily: 'Inter, sans-serif' }, labels: [], series: [], responsive: [{ breakpoint: 480, options: { chart: { width: 200 }, legend: { position: 'bottom' } } }], noData: { text: noDataMessage }, legend: { position: 'bottom' }, colors: chartColors });
+            charts.paradasPorCausa = new ApexCharts(document.querySelector("#chart-paradas-causa"), { ...commonBarOptions, plotOptions: { bar: { ...commonBarOptions.plotOptions.bar, horizontal: true } }, chart: { ...commonBarOptions.chart, height: 400 }});
             Object.values(charts).forEach(chart => chart.render());
         }
         init();
@@ -484,4 +466,3 @@
     </script>
 </body>
 </html>
-
