@@ -3,7 +3,7 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Dashboard Industrial v2.3</title>
+    <title>Dashboard Industrial v2.4</title>
     <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.3/dist/css/bootstrap.min.css" rel="stylesheet">
     <link rel="preconnect" href="https://fonts.googleapis.com">
     <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
@@ -153,7 +153,7 @@
         <section class="row mb-4 g-4">
             <div class="col-lg-3 col-md-6"><div class="card p-3"><div class="card-body text-center"><h5 class="card-title text-muted">Producción Total</h5><p class="kpi-value" id="kpi-total-production">--</p></div></div></div>
             <div class="col-lg-3 col-md-6"><div class="card p-3"><div class="card-body text-center"><h5 class="card-title text-muted">Disponibilidad</h5><p class="kpi-value" id="kpi-availability">--</p></div></div></div>
-            <div class="col-lg-3 col-md-6"><div class="card p-3"><div class="card-body text-center"><h5 class="card-title text-muted">Eficiencia (Pzas/Hr)</h5><p class="kpi-value" id="kpi-efficiency">--</p></div></div></div>
+            <div class="col-lg-3 col-md-6"><div class="card p-3"><div class="card-body text-center"><h5 class="card-title text-muted">Eficiencia (Pzas/Turno)</h5><p class="kpi-value" id="kpi-efficiency">--</p></div></div></div>
             <div class="col-lg-3 col-md-6"><div class="card p-3"><div class="card-body text-center"><h5 class="card-title text-muted">Horas de Parada</h5><p class="kpi-value" id="kpi-total-downtime">--</p></div></div></div>
         </section>
         
@@ -221,7 +221,6 @@
                         populateFilters(originalData);
                         addEventListeners();
                         
-                        // Default date range: 1st of previous month to today
                         const today = new Date();
                         const startOfPreviousMonth = new Date(today.getFullYear(), today.getMonth() - 1, 1);
                         datepicker.setDate([startOfPreviousMonth, today], true);
@@ -275,7 +274,6 @@
                 
                 const today = new Date();
                 
-                // Botones Mes
                 document.getElementById('btnMesActual').addEventListener('click', () => datepicker.setDate([new Date(today.getFullYear(), today.getMonth(), 1), today], true));
                 document.getElementById('btnMesAnterior').addEventListener('click', () => {
                      const start = new Date(today.getFullYear(), today.getMonth() - 1, 1);
@@ -283,18 +281,19 @@
                      datepicker.setDate([start, end], true);
                 });
                 
-                // Botones Semana
                 document.getElementById('btnSemanaActual').addEventListener('click', () => {
-                    const firstDay = today.getDate() - today.getDay() + (today.getDay() === 0 ? -6 : 1);
-                    const start = new Date(today.setDate(firstDay));
-                    datepicker.setDate([start, new Date()], true);
+                    const first = today.getDate() - today.getDay() + (today.getDay() === 0 ? -6 : 1);
+                    const startOfWeek = new Date(new Date().setDate(first));
+                    datepicker.setDate([startOfWeek, new Date()], true);
                 });
                  document.getElementById('btnSemanaAnterior').addEventListener('click', () => {
-                    const end = new Date();
-                    end.setDate(end.getDate() - end.getDay() - (end.getDay() === 0 ? 0 : 7) + 7);
-                    const start = new Date(end);
-                    start.setDate(start.getDate() - 6);
-                    datepicker.setDate([start, end], true);
+                    const before = new Date();
+                    before.setDate(before.getDate() - 7);
+                    const first = before.getDate() - before.getDay() + (before.getDay() === 0 ? -6 : 1);
+                    const startOfLastWeek = new Date(new Date().setDate(first));
+                    const endOfLastWeek = new Date(startOfLastWeek);
+                    endOfLastWeek.setDate(endOfLastWeek.getDate() + 6);
+                    datepicker.setDate([startOfLastWeek, endOfLastWeek], true);
                 });
 
                 document.getElementById('reset-filters').addEventListener('click', () => {
@@ -406,7 +405,12 @@
                         ...commonOptions, chart: {...commonOptions.chart, type: 'line'}, series: chartData.series,
                         stroke: { curve: 'smooth', width: 3 },
                         markers: { size: 5 },
-                        dataLabels: { enabled: true, style: { colors: ["#000000"] }, background: { enabled: true, foreColor: '#000', borderRadius: 2, padding: 4, opacity: 0.8, borderColor: '#87CEFA', borderWidth: 1 } },
+                        dataLabels: { 
+                            enabled: true, 
+                            offsetY: -15, // FIX: Ajuste vertical para evitar solapamiento
+                            style: { colors: ["#000000"] }, 
+                            background: { enabled: true, foreColor: '#000', borderRadius: 2, padding: 4, opacity: 0.8, borderColor: '#87CEFA', borderWidth: 1 } 
+                        },
                         xaxis: { type: 'datetime', categories: chartData.categories, labels: { style: { colors: textColor }, datetimeUTC: false, format: 'dd MMM' } },
                         yaxis: { labels: { style: { colors: textColor }, formatter: val => val.toLocaleString('es-ES') } },
                         tooltip: { theme: currentTheme, x: { format: 'dd/MM/yyyy' }, y: { formatter: val => val ? val.toLocaleString('es-ES') : val } }
@@ -426,38 +430,39 @@
                     options = {
                         ...commonOptions, chart: {...commonOptions.chart, type: 'line', stacked: false},
                         series: [
-                            { name: 'Tiempo (Horas)', type: 'column', data: chartData.map(d => (d.totalMinutes / 60).toFixed(2)) },
+                            { name: 'Tiempo (Horas)', type: 'column', data: chartData.map(d => parseFloat((d.totalMinutes / 60).toFixed(2))) },
                             { name: 'Frecuencia', type: 'line', data: chartData.map(d => d.totalFrequency) }
                         ],
-                        stroke: { width: [0, 4] },
-                        xaxis: { categories: chartData.map(d => d.reason), labels: { style: { colors: textColor }, trim: true, rotate: -45, maxHeight: 120 } },
+                        stroke: { width: [0, 4], curve: 'smooth' },
+                        xaxis: { categories: chartData.map(d => d.reason), labels: { style: { colors: textColor, fontSize: '11px' }, trim: true, rotate: -45, hideOverlappingLabels: true, maxHeight: 120 } },
                         yaxis: [
                             { seriesName: 'Tiempo (Horas)', axisTicks: { show: true }, axisBorder: { show: true, color: chartColors[0] }, labels: { style: { colors: chartColors[0] } }, title: { text: "Tiempo Total (Horas)", style: { color: chartColors[0] } }},
                             { seriesName: 'Frecuencia', opposite: true, axisTicks: { show: true }, axisBorder: { show: true, color: chartColors[1] }, labels: { style: { colors: chartColors[1] } }, title: { text: "Frecuencia (Nro. de Veces)", style: { color: chartColors[1] } }}
                         ],
-                        tooltip: { theme: currentTheme, fixed: { enabled: true, position: 'topLeft', offsetY: 30, offsetX: 60 }},
+                        tooltip: { theme: currentTheme, fixed: { enabled: false }, y: { formatter: (val) => val.toLocaleString('es-ES') } },
                         legend: { horizontalAlign: 'left', offsetX: 40 }
                     };
                 }
 
                 if (charts[elementId]) {
-                    charts[elementId].updateOptions(options);
+                    charts[elementId].updateOptions(options, true, true, true);
                 } else {
                     charts[elementId] = new ApexCharts(document.querySelector(`#${elementId}`), options);
                     charts[elementId].render();
                 }
             }
             
-            // FIX: Función de agregación específica y correcta para producción diaria
             function aggregateDailyProduction(data) {
                 const aggregation = {};
                 const seenProdIds = new Set();
                 data.forEach(row => {
-                    const dateCategory = row.Fecha.toISOString().split('T')[0];
-                    const uniqueKey = `${dateCategory}-${row.IdProduccion}`;
-                    if (row.IdProduccion && !seenProdIds.has(uniqueKey)) {
-                        aggregation[dateCategory] = (aggregation[dateCategory] || 0) + row.Cantidad;
-                        seenProdIds.add(uniqueKey);
+                    if (row.Fecha) {
+                        const dateCategory = row.Fecha.toISOString().split('T')[0];
+                        const uniqueKey = `${dateCategory}-${row.IdProduccion}`;
+                        if (row.IdProduccion && !seenProdIds.has(uniqueKey)) {
+                            aggregation[dateCategory] = (aggregation[dateCategory] || 0) + row.Cantidad;
+                            seenProdIds.add(uniqueKey);
+                        }
                     }
                 });
                 const sorted = Object.keys(aggregation).sort((a, b) => new Date(a) - new Date(b));
@@ -482,7 +487,6 @@
                 return aggregatedArray.sort((a, b) => b.value - a.value);
             }
 
-            // NUEVA FUNCIÓN: Agrega datos para el gráfico de Tiempo vs Frecuencia
             function aggregateDowntime(data) {
                 const aggregation = {};
                 data.forEach(row => {
