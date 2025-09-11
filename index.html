@@ -3,108 +3,136 @@
 <head>
   <meta charset="utf-8" />
   <meta name="viewport" content="width=device-width, initial-scale=1" />
-  <title>Dashboard OEE Unificado</title>
+  <title>Dashboard Industrial - OEE Unificado</title>
   <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.3/dist/css/bootstrap.min.css" rel="stylesheet">
+  <link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;600;700&display=swap" rel="stylesheet">
   <link href="https://cdn.datatables.net/1.13.6/css/jquery.dataTables.min.css" rel="stylesheet" />
   <link href="https://cdn.datatables.net/buttons/2.4.1/css/buttons.dataTables.min.css" rel="stylesheet" />
-  <link href="https://cdn.jsdelivr.net/npm/flatpickr/dist/flatpickr.min.css" rel="stylesheet" />
+  <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/flatpickr/dist/flatpickr.min.css">
   <style>
-    body{font-family:Inter,system-ui,-apple-system,Segoe UI,Roboto,Arial;background:#f5f7fb;padding:20px}
-    .card{border-radius:10px;box-shadow:0 6px 18px rgba(0,0,0,0.06)}
-    .kpi{font-size:1.6rem;font-weight:700}
-    .sidebar{display:flex;gap:8px;margin-bottom:12px}
-    .small-muted{color:#6c757d}
+    body {
+      font-family: Inter, system-ui, -apple-system, Segoe UI, Roboto, "Helvetica Neue", Arial;
+      background: linear-gradient(135deg, #f0f2f5, #e4e7eb);
+      min-height: 100vh;
+      display: flex;
+      flex-direction: column;
+      transition: background 0.3s ease;
+    }
+    body.dark-mode {
+      background: linear-gradient(135deg, #1e1f26, #2c2e36);
+    }
+    .glass-card {
+      backdrop-filter: blur(12px) saturate(180%);
+      -webkit-backdrop-filter: blur(12px) saturate(180%);
+      background-color: rgba(255, 255, 255, 0.6);
+      border-radius: 12px;
+      border: 1px solid rgba(255, 255, 255, 0.3);
+      box-shadow: 0 8px 24px rgba(0,0,0,0.15);
+      padding: 16px;
+      margin-bottom: 16px;
+      transition: background-color 0.3s ease;
+    }
+    body.dark-mode .glass-card {
+      background-color: rgba(30, 30, 30, 0.55);
+      border: 1px solid rgba(255, 255, 255, 0.1);
+    }
+    nav.navbar {
+      backdrop-filter: blur(20px) saturate(180%);
+      -webkit-backdrop-filter: blur(20px) saturate(180%);
+      background-color: rgba(255, 255, 255, 0.5) !important;
+      border-bottom: 1px solid rgba(255, 255, 255, 0.3);
+      transition: background-color 0.3s ease;
+    }
+    body.dark-mode nav.navbar {
+      background-color: rgba(30, 30, 30, 0.6) !important;
+      border-bottom: 1px solid rgba(255, 255, 255, 0.1);
+    }
+    .kpi {
+      font-size: 1.8rem;
+      font-weight: 700;
+      color: #212529;
+    }
+    body.dark-mode .kpi {
+      color: #f8f9fa;
+    }
+    .nav-tabs .nav-link.active {
+      background-color: rgba(13,110,253,0.15);
+      border-radius: 8px;
+      font-weight: 600;
+    }
+    .btn-dynamic {
+      transition: all 0.3s ease;
+    }
+    .btn-dynamic:hover {
+      transform: translateY(-2px);
+      box-shadow: 0 6px 12px rgba(0,0,0,0.15);
+    }
   </style>
 </head>
 <body>
-  <div class="d-flex justify-content-between align-items-center mb-3">
-    <h3>Dashboard OEE Unificado</h3>
-    <div>
-      <input id="csv-upload" type="file" accept=".csv" />
-      <button id="btn-load-sample" class="btn btn-sm btn-outline-primary">Cargar CSV por defecto</button>
+  <nav class="navbar navbar-expand-lg navbar-light px-3">
+    <a class="navbar-brand fw-bold" href="#">📊 Dashboard OEE</a>
+    <div class="ms-auto d-flex align-items-center gap-3">
+      <div class="small text-muted" id="last-updated">Cargando...</div>
+      <button id="btn-toggle-theme" class="btn btn-sm btn-outline-secondary btn-dynamic">🌙/☀️</button>
     </div>
-  </div>
+  </nav>
 
-  <div class="row g-3 mb-3">
-    <div class="col-md-3">
-      <div class="card p-3">
-        <div class="small-muted">Rango de fechas</div>
-        <input id="date-range" class="form-control form-control-sm" placeholder="Seleccionar rango...">
-        <div class="small-muted mt-2">Máquinas</div>
-        <select id="filter-machines" class="form-select form-select-sm" multiple></select>
-        <div class="small-muted mt-2">Turnos</div>
-        <select id="filter-shifts" class="form-select form-select-sm" multiple></select>
-        <div class="mt-3 d-flex gap-2">
-          <button id="btn-reset" class="btn btn-sm btn-outline-secondary">Reset</button>
-          <button id="btn-export-csv" class="btn btn-sm btn-outline-success">Exportar filtrado</button>
-        </div>
-      </div>
-    </div>
-
-    <div class="col-md-9">
-      <div class="card p-3">
-        <div class="d-flex justify-content-between align-items-center">
-          <div>
-            <div class="small-muted">OEE Global</div>
-            <div id="kpi-oee" class="kpi">--</div>
-          </div>
-          <div>
-            <div class="small-muted">Disponibilidad</div>
-            <div id="kpi-availability" class="kpi">--</div>
-          </div>
-          <div>
-            <div class="small-muted">Rendimiento</div>
-            <div id="kpi-performance" class="kpi">--</div>
-          </div>
-          <div>
-            <div class="small-muted">Calidad</div>
-            <div id="kpi-quality" class="kpi">--</div>
-          </div>
-        </div>
-      </div>
-
-      <ul class="nav nav-tabs mt-3" id="tabs">
-        <li class="nav-item"><button class="nav-link active" data-bs-target="#tab-oee" data-bs-toggle="tab">OEE</button></li>
-        <li class="nav-item"><button class="nav-link" data-bs-target="#tab-paradas" data-bs-toggle="tab">Paradas OEE</button></li>
-        <li class="nav-item"><button class="nav-link" data-bs-target="#tab-turnos" data-bs-toggle="tab">Turnos</button></li>
-        <li class="nav-item"><button class="nav-link" data-bs-target="#tab-datos" data-bs-toggle="tab">Datos Brutos</button></li>
+  <main class="container-fluid py-4">
+    <div class="glass-card">
+      <ul class="nav nav-tabs" id="mainTabs" role="tablist">
+        <li class="nav-item"><button class="nav-link active" data-bs-toggle="tab" data-bs-target="#tab-overview">Resumen</button></li>
+        <li class="nav-item"><button class="nav-link" data-bs-toggle="tab" data-bs-target="#tab-oee">OEE</button></li>
+        <li class="nav-item"><button class="nav-link" data-bs-toggle="tab" data-bs-target="#tab-paradas">Paradas OEE</button></li>
+        <li class="nav-item"><button class="nav-link" data-bs-toggle="tab" data-bs-target="#tab-turnos">Turnos</button></li>
+        <li class="nav-item"><button class="nav-link" data-bs-toggle="tab" data-bs-target="#tab-data">Datos Brutos</button></li>
       </ul>
+    </div>
 
-      <div class="tab-content mt-3">
-        <div class="tab-pane fade show active" id="tab-oee">
-          <div class="row g-3">
-            <div class="col-lg-8">
-              <div class="card p-3 mb-3"><h5>OEE diario</h5><div id="chart-oee"></div></div>
-              <div class="card p-3"><h5>OEE por máquina</h5><div id="chart-oee-machine"></div></div>
-            </div>
-            <div class="col-lg-4">
-              <div class="card p-3 mb-3"><h6>Observaciones</h6><div id="oee-observations" class="small-muted"></div></div>
-              <div class="card p-3"><h6>Benchmark (velocidades)</h6><div id="bench-table"></div></div>
-            </div>
-          </div>
+    <div class="tab-content">
+      <!-- RESUMEN -->
+      <div class="tab-pane fade show active" id="tab-overview">
+        <div class="row g-3">
+          <div class="col-md-3"><div class="glass-card text-center"><div class="small text-muted">Producción Total</div><div id="kpi-production" class="kpi">--</div></div></div>
+          <div class="col-md-3"><div class="glass-card text-center"><div class="small text-muted">Disponibilidad</div><div id="kpi-availability" class="kpi">--</div></div></div>
+          <div class="col-md-3"><div class="glass-card text-center"><div class="small text-muted">Eficiencia (pz/hr)</div><div id="kpi-efficiency" class="kpi">--</div></div></div>
+          <div class="col-md-3"><div class="glass-card text-center"><div class="small text-muted">Horas parada</div><div id="kpi-downtime" class="kpi">--</div></div></div>
         </div>
-
-        <div class="tab-pane fade" id="tab-paradas">
-          <div class="row g-3">
-            <div class="col-lg-6"><div class="card p-3"><h5>Pareto por categoría</h5><div id="chart-paradas"></div></div></div>
-            <div class="col-lg-6"><div class="card p-3"><h5>Tabla de paradas</h5><table id="paradas-table" class="display" style="width:100%"></table></div></div>
-          </div>
+        <div class="row g-3 mt-2">
+          <div class="col-lg-8"><div class="glass-card"><h5>Producción diaria</h5><div id="chart-daily"></div></div></div>
+          <div class="col-lg-4"><div class="glass-card"><h5>Producción por máquina</h5><div id="chart-by-machine"></div></div></div>
         </div>
+      </div>
 
-        <div class="tab-pane fade" id="tab-turnos">
-          <div class="card p-3 mb-3"><h5>Heatmap OEE por turno / máquina</h5><div id="chart-heatmap"></div></div>
-          <div class="card p-3"><h5>KPI por turno</h5><div id="turno-table"></div></div>
+      <!-- OEE -->
+      <div class="tab-pane fade" id="tab-oee">
+        <div class="row g-3 mb-3">
+          <div class="col-md-3"><div class="glass-card text-center"><div class="small text-muted">OEE Global</div><div id="kpi-oee" class="kpi">--</div></div></div>
+          <div class="col-md-3"><div class="glass-card text-center"><div class="small text-muted">Disponibilidad</div><div id="kpi-oee-availability" class="kpi">--</div></div></div>
+          <div class="col-md-3"><div class="glass-card text-center"><div class="small text-muted">Rendimiento</div><div id="kpi-oee-performance" class="kpi">--</div></div></div>
+          <div class="col-md-3"><div class="glass-card text-center"><div class="small text-muted">Calidad</div><div id="kpi-oee-quality" class="kpi">--</div></div></div>
         </div>
+        <div class="glass-card mb-3"><h5>OEE Diario</h5><div id="chart-oee-daily"></div></div>
+        <div class="glass-card"><h5>OEE por Máquina</h5><div id="chart-oee-machine"></div></div>
+      </div>
 
-        <div class="tab-pane fade" id="tab-datos">
-          <div class="card p-3"><h5>Datos brutos</h5><table id="raw-table" class="display" style="width:100%"></table></div>
-        </div>
+      <!-- PARADAS -->
+      <div class="tab-pane fade" id="tab-paradas">
+        <div class="glass-card mb-3"><h5>Pareto por Categoría OEE</h5><div id="chart-oee-losses"></div></div>
+        <div class="glass-card"><h5>Detalle de Paradas</h5><div id="table-paradas"></div></div>
+      </div>
 
+      <!-- TURNOS -->
+      <div class="tab-pane fade" id="tab-turnos">
+        <div class="glass-card mb-3"><h5>Heatmap OEE por Turno</h5><div id="chart-oee-turno"></div></div>
+      </div>
+
+      <!-- DATOS -->
+      <div class="tab-pane fade" id="tab-data">
+        <div class="glass-card"><h5>Datos Brutos</h5><table id="raw-table" class="display" style="width:100%"></table></div>
       </div>
     </div>
-  </div>
-
-  <div class="modal fade" id="modalDetails" tabindex="-1"><div class="modal-dialog modal-xl"><div class="modal-content"><div class="modal-header"><h5 class="modal-title">Detalles</h5><button class="btn-close" data-bs-dismiss="modal"></button></div><div class="modal-body"><div id="modal-body-content"></div></div></div></div></div>
+  </main>
 
   <script src="https://code.jquery.com/jquery-3.7.1.min.js"></script>
   <script src="https://cdn.jsdelivr.net/npm/papaparse@5.3.2/papaparse.min.js"></script>
@@ -112,161 +140,45 @@
   <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.3/dist/js/bootstrap.bundle.min.js"></script>
   <script src="https://cdn.jsdelivr.net/npm/flatpickr"></script>
   <script src="https://cdn.datatables.net/1.13.6/js/jquery.dataTables.min.js"></script>
-  <script src="https://cdn.datatables.net/buttons/2.4.1/js/dataTables.buttons.min.js"></script>
-  <script src="https://cdn.datatables.net/buttons/2.4.1/js/buttons.html5.min.js"></script>
 
   <script>
-    // ----------------- Mapeo de códigos según tabla proporcionada -----------------
-    const codigoCategoria = {
-      '00':'Planificado',
-      '01':'Setup',
-      '02':'Microparada',
-      '04':'Mantenimiento',
-      '05':'Mantenimiento',
-      '06':'Mantenimiento',
-      '07':'Mantenimiento',
-      '08':'Mantenimiento',
-      '09':'Material',
-      '10':'Setup',
-      '11':'Setup',
-      '12':'Otros',
-      '13':'Otros',
-      '14':'Microparada',
-      '15':'Microparada',
-      '16':'Otros',
-      '20':'Externo'
+    const oeeMap = {
+      '01':'Setup','10':'Setup','11':'Setup',
+      '04':'Mantenimiento','05':'Mantenimiento','06':'Mantenimiento','07':'Mantenimiento','08':'Mantenimiento','20':'Mantenimiento',
+      '02':'Microparadas','14':'Microparadas','15':'Microparadas',
+      '09':'Otros','12':'Otros','13':'Otros','16':'Otros'
     };
 
-    // ----------------- Estado -----------------
-    let rawData = []; let normalized = []; let charts = {};
-
-    function normalizeHeader(h){ return (h||'').toString().trim().normalize('NFKD').replace(/\p{Diacritic}/gu,'').replace(/[^a-zA-Z0-9]+/g,'_').replace(/^_|_$/g,''); }
-
-    function parseDateString(s){ if(!s) return null; if(/\d{1,2}\/\d{1,2}\/\d{2,4}/.test(s)){ const p=s.split('/').map(x=>parseInt(x,10)); return new Date(p[2],p[1]-1,p[0]); } const d=new Date(s); return isNaN(d)?null:d; }
-
-    function loadCSVFromUrl(url){ Papa.parse(url,{download:true,header:true,skipEmptyLines:true,transformHeader:normalizeHeader,complete:(res)=>onDataLoaded(res.data)}); }
-    function loadCSVFromFile(file){ Papa.parse(file,{header:true,skipEmptyLines:true,transformHeader:normalizeHeader,complete:(res)=>onDataLoaded(res.data)}); }
-
-    function onDataLoaded(data){ rawData=data; normalized = data.map(r=>{ const o={}; for(const k in r) o[k]=r[k]; const dateCol = Object.keys(o).find(c=>/fecha/i.test(c))||'Fecha'; o._fecha = parseDateString(o[dateCol]); o._cantidad = Number(String(o['Cantidad']||o['cantidad']||0).replace(/[^0-9\-\.]/g,''))||0; o._minutos = Number(String(o['Minutos']||o['minutos']||0).replace(/[^0-9\-\.]/g,''))||0; o._hs_trab_min = Number(String(o['Hs_Trab']||o['hs_trab']||0).replace(/[^0-9\-\.]/g,''))||0; // codigo de incidencia
-      const codeKey = Object.keys(o).find(c=>/cod/i.test(c) && /incid/i.test(c) || c.toLowerCase()==='codigo' ) || Object.keys(o).find(c=>/codigo/i.test(c));
-      o._codigo = (codeKey && String(o[codeKey]).trim()) || (o['descrip_incidencia'] && o['descrip_incidencia'].trim() && null);
-      // If codigo is not present but descrip_incidencia contains code like '01 - Arranque', try to extract leading two digits
-      if(!o._codigo && o['descrip_incidencia']){
-        const m = String(o['descrip_incidencia']).match(/\b(\d{1,2})\b/);
-        if(m) o._codigo = m[1];
-      }
-      // Map category
-      o._categoria = codigoCategoria[o._codigo] || (o['descrip_incidencia']? 'Otros' : 'SinCodigo');
-      return o; }).filter(r=>r._fecha);
-
-      populateFilters(); applyFiltersAndRender(); document.getElementById('lastUpdated')?.innerText = new Date().toLocaleString(); }
-
-    function populateFilters(){ const machines = [...new Set(normalized.map(r=>r.Descrip_Maquina||r['Descrip_Maquina']).filter(Boolean))].sort(); const selM=document.getElementById('filter-machines'); selM.innerHTML=''; machines.forEach(m=>selM.add(new Option(m,m))); const turns=[...new Set(normalized.map(r=>r.Turno).filter(Boolean))].sort(); const selT=document.getElementById('filter-shifts'); selT.innerHTML=''; turns.forEach(t=>selT.add(new Option(t,t))); const dates=normalized.map(r=>r._fecha).sort((a,b)=>a-b); if(dates.length) flatpickr('#date-range',{mode:'range',dateFormat:'d/m/Y',defaultDate:[dates[0],dates[dates.length-1]],onClose:applyFiltersAndRender}); }
-
-    function getActiveFilters(){ const selM=Array.from(document.getElementById('filter-machines').selectedOptions).map(o=>o.value); const selT=Array.from(document.getElementById('filter-shifts').selectedOptions).map(o=>o.value); const dr=document.querySelector('#date-range')._flatpickr ? document.querySelector('#date-range')._flatpickr.selectedDates : []; return {machines:selM,shifts:selT,dateRange:dr}; }
-
-    // Aggregate unique productions by IdProduccion
-    function aggregateUnique(data){ const map=new Map(); const idKey = Object.keys(data[0]||{}).find(k=>/idproduccion/i.test(k))||'IdProduccion'; for(const r of data){ const id=r[idKey]||Math.random().toString(36); if(!map.has(id)) map.set(id, {cantidad:r._cantidad||0,hs_trab_min:r._hs_trab_min||0,downtime_min:r._minutos||0,machine:r.Descrip_Maquina||r['Descrip_Maquina'],turno:r.Turno,categoria:r._categoria}); else { const v=map.get(id); v.cantidad=Math.max(v.cantidad,r._cantidad||0); v.hs_trab_min=Math.max(v.hs_trab_min,r._hs_trab_min||0); v.downtime_min+=r._minutos||0; map.set(id,v);} } return Array.from(map.values()); }
-
-    function computeBenchmarks(data){ // velocidad estandar por maquina = mejor piezas/minuto observado
-      const perMachine ={}; for(const r of data){ const m = r.Descrip_Maquina||r['Descrip_Maquina']||'SinMaquina'; const piezas = Number(r.Cantidad||r._cantidad||0); const tiempo = Number(r.Hs_Trab||r._hs_trab_min||0) || Number(r._hs_trab_min||0); if(!tiempo || tiempo<=0) continue; const ppm = piezas / tiempo; if(!perMachine[m] || ppm>perMachine[m]) perMachine[m]=ppm; }
-      return perMachine; }
-
-    function calculateOEE(agg, benchmarks){ // agg is aggregated unique productions
-      const totalProduction = agg.reduce((s,x)=>s+x.cantidad,0);
-      const planned = agg.reduce((s,x)=>s + (x.hs_trab_min||0),0) || 1;
-      const downtime = agg.reduce((s,x)=>s + (x.downtime_min||0),0);
-      const run = Math.max(0, planned - downtime);
-      const availability = run / planned;
-      // performance via benchmarks: expected production = sum(run * benchmark_for_machine)
-      let expected = 0; for(const x of agg){ const bpm = benchmarks[x.machine] || (totalProduction/planned); expected += ( (x.hs_trab_min - (x.downtime_min||0)) * (benchmarks[x.machine]|| (totalProduction/planned)) ); }
-      const performance = expected>0 ? (totalProduction / expected) : 1;
-      // quality: deduce from categories mapped to 'Calidad' (none initially). We'll assume 100% if no quality categories.
-      // If there are records with category 'Calidad', we expect them to carry a field with defective count; absent that we treat minutes in Calidad as proxy (not ideal)
-      const quality_losses_codes = ['Calidad'];
-      // find any lines whose categoria equals Calidad — if exist, set quality <100 using a heuristic: lost_units = totalProduction * (minutes_in_calidad / planned)
-      const minutes_quality = agg.filter(a=>a.categoria==='Calidad').reduce((s,x)=>s+(x.downtime_min||0),0);
-      let quality = 1.0; if(minutes_quality>0){ const est_bad = totalProduction * (minutes_quality / planned); quality = Math.max(0, (totalProduction - est_bad)/totalProduction); }
-      const oee = availability * performance * quality;
-      return {totalProduction,planned,downtime,run,availability,performance,quality,oee}; }
-
-    function applyFiltersAndRender(){ const f=getActiveFilters(); let filtered = normalized.slice(); if(f.machines.length) filtered = filtered.filter(r=>f.machines.includes(r.Descrip_Maquina)); if(f.shifts && f.shifts.length) filtered = filtered.filter(r=>f.shifts.includes(r.Turno)); if(f.dateRange && f.dateRange.length===2){ const [a,b]=f.dateRange; filtered = filtered.filter(r=>r._fecha>=a && r._fecha<=b); }
-      // Aggregations
-      const agg = aggregateUnique(filtered);
-      const benchmarks = computeBenchmarks(filtered);
-      const oee = calculateOEE(agg,benchmarks);
-      renderKPIs(oee);
-      renderOEEDaily(agg,benchmarks);
-      renderOEEMachine(agg,benchmarks);
-      renderParadas(filtered);
-      renderTurnos(agg,benchmarks);
-      renderRawTable(filtered);
+    function classifyOEE(row){
+      const code = row.IdIncidencia || row.NroIncidencia || '';
+      return oeeMap[code] || 'Otros';
     }
 
-    function renderKPIs(oee){ document.getElementById('kpi-oee').innerText = (oee.oee*100).toFixed(1)+'%'; document.getElementById('kpi-availability').innerText = (oee.availability*100).toFixed(1)+'%'; document.getElementById('kpi-performance').innerText = (oee.performance*100).toFixed(1)+'%'; document.getElementById('kpi-quality').innerText = (oee.quality*100).toFixed(1)+'%'; document.getElementById('oee-observations').innerText = `Producción: ${oee.totalProduction.toLocaleString()} piezas • Planned min: ${oee.planned.toLocaleString()} • Paradas min: ${oee.downtime.toLocaleString()}`; // benchmark table
-      const bench = computeBenchmarks(normalized);
-      let html = '<table class="table table-sm"><thead><tr><th>Máquina</th><th>piezas/min (benchmark)</th></tr></thead><tbody>';
-      for(const m in bench) html += `<tr><td>${m}</td><td>${bench[m].toFixed(3)}</td></tr>`;
-      html += '</tbody></table>'; document.getElementById('bench-table').innerHTML = html; }
-
-    function renderOEEDaily(agg,bench){ // produce daily OEE time series
-      const byDate = {}; for(const a of agg){ const d = new Date(a.hs_trab_min?0:0); // placeholder
-        // we need dates: since agg lost date, approximate by searching original rows with same cantidad and machine
-      }
-      // Simpler approach: compute daily OEE from raw rows grouped by date
-      const grouped = {};
-      for(const r of normalized){ const d=r._fecha.toISOString().slice(0,10); if(!grouped[d]) grouped[d]=[]; grouped[d].push(r); }
-      const dates = Object.keys(grouped).sort(); const series=[];
-      for(const d of dates){ const a=aggregateUnique(grouped[d]); const b=computeBenchmarks(grouped[d]); const m=calculateOEE(a,b); series.push({x:d,y:(m.oee*100).toFixed(2)}); }
-      const cats = series.map(s=>s.x); const vals = series.map(s=>Number(s.y)); if(charts.oee) charts.oee.updateOptions({series:[{name:'OEE %',data:vals}], xaxis:{categories:cats}}); else { charts.oee = new ApexCharts(document.querySelector('#chart-oee'),{chart:{type:'line',height:320,toolbar:{show:true}},series:[{name:'OEE %',data:vals}],xaxis:{categories:cats},yaxis:{min:0,max:100}}); charts.oee.render(); }
+    async function loadCSV(){
+      const url = "exportProduccionyEventos.csv"; // relativo al mismo repo
+      const response = await fetch(url);
+      const text = await response.text();
+      Papa.parse(text, {
+        header: true,
+        skipEmptyLines: true,
+        complete: function(results) {
+          onDataLoaded(results.data);
+        }
+      });
     }
 
-    function renderOEEMachine(agg,bench){ // OEE per machine
-      const byMachine = {};
-      const idKey = Object.keys(normalized[0]||{}).find(k=>/idproduccion/i.test(k))||'IdProduccion';
-      // create per-machine agg
-      for(const r of agg){ const m=r.machine||'SinMaquina'; if(!byMachine[m]) byMachine[m]=[]; byMachine[m].push(r); }
-      const cats=[]; const oeeVals=[];
-      for(const m in byMachine){ const a=byMachine[m]; const b={}; // build fake bench for this group
-        const benchVal = computeBenchmarks(normalized)[m] || (a.reduce((s,x)=>s+x.cantidad,0)/Math.max(1,a.reduce((s,x)=>s+x.hs_trab_min,0))); const res = calculateOEE(a,{[m]:benchVal}); cats.push(m); oeeVals.push(Number((res.oee*100).toFixed(2))); }
-      if(charts.oeeMachine) charts.oeeMachine.updateOptions({series:[{name:'OEE %',data:oeeVals}], xaxis:{categories:cats}}); else { charts.oeeMachine = new ApexCharts(document.querySelector('#chart-oee-machine'),{chart:{type:'bar',height:320},series:[{name:'OEE %',data:oeeVals}],xaxis:{categories:cats}}); charts.oeeMachine.render(); }
+    function onDataLoaded(data){
+      console.log("Datos cargados:", data.slice(0,5));
+      document.getElementById("last-updated").innerText = "Última actualización: " + new Date().toLocaleString();
+      // TODO: cálculos y renderizado de KPIs/gráficos
     }
 
-    function renderParadas(filtered){ // pareto
-      const byCat = {};
-      for(const r of filtered){ const c = r._categoria || 'SinCodigo'; byCat[c]=(byCat[c]||0)+ (r._minutos||0); }
-      const cats = Object.keys(byCat).sort((a,b)=>byCat[b]-byCat[a]); const vals = cats.map(c=>byCat[c]); if(charts.paradas) charts.paradas.updateOptions({series:[{name:'Minutos',data:vals}], xaxis:{categories:cats}}); else { charts.paradas = new ApexCharts(document.querySelector('#chart-paradas'),{chart:{type:'bar',height:320},series:[{name:'Minutos',data:vals}],plotOptions:{bar:{horizontal:true}},xaxis:{categories:cats}}); charts.paradas.render(); }
-      // render table
-      const rows = Object.keys(byCat).map(c=>({categoria:c,minutos:byCat[c]})).sort((a,b)=>b.minutos-a.minutos);
-      if(window.paradasDT) window.paradasDT.clear().destroy(); $('#paradas-table').DataTable({data:rows,columns:[{title:'Categoria',data:'categoria'},{title:'Minutos',data:'minutos'}],dom:'Bfrtip',buttons:['csv']}); }
+    document.addEventListener("DOMContentLoaded", loadCSV);
 
-    function renderTurnos(agg,bench){ // heatmap: machine x turno OEE
-      // prepare matrix
-      const machines = [...new Set(normalized.map(r=>r.Descrip_Maquina).filter(Boolean))]; const turns = [...new Set(normalized.map(r=>r.Turno).filter(Boolean))]; const matrix = {};
-      for(const m of machines) matrix[m] = {};
-      for(const r of normalized){ const key = r.Descrip_Maquina || 'SinMaquina'; const t = r.Turno || 'SinTurno'; if(!matrix[key][t]) matrix[key][t]=[]; matrix[key][t].push(r); }
-      const series = [];
-      for(const t of turns){ const data = []; for(const m of machines){ const group = matrix[m][t]||[]; if(!group.length){ data.push({x:m,y:0}); continue; } const a=aggregateUnique(group); const b=computeBenchmarks(group); const res=calculateOEE(a,b); data.push({x:m,y: Math.round(res.oee*100)}); } series.push({name:t,data:data}); }
-      // use Apex heatmap-like: we'll render as multiple series in bar chart (stacked) or as heatmap if many combos
-      if(window.heatmapChart) window.heatmapChart.destroy(); const options = {chart:{type:'heatmap',height:350},series:series,plotOptions:{heatmap:{shadeIntensity:0.5,distributed:false}},dataLabels:{enabled:false}}; window.heatmapChart = new ApexCharts(document.querySelector('#chart-heatmap'),options); window.heatmapChart.render();
-      // KPI per turno table
-      const turnoRows = turns.map(t=>{ const group = normalized.filter(r=>r.Turno===t); const a=aggregateUnique(group); const b=computeBenchmarks(group); const res=calculateOEE(a,b); return {turno:t,oee:(res.oee*100).toFixed(1),availability:(res.availability*100).toFixed(1),performance:(res.performance*100).toFixed(1),quality:(res.quality*100).toFixed(1)} });
-      let html = '<table class="table table-sm"><thead><tr><th>Turno</th><th>OEE%</th><th>Disp%</th><th>Perf%</th><th>Qual%</th></tr></thead><tbody>';
-      for(const r of turnoRows) html += `<tr><td>${r.turno}</td><td>${r.oee}</td><td>${r.availability}</td><td>${r.performance}</td><td>${r.quality}</td></tr>`;
-      html += '</tbody></table>'; document.getElementById('turno-table').innerHTML = html; }
-
-    function renderRawTable(data){ if(window.rawDT) window.rawDT.clear().destroy(); if(!data.length){ $('#raw-table').html('<p>No hay datos</p>'); return; } const cols = Object.keys(data[0]).filter(c=>!c.startsWith('_')).map(c=>({title:c,data:c})); window.rawDT = $('#raw-table').DataTable({data:data,columns:cols,dom:'Bfrtip',buttons:['csv','excel'],pageLength:25}); }
-
-    // events
-    document.getElementById('btn-load-sample').addEventListener('click', ()=> loadCSVFromUrl('exportProduccionyEventos.csv'));
-    document.getElementById('csv-upload').addEventListener('change', (e)=>{ const f=e.target.files[0]; if(f) loadCSVFromFile(f); });
-    document.getElementById('btn-reset').addEventListener('click', ()=>{ document.getElementById('filter-machines').selectedIndex=-1; document.getElementById('filter-shifts').selectedIndex=-1; applyFiltersAndRender(); });
-    document.getElementById('filter-machines').addEventListener('change', applyFiltersAndRender);
-    document.getElementById('filter-shifts').addEventListener('change', applyFiltersAndRender);
-    document.getElementById('btn-export-csv').addEventListener('click', ()=>{ const f=getActiveFilters(); let filtered = normalized.slice(); if(f.machines.length) filtered = filtered.filter(r=>f.machines.includes(r.Descrip_Maquina)); if(f.dateRange && f.dateRange.length==2){ const [a,b]=f.dateRange; filtered = filtered.filter(r=>r._fecha>=a && r._fecha<=b); } const csv = Papa.unparse(filtered); const blob=new Blob([csv],{type:'text/csv;charset=utf-8;'}); const url=URL.createObjectURL(blob); const a=document.createElement('a'); a.href=url; a.download='filtered_export.csv'; a.click(); });
-
-    // initial: try auto-load sample if available
-    // loadCSVFromUrl('exportProduccionyEventos.csv');
+    // Toggle claro/oscuro
+    document.getElementById("btn-toggle-theme").addEventListener("click", ()=>{
+      document.body.classList.toggle("dark-mode");
+    });
   </script>
 </body>
 </html>
