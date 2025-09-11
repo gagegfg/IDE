@@ -20,6 +20,7 @@
     }
     body.dark-mode {
       background: linear-gradient(135deg, #1e1f26, #2c2e36);
+      color: #f8f9fa;
     }
     .glass-card {
       backdrop-filter: blur(12px) saturate(180%);
@@ -55,10 +56,16 @@
     body.dark-mode .kpi {
       color: #f8f9fa;
     }
+    .nav-tabs .nav-link { color: #6c757d; }
+    body.dark-mode .nav-tabs .nav-link { color: #adb5bd; }
     .nav-tabs .nav-link.active {
       background-color: rgba(13,110,253,0.15);
       border-radius: 8px;
       font-weight: 600;
+      color: #0d6efd;
+    }
+    body.dark-mode .nav-tabs .nav-link.active {
+       color: #589eff;
     }
     .btn-dynamic {
       transition: all 0.3s ease;
@@ -90,7 +97,6 @@
     </div>
 
     <div class="tab-content">
-      <!-- RESUMEN -->
       <div class="tab-pane fade show active" id="tab-overview">
         <div class="row g-3">
           <div class="col-md-3"><div class="glass-card text-center"><div class="small text-muted">Producción Total</div><div id="kpi-production" class="kpi">--</div></div></div>
@@ -104,30 +110,27 @@
         </div>
       </div>
 
-      <!-- OEE -->
       <div class="tab-pane fade" id="tab-oee">
-        <div class="row g-3 mb-3">
-          <div class="col-md-3"><div class="glass-card text-center"><div class="small text-muted">OEE Global</div><div id="kpi-oee" class="kpi">--</div></div></div>
-          <div class="col-md-3"><div class="glass-card text-center"><div class="small text-muted">Disponibilidad</div><div id="kpi-oee-availability" class="kpi">--</div></div></div>
-          <div class="col-md-3"><div class="glass-card text-center"><div class="small text-muted">Rendimiento</div><div id="kpi-oee-performance" class="kpi">--</div></div></div>
-          <div class="col-md-3"><div class="glass-card text-center"><div class="small text-muted">Calidad</div><div id="kpi-oee-quality" class="kpi">--</div></div></div>
+        <div class="glass-card text-center">
+            <h5>En desarrollo</h5>
+            <p>Los gráficos y KPIs para la pestaña de OEE se implementarán aquí.</p>
         </div>
-        <div class="glass-card mb-3"><h5>OEE Diario</h5><div id="chart-oee-daily"></div></div>
-        <div class="glass-card"><h5>OEE por Máquina</h5><div id="chart-oee-machine"></div></div>
       </div>
 
-      <!-- PARADAS -->
       <div class="tab-pane fade" id="tab-paradas">
-        <div class="glass-card mb-3"><h5>Pareto por Categoría OEE</h5><div id="chart-oee-losses"></div></div>
-        <div class="glass-card"><h5>Detalle de Paradas</h5><div id="table-paradas"></div></div>
+         <div class="glass-card text-center">
+            <h5>En desarrollo</h5>
+            <p>Los gráficos y tablas para la pestaña de Paradas se implementarán aquí.</p>
+        </div>
       </div>
 
-      <!-- TURNOS -->
       <div class="tab-pane fade" id="tab-turnos">
-        <div class="glass-card mb-3"><h5>Heatmap OEE por Turno</h5><div id="chart-oee-turno"></div></div>
+        <div class="glass-card text-center">
+            <h5>En desarrollo</h5>
+            <p>Los gráficos para la pestaña de Turnos se implementarán aquí.</p>
+        </div>
       </div>
 
-      <!-- DATOS -->
       <div class="tab-pane fade" id="tab-data">
         <div class="glass-card"><h5>Datos Brutos</h5><table id="raw-table" class="display" style="width:100%"></table></div>
       </div>
@@ -138,46 +141,187 @@
   <script src="https://cdn.jsdelivr.net/npm/papaparse@5.3.2/papaparse.min.js"></script>
   <script src="https://cdn.jsdelivr.net/npm/apexcharts"></script>
   <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.3/dist/js/bootstrap.bundle.min.js"></script>
-  <script src="https://cdn.jsdelivr.net/npm/flatpickr"></script>
   <script src="https://cdn.datatables.net/1.13.6/js/jquery.dataTables.min.js"></script>
 
   <script>
-    const oeeMap = {
-      '01':'Setup','10':'Setup','11':'Setup',
-      '04':'Mantenimiento','05':'Mantenimiento','06':'Mantenimiento','07':'Mantenimiento','08':'Mantenimiento','20':'Mantenimiento',
-      '02':'Microparadas','14':'Microparadas','15':'Microparadas',
-      '09':'Otros','12':'Otros','13':'Otros','16':'Otros'
-    };
-
-    function classifyOEE(row){
-      const code = row.IdIncidencia || row.NroIncidencia || '';
-      return oeeMap[code] || 'Otros';
-    }
+    // Objeto global para mantener instancias de los gráficos
+    let charts = {};
 
     async function loadCSV(){
-      const url = "exportProduccionyEventos.csv"; // relativo al mismo repo
-      const response = await fetch(url);
-      const text = await response.text();
-      Papa.parse(text, {
-        header: true,
-        skipEmptyLines: true,
-        complete: function(results) {
-          onDataLoaded(results.data);
-        }
-      });
+      const url = "exportProduccionyEventos.csv";
+      try {
+        const response = await fetch(url);
+        const text = await response.text();
+        Papa.parse(text, {
+          header: true,
+          skipEmptyLines: true,
+          delimiter: ';', // <-- CORRECCIÓN 1: Añadir delimitador
+          complete: function(results) {
+            const processedData = processData(results.data);
+            onDataLoaded(processedData);
+          },
+          error: function(err) {
+            console.error("Error al parsear el CSV:", err);
+            alert("No se pudo procesar el archivo CSV. Revisa la consola.");
+          }
+        });
+      } catch (error) {
+        console.error("Error al cargar el archivo CSV:", error);
+        alert("No se pudo cargar el archivo de datos. ¿Está en la misma carpeta?");
+      }
+    }
+
+    function processData(data) {
+        // CORRECCIÓN 2: Procesar los datos para convertirlos a los tipos correctos
+        return data.map(row => {
+            row.Cantidad = parseInt(row.Cantidad) || 0;
+            row.Minutos = parseInt(row.Minutos) || 0;
+            row.Hs_Trab = parseFloat(String(row.Hs_Trab).replace(',', '.')) || 0;
+            // Parsear fecha de formato DD/MM/YYYY a un objeto Date
+            const parts = (row.Fecha || '').split('/');
+            if (parts.length === 3) {
+                row.FechaObj = new Date(parts[2], parts[1] - 1, parts[0]);
+            } else {
+                row.FechaObj = null;
+            }
+            return row;
+        }).filter(row => row.FechaObj); // Filtrar filas con fecha inválida
+    }
+    
+    // Función genérica para agregar y ordenar datos para los gráficos
+    function aggregateData(data, categoryField, valueField, method = 'sum') {
+        const aggregation = data.reduce((acc, row) => {
+            const category = categoryField === 'FechaObj' ? row[categoryField].toISOString().split('T')[0] : row[categoryField];
+            if (category) {
+                acc[category] = (acc[category] || 0) + row[valueField];
+            }
+            return acc;
+        }, {});
+
+        return Object.entries(aggregation)
+            .map(([category, value]) => ({ category, value }))
+            .sort((a, b) => categoryField === 'FechaObj' ? new Date(a.category) - new Date(b.category) : b.value - a.value);
     }
 
     function onDataLoaded(data){
-      console.log("Datos cargados:", data.slice(0,5));
-      document.getElementById("last-updated").innerText = "Última actualización: " + new Date().toLocaleString();
-      // TODO: cálculos y renderizado de KPIs/gráficos
+      console.log("Datos cargados y procesados:", data.slice(0,5));
+      document.getElementById("last-updated").innerText = "Última actualización: " + new Date().toLocaleString('es-AR');
+      
+      // CORRECCIÓN 3: Implementar la lógica para renderizar los datos
+      renderOverview(data);
+      renderRawDataTable(data);
+      // Aquí se llamarían las funciones para las otras pestañas
+      // renderOeeTab(data);
+      // renderParadasTab(data);
+    }
+
+    function renderOverview(data) {
+        // --- 1. Calcular KPIs ---
+        const uniqueProductions = [...new Map(data.map(item => [item.IdProduccion, item])).values()];
+        const totalProduction = uniqueProductions.reduce((sum, item) => sum + item.Cantidad, 0);
+        const totalWorkHours = uniqueProductions.reduce((sum, item) => sum + item.Hs_Trab, 0);
+        const totalDowntimeMinutes = data.reduce((sum, row) => sum + row.Minutos, 0);
+        
+        const plannedTimeHours = totalWorkHours > 0 ? totalWorkHours : 1;
+        const runTimeHours = totalWorkHours - (totalDowntimeMinutes / 60);
+        const availability = (runTimeHours / plannedTimeHours);
+        const efficiency = runTimeHours > 0 ? totalProduction / runTimeHours : 0; // Piezas por hora efectiva
+
+        // --- 2. Renderizar KPIs ---
+        document.getElementById("kpi-production").textContent = totalProduction.toLocaleString('es-AR');
+        document.getElementById("kpi-availability").textContent = `${(availability * 100).toFixed(1)}%`;
+        document.getElementById("kpi-efficiency").textContent = efficiency.toFixed(0);
+        document.getElementById("kpi-downtime").textContent = (totalDowntimeMinutes / 60).toFixed(1);
+
+        // --- 3. Renderizar Gráficos ---
+        const dailyProdData = aggregateData(data, 'FechaObj', 'Cantidad');
+        renderChart('chart-daily', 'line', {
+            categories: dailyProdData.map(d => d.category),
+            series: [{ name: 'Producción', data: dailyProdData.map(d => d.value) }],
+            xaxisType: 'datetime'
+        });
+
+        const prodByMachineData = aggregateData(uniqueProductions, 'Descrip_Maquina', 'Cantidad');
+        renderChart('chart-by-machine', 'bar', {
+            categories: prodByMachineData.map(d => d.category),
+            series: [{ name: 'Producción', data: prodByMachineData.map(d => d.value) }]
+        });
+    }
+
+    function renderRawDataTable(data) {
+        if (data.length === 0) return;
+        
+        const columns = Object.keys(data[0]).map(key => ({
+            title: key,
+            data: key
+        }));
+
+        if ($.fn.dataTable.isDataTable('#raw-table')) {
+            $('#raw-table').DataTable().destroy();
+            $('#raw-table').empty();
+        }
+
+        $('#raw-table').DataTable({
+            data: data,
+            columns: columns,
+            responsive: true,
+            language: { url: '//cdn.datatables.net/plug-ins/1.13.6/i18n/es-ES.json' }
+        });
+    }
+
+    function renderChart(elementId, type, chartData) {
+        const isDarkMode = document.body.classList.contains('dark-mode');
+        const options = {
+            chart: {
+                type: type,
+                height: 350,
+                toolbar: { show: false },
+                background: 'transparent'
+            },
+            series: chartData.series,
+            theme: {
+                mode: isDarkMode ? 'dark' : 'light'
+            },
+            dataLabels: { enabled: false },
+            stroke: { curve: 'smooth', width: 2 },
+            xaxis: {
+                type: chartData.xaxisType || 'category',
+                categories: chartData.categories,
+            },
+            tooltip: {
+                y: { formatter: val => val.toLocaleString('es-AR') },
+                x: chartData.xaxisType === 'datetime' ? { format: 'dd MMM yyyy' } : {}
+            },
+            grid: {
+                borderColor: isDarkMode ? '#444' : '#e0e0e0',
+                strokeDashArray: 4
+            }
+        };
+
+        if (charts[elementId]) {
+            charts[elementId].updateOptions(options);
+        } else {
+            charts[elementId] = new ApexCharts(document.getElementById(elementId), options);
+            charts[elementId].render();
+        }
     }
 
     document.addEventListener("DOMContentLoaded", loadCSV);
 
     // Toggle claro/oscuro
-    document.getElementById("btn-toggle-theme").addEventListener("click", ()=>{
-      document.body.classList.toggle("dark-mode");
+    document.getElementById("btn-toggle-theme").addEventListener("click", () => {
+        document.body.classList.toggle("dark-mode");
+        // Re-renderizar todos los gráficos para que adopten el nuevo tema
+        Object.keys(charts).forEach(chartId => {
+            charts[chartId].updateOptions({
+                theme: {
+                    mode: document.body.classList.contains('dark-mode') ? 'dark' : 'light'
+                },
+                grid: {
+                    borderColor: document.body.classList.contains('dark-mode') ? '#444' : '#e0e0e0'
+                }
+            });
+        });
     });
   </script>
 </body>
