@@ -3,7 +3,7 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Dashboard Industrial v2.5</title>
+    <title>Dashboard Industrial v2.6</title>
     <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.3/dist/css/bootstrap.min.css" rel="stylesheet">
     <link rel="preconnect" href="https://fonts.googleapis.com">
     <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
@@ -188,6 +188,9 @@
             const themeToggle = document.getElementById('theme-toggle');
             const chartColors = ['#5E35B1', '#039BE5', '#00897B', '#FDD835', '#E53935', '#8E24AA', '#3949AB'];
 
+            // Helper para formatear números
+            const formatNumber = (val) => val ? val.toLocaleString('es-ES') : val;
+
             function applyTheme(theme) {
                 document.body.setAttribute('data-theme', theme);
                 themeToggle.checked = theme === 'dark';
@@ -353,9 +356,9 @@
             }
 
             function renderKPIs(kpiData) {
-                document.getElementById('kpi-total-production').textContent = kpiData.totalProduction.toLocaleString('es-ES');
+                document.getElementById('kpi-total-production').textContent = formatNumber(kpiData.totalProduction);
                 document.getElementById('kpi-availability').textContent = `${(kpiData.availability * 100).toFixed(1)}%`;
-                document.getElementById('kpi-efficiency').textContent = kpiData.efficiency.toFixed(0);
+                document.getElementById('kpi-efficiency').textContent = formatNumber(kpiData.efficiency.toFixed(0));
                 document.getElementById('kpi-total-downtime').textContent = kpiData.totalDowntimeHours.toFixed(1);
             }
             
@@ -408,30 +411,30 @@
                         dataLabels: { 
                             enabled: true, 
                             offsetY: -15, 
-                            style: { colors: ["#000000"] }, // Texto negro
+                            formatter: (val) => formatNumber(val),
+                            style: { colors: ["#000000"] }, 
                             background: { 
                                 enabled: true, 
                                 foreColor: '#000', 
-                                borderRadius: 2, 
-                                padding: 4, 
-                                opacity: 1, // Opacidad total
-                                borderColor: '#87CEFA', // Borde celeste claro
-                                borderWidth: 1,
-                                backgroundColor: '#87CEFA' // Fondo celeste claro
+                                borderRadius: 3, 
+                                padding: 5, 
+                                opacity: 0.9, 
+                                borderColor: '#BDE5F8',
+                                backgroundColor: '#BDE5F8'
                             } 
                         },
                         xaxis: { type: 'datetime', categories: chartData.categories, labels: { style: { colors: textColor }, datetimeUTC: false, format: 'dd MMM' } },
-                        yaxis: { labels: { style: { colors: textColor }, formatter: val => val.toLocaleString('es-ES') } },
-                        tooltip: { theme: currentTheme, x: { format: 'dd/MM/yyyy' }, y: { formatter: val => val ? val.toLocaleString('es-ES') : val } }
+                        yaxis: { labels: { style: { colors: textColor }, formatter: (val) => formatNumber(val) } },
+                        tooltip: { theme: currentTheme, x: { format: 'dd/MM/yyyy' }, y: { formatter: (val) => formatNumber(val) } }
                     };
                 } else if (type === 'bar') {
                      options = {
                         ...commonOptions, chart: {...commonOptions.chart, type: 'bar'}, series: chartData.series,
                         plotOptions: { bar: { horizontal: chartData.horizontal || false, borderRadius: 4, dataLabels: { position: 'top' } } },
-                        dataLabels: { enabled: true, style: { fontSize: '12px' }, offsetY: -20, dropShadow: { enabled: true, top: 1, left: 1, blur: 1, color: '#000', opacity: 0.45 }},
+                        dataLabels: { enabled: true, formatter: (val) => formatNumber(val), style: { fontSize: '12px' }, offsetY: -20, dropShadow: { enabled: true, top: 1, left: 1, blur: 1, color: '#000', opacity: 0.45 }},
                         xaxis: { categories: chartData.categories, labels: { style: { colors: textColor, fontSize: '12px' }, trim: true, maxHeight: 100 } },
-                        yaxis: { labels: { style: { colors: textColor }, formatter: val => val.toLocaleString('es-ES') } },
-                        tooltip: { theme: currentTheme, y: { formatter: val => val.toLocaleString('es-ES') } }
+                        yaxis: { labels: { style: { colors: textColor }, formatter: (val) => formatNumber(val) } },
+                        tooltip: { theme: currentTheme, y: { formatter: (val) => formatNumber(val) } }
                     };
                     if (chartData.horizontal) { options.dataLabels.style.colors = ["#fff"]; options.dataLabels.offsetX = -10; } 
                     else { options.dataLabels.style.colors = [textColor]; }
@@ -445,10 +448,22 @@
                         stroke: { width: [0, 4], curve: 'smooth' },
                         xaxis: { categories: chartData.map(d => d.reason), labels: { style: { colors: textColor, fontSize: '11px' }, trim: true, rotate: -45, hideOverlappingLabels: true, maxHeight: 120 } },
                         yaxis: [
-                            { seriesName: 'Tiempo (Horas)', axisTicks: { show: true }, axisBorder: { show: true, color: chartColors[0] }, labels: { style: { colors: chartColors[0] } }, title: { text: "Tiempo Total (Horas)", style: { color: chartColors[0] } }},
-                            { seriesName: 'Frecuencia', opposite: true, axisTicks: { show: true }, axisBorder: { show: true, color: chartColors[1] }, labels: { style: { colors: chartColors[1] } }, title: { text: "Frecuencia (Nro. de Veces)", style: { color: chartColors[1] } }}
+                            { seriesName: 'Tiempo (Horas)', axisTicks: { show: true }, axisBorder: { show: true, color: chartColors[0] }, labels: { style: { colors: chartColors[0] }, formatter: (val) => formatNumber(val) }, title: { text: "Tiempo Total (Horas)", style: { color: chartColors[0] } }},
+                            { seriesName: 'Frecuencia', opposite: true, axisTicks: { show: true }, axisBorder: { show: true, color: chartColors[1] }, labels: { style: { colors: chartColors[1] }, formatter: (val) => formatNumber(val) }, title: { text: "Frecuencia (Nro. de Veces)", style: { color: chartColors[1] } }}
                         ],
-                        tooltip: { theme: currentTheme, fixed: { enabled: false }, y: { formatter: (val) => val.toLocaleString('es-ES') } },
+                        tooltip: { 
+                            theme: currentTheme,
+                            y: {
+                                formatter: function(val, { seriesIndex }) {
+                                    if(val === undefined) return val;
+                                    if (seriesIndex === 0) { // Bar series (Hours)
+                                        return val.toLocaleString('es-ES', { minimumFractionDigits: 2, maximumFractionDigits: 2 }) + " Hs";
+                                    } else { // Line series (Frequency)
+                                        return val.toLocaleString('es-ES') + " veces";
+                                    }
+                                }
+                            }
+                        },
                         legend: { horizontalAlign: 'left', offsetX: 40 }
                     };
                 }
