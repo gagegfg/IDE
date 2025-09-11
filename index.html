@@ -3,7 +3,7 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Dashboard de Producción v8 - Molderil</title>
+    <title>Dashboard de Producción v9 - Molderil</title>
     <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.3/dist/css/bootstrap.min.css" rel="stylesheet">
     <link rel="preconnect" href="https://fonts.googleapis.com">
     <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
@@ -155,13 +155,21 @@
 
         const mainContentEl = document.querySelector('.main-content');
 
-        function displayError(title, message) {
+        // --- SISTEMA DE DIAGNÓSTICO MEJORADO ---
+        function displayError(title, message, isTechnical = false) {
+            let technicalHelp = isTechnical 
+                ? `<hr><p class="mb-0">Este es un problema común de seguridad del navegador. Para solucionarlo, debe ejecutar este archivo a través de un <strong>servidor web local</strong>. Aquí hay dos opciones sencillas:</p>
+                    <ul class="mt-2">
+                        <li><b>Si usa Visual Studio Code:</b> Instale la extensión "Live Server" de Ritwick Dey y haga clic en el botón "Go Live" en la parte inferior derecha de la ventana.</li>
+                        <li><b>Si tiene Python instalado:</b> Abra una terminal en la carpeta de este archivo, ejecute el comando <code>python -m http.server</code> (o <code>python3 -m http.server</code>) y luego visite <code>http://localhost:8000</code> en su navegador.</li>
+                    </ul>` 
+                : `<hr><p class="mb-0">Por favor, revise la consola del navegador (presionando F12) para ver los detalles técnicos del error.</p>`;
+
             mainContentEl.innerHTML = `
                 <div class="alert alert-danger">
                     <h4 class="alert-heading">${title}</h4>
                     <p>${message}</p>
-                    <hr>
-                    <p class="mb-0">Por favor, revise la consola del navegador (presionando F12) para ver los detalles técnicos del error.</p>
+                    ${technicalHelp}
                 </div>`;
         }
         
@@ -188,6 +196,16 @@
         }
 
         async function init() {
+            // --- CHEQUEO DE ENTORNO DE EJECUCIÓN ---
+            if (window.location.protocol === 'file:') {
+                displayError(
+                    'Error de Entorno de Ejecución',
+                    'Este dashboard no puede cargar los archivos de datos (.csv, .txt) cuando se abre directamente desde el sistema de archivos (`file://`).',
+                    true // Indica que es un error técnico con solución guiada
+                );
+                return; // Detiene la ejecución para evitar más errores
+            }
+
             try {
                 await loadOEEData();
                 await loadAndProcessProductionData();
