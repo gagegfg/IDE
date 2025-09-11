@@ -1,464 +1,272 @@
-<!DOCTYPE html>
+<!doctype html>
 <html lang="es">
 <head>
-    <meta charset="UTF-8">
-    <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Dashboard de Rendimiento Industrial Avanzado</title>
-    
-    <!-- Librerías Externas -->
-    <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.3/dist/css/bootstrap.min.css" rel="stylesheet">
-    <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/flatpickr/dist/flatpickr.min.css">
-    <link href="https://cdn.jsdelivr.net/npm/tom-select@2.3.1/dist/css/tom-select.bootstrap5.css" rel="stylesheet">
-    <link rel="preconnect" href="https://fonts.googleapis.com">
-    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
-    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&display=swap" rel="stylesheet">
-
-    <style>
-        :root {
-            --sidebar-width: 280px;
-            --primary-color: #0d6efd;
-            --secondary-color: #ff7f0e; /* Naranja para el segundo eje */
-            --background-light: #f8f9fa;
-            --card-bg: #ffffff;
-            --text-color: #343a40;
-            --card-shadow: 0 4px_12px rgba(0,0,0,0.08);
-            --border-radius: 0.75rem;
-        }
-
-        body {
-            font-family: 'Inter', sans-serif;
-            background-color: var(--background-light);
-            color: var(--text-color);
-        }
-
-        .sidebar {
-            position: fixed;
-            top: 0;
-            left: 0;
-            height: 100vh;
-            width: var(--sidebar-width);
-            background-color: var(--card-bg);
-            box-shadow: 0 0 20px rgba(0,0,0,0.1);
-            padding: 1.5rem;
-            overflow-y: auto;
-        }
-        
-        .sidebar h3 {
-            font-weight: 700;
-            color: var(--primary-color);
-        }
-
-        .main-content {
-            margin-left: var(--sidebar-width);
-            padding: 2rem;
-        }
-        .kpi-card {
-            background-color: var(--card-bg);
-            padding: 1.5rem;
-            border-radius: var(--border-radius);
-            box-shadow: var(--card-shadow);
-            text-align: center;
-            transition: transform 0.2s;
-        }
-        .kpi-card:hover { transform: translateY(-5px); }
-        .kpi-title { font-size: 0.9rem; font-weight: 500; color: #6c757d; text-transform: uppercase; }
-        .kpi-value { font-size: 2.5rem; font-weight: 700; color: var(--primary-color); }
-
-        .chart-card {
-            background-color: var(--card-bg);
-            padding: 1.5rem;
-            border-radius: var(--border-radius);
-            box-shadow: var(--card-shadow);
-            height: 100%;
-        }
-        .chart-title { font-weight: 600; margin-bottom: 1rem; }
-        #loading-spinner {
-            position: fixed; top: 50%; left: calc(50% + var(--sidebar-width) / 2);
-            transform: translate(-50%, -50%); z-index: 1000;
-        }
-        .ts-control { border-radius: 0.375rem !important; } /* Ajuste para Tom-Select */
-    </style>
+  <meta charset="utf-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1" />
+  <title>Dashboard OEE Unificado</title>
+  <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.3/dist/css/bootstrap.min.css" rel="stylesheet">
+  <link href="https://cdn.datatables.net/1.13.6/css/jquery.dataTables.min.css" rel="stylesheet" />
+  <link href="https://cdn.datatables.net/buttons/2.4.1/css/buttons.dataTables.min.css" rel="stylesheet" />
+  <link href="https://cdn.jsdelivr.net/npm/flatpickr/dist/flatpickr.min.css" rel="stylesheet" />
+  <style>
+    body{font-family:Inter,system-ui,-apple-system,Segoe UI,Roboto,Arial;background:#f5f7fb;padding:20px}
+    .card{border-radius:10px;box-shadow:0 6px 18px rgba(0,0,0,0.06)}
+    .kpi{font-size:1.6rem;font-weight:700}
+    .sidebar{display:flex;gap:8px;margin-bottom:12px}
+    .small-muted{color:#6c757d}
+  </style>
 </head>
 <body>
-    <div class="sidebar">
-        <h3 class="mb-4">Panel de Control</h3>
-        
-        <div class="mb-3">
-            <label for="date-range-picker" class="form-label">Rango de Fechas</label>
-            <input type="text" id="date-range-picker" class="form-control" placeholder="Seleccione fechas">
+  <div class="d-flex justify-content-between align-items-center mb-3">
+    <h3>Dashboard OEE Unificado</h3>
+    <div>
+      <input id="csv-upload" type="file" accept=".csv" />
+      <button id="btn-load-sample" class="btn btn-sm btn-outline-primary">Cargar CSV por defecto</button>
+    </div>
+  </div>
+
+  <div class="row g-3 mb-3">
+    <div class="col-md-3">
+      <div class="card p-3">
+        <div class="small-muted">Rango de fechas</div>
+        <input id="date-range" class="form-control form-control-sm" placeholder="Seleccionar rango...">
+        <div class="small-muted mt-2">Máquinas</div>
+        <select id="filter-machines" class="form-select form-select-sm" multiple></select>
+        <div class="small-muted mt-2">Turnos</div>
+        <select id="filter-shifts" class="form-select form-select-sm" multiple></select>
+        <div class="mt-3 d-flex gap-2">
+          <button id="btn-reset" class="btn btn-sm btn-outline-secondary">Reset</button>
+          <button id="btn-export-csv" class="btn btn-sm btn-outline-success">Exportar filtrado</button>
         </div>
-        <div class="mb-3">
-            <label for="machine-filter" class="form-label">Máquinas</label>
-            <select id="machine-filter" multiple placeholder="Seleccione una o más..."></select>
-        </div>
-        <div class="mb-3">
-            <label for="operator-filter" class="form-label">Operario</label>
-            <select id="operator-filter" class="form-select">
-                <option value="all">Todos</option>
-            </select>
-        </div>
-        <div class="mb-3">
-            <label for="shift-filter" class="form-label">Turno</label>
-            <select id="shift-filter" class="form-select">
-                <option value="all">Todos</option>
-            </select>
-        </div>
-        <div class="d-grid gap-2 mt-4">
-            <button id="apply-filters" class="btn btn-primary">Aplicar Filtros</button>
-            <button id="reset-filters" class="btn btn-outline-secondary">Limpiar Filtros</button>
-        </div>
+      </div>
     </div>
 
-    <main class="main-content">
-        <h1 class="h2 mb-4">Dashboard de Análisis de Producción</h1>
-        <div id="loading-spinner" class="spinner-border text-primary" role="status"><span class="visually-hidden">Cargando...</span></div>
+    <div class="col-md-9">
+      <div class="card p-3">
+        <div class="d-flex justify-content-between align-items-center">
+          <div>
+            <div class="small-muted">OEE Global</div>
+            <div id="kpi-oee" class="kpi">--</div>
+          </div>
+          <div>
+            <div class="small-muted">Disponibilidad</div>
+            <div id="kpi-availability" class="kpi">--</div>
+          </div>
+          <div>
+            <div class="small-muted">Rendimiento</div>
+            <div id="kpi-performance" class="kpi">--</div>
+          </div>
+          <div>
+            <div class="small-muted">Calidad</div>
+            <div id="kpi-quality" class="kpi">--</div>
+          </div>
+        </div>
+      </div>
 
-        <div class="row g-4 mb-4">
-             <div class="col-lg-3 col-md-6"><div class="kpi-card"><div class="kpi-title">Producción Total</div><div id="kpi-total-production" class="kpi-value">0</div></div></div>
-             <div class="col-lg-3 col-md-6"><div class="kpi-card"><div class="kpi-title">Tiempo Muerto (Horas)</div><div id="kpi-total-downtime" class="kpi-value">0</div></div></div>
-             <div class="col-lg-3 col-md-6"><div class="kpi-card"><div class="kpi-title">Lotes de Producción</div><div id="kpi-total-runs" class="kpi-value">0</div></div></div>
-             <div class="col-lg-3 col-md-6"><div class="kpi-card"><div class="kpi-title">Cumplimiento Objetivo</div><div id="kpi-target-efficiency" class="kpi-value">0%</div></div></div>
+      <ul class="nav nav-tabs mt-3" id="tabs">
+        <li class="nav-item"><button class="nav-link active" data-bs-target="#tab-oee" data-bs-toggle="tab">OEE</button></li>
+        <li class="nav-item"><button class="nav-link" data-bs-target="#tab-paradas" data-bs-toggle="tab">Paradas OEE</button></li>
+        <li class="nav-item"><button class="nav-link" data-bs-target="#tab-turnos" data-bs-toggle="tab">Turnos</button></li>
+        <li class="nav-item"><button class="nav-link" data-bs-target="#tab-datos" data-bs-toggle="tab">Datos Brutos</button></li>
+      </ul>
+
+      <div class="tab-content mt-3">
+        <div class="tab-pane fade show active" id="tab-oee">
+          <div class="row g-3">
+            <div class="col-lg-8">
+              <div class="card p-3 mb-3"><h5>OEE diario</h5><div id="chart-oee"></div></div>
+              <div class="card p-3"><h5>OEE por máquina</h5><div id="chart-oee-machine"></div></div>
+            </div>
+            <div class="col-lg-4">
+              <div class="card p-3 mb-3"><h6>Observaciones</h6><div id="oee-observations" class="small-muted"></div></div>
+              <div class="card p-3"><h6>Benchmark (velocidades)</h6><div id="bench-table"></div></div>
+            </div>
+          </div>
         </div>
 
-        <div class="row g-4">
-            <div class="col-xl-6">
-                <div class="chart-card">
-                    <h5 class="chart-title">Causas Principales de Tiempo Muerto (Minutos)</h5>
-                    <div id="downtime-chart"></div>
-                </div>
-            </div>
-            <div class="col-xl-6">
-                <div class="chart-card">
-                    <h5 class="chart-title">Producción Total por Máquina</h5>
-                    <div id="production-by-machine-chart"></div>
-                </div>
-            </div>
-            <div class="col-xl-12 mt-4">
-                <div class="chart-card">
-                    <h5 class="chart-title">Evolución Diaria: Producción vs. Cumplimiento</h5>
-                    <div id="production-evolution-chart"></div>
-                </div>
-            </div>
-            <div class="col-xl-12 mt-4">
-                <div class="chart-card">
-                    <div class="d-flex justify-content-between align-items-center mb-2">
-                         <h5 class="chart-title mb-0">Análisis de Operarios</h5>
-                         <div class="d-flex align-items-center">
-                            <div class="btn-group btn-group-sm me-3" role="group">
-                               <input type="radio" class="btn-check" name="operator-chart-toggle" id="toggle-prod" autocomplete="off" checked>
-                               <label class="btn btn-outline-primary" for="toggle-prod">Por Producción</label>
-                               <input type="radio" class="btn-check" name="operator-chart-toggle" id="toggle-downtime" autocomplete="off">
-                               <label class="btn btn-outline-primary" for="toggle-downtime">Por Tiempo Muerto</label>
-                            </div>
-                             <div class="d-flex align-items-center">
-                                <label for="operator-top-n" class="form-label me-2 mb-0 small">Top:</label>
-                                <input type="number" id="operator-top-n" class="form-control form-control-sm" value="10" style="width: 70px;">
-                            </div>
-                         </div>
-                    </div>
-                    <div id="operator-performance-chart"></div>
-                </div>
-            </div>
+        <div class="tab-pane fade" id="tab-paradas">
+          <div class="row g-3">
+            <div class="col-lg-6"><div class="card p-3"><h5>Pareto por categoría</h5><div id="chart-paradas"></div></div></div>
+            <div class="col-lg-6"><div class="card p-3"><h5>Tabla de paradas</h5><table id="paradas-table" class="display" style="width:100%"></table></div></div>
+          </div>
         </div>
-    </main>
 
-    <script src="https://cdn.jsdelivr.net/npm/d3@7"></script>
-    <script src="https://cdn.jsdelivr.net/npm/apexcharts"></script>
-    <script src="https://cdn.jsdelivr.net/npm/flatpickr"></script>
-    <script src="https://npmcdn.com/flatpickr/dist/l10n/es.js"></script>
-    <script src="https://cdn.jsdelivr.net/npm/tom-select@2.3.1/dist/js/tom-select.complete.min.js"></script>
+        <div class="tab-pane fade" id="tab-turnos">
+          <div class="card p-3 mb-3"><h5>Heatmap OEE por turno / máquina</h5><div id="chart-heatmap"></div></div>
+          <div class="card p-3"><h5>KPI por turno</h5><div id="turno-table"></div></div>
+        </div>
 
-    <script>
-        document.addEventListener('DOMContentLoaded', function () {
-            let originalData = [];
-            let charts = {};
-            let tomSelectMachines;
-            const spinner = document.getElementById('loading-spinner');
-            
-const csvDataString = `IdProduccion;Fecha;Turno;Objetivo;Encargado;Máquina_Prod;Descrip_Maquina;Operario;Apellido;Cantidad;Hs Trab;Hs Descanso;Observaciones;IdIncidencia;NroIncidencia;descrip_incidencia;Frecuencia;Minutos;SinOperario
-189796;01/08/2025;06-14;40000;18;9;Pan Dulcera 9;189;Avendaño;41000;400;;;298720;10;Cambio de Bobina;2;20;False
-189796;01/08/2025;06-14;40000;18;9;Pan Dulcera 9;189;Avendaño;41000;400;;;298721;14;Incidencia Papel;2;20;False
-189796;01/08/2025;06-14;40000;18;9;Pan Dulcera 9;189;Avendaño;41000;400;;;298722;2;Limpieza en Proceso;2;40;False
-189797;01/08/2025;06-14;0;18;10;Pan Dulcera 10;211;Alvarez;25500;310;;;298723;4;Ajuste de mantenimiento;1;30;False
-189797;01/08/2025;06-14;0;18;10;Pan Dulcera 10;211;Alvarez;25500;310;;;298724;14;Incidencia Papel;1;15;False
-189797;01/08/2025;06-14;0;18;10;Pan Dulcera 10;211;Alvarez;25500;310;;;298725;10;Cambio de Bobina;1;10;False
-189797;01/08/2025;06-14;0;18;10;Pan Dulcera 10;211;Alvarez;25500;310;;;298726;2;Limpieza en Proceso;1;15;False
-189798;01/08/2025;06-14;0;18;11;Pan Dulcera 11;397;Calidad;4500;275;;;298727;4;Ajuste de mantenimiento;2;60;False
-189798;01/08/2025;06-14;0;18;11;Pan Dulcera 11;397;Calidad;4500;275;;;298728;2;Limpieza en Proceso;1;30;False
-189799;01/08/2025;14-22;40000;18;13;Pan Dulcera 13;331;Torrez Pantoja;41400;410;;;298729;4;Ajuste de mantenimiento;2;30;False
-189799;01/08/2025;14-22;40000;18;13;Pan Dulcera 13;331;Torrez Pantoja;41400;410;;;298730;2;Limpieza en Proceso;1;30;False
-189799;01/08/2025;14-22;40000;18;13;Pan Dulcera 13;331;Torrez Pantoja;41400;410;;;298731;10;Cambio de Bobina;1;10;False
-189800;01/08/2025;14-22;40000;18;9;Pan Dulcera 9;109;Pacheco;25000;255;;;298732;4;Ajuste de mantenimiento;2;120;False
-189800;01/08/2025;14-22;40000;18;9;Pan Dulcera 9;109;Pacheco;25000;255;;;298733;2;Limpieza en Proceso;2;30;False
-189801;01/08/2025;14-22;40000;18;10;Pan Dulcera 10;241;Villaroel;42500;430;;;298734;14;Incidencia Papel;2;20;False
-189801;01/08/2025;14-22;40000;18;10;Pan Dulcera 10;241;Villaroel;42500;430;;;298735;10;Cambio de Bobina;2;20;False
-189802;01/08/2025;22-06;40000;18;11;Pan Dulcera 11;345;Rojas;48000;480;;;298736;14;Incidencia Papel;2;20;False
-189802;01/08/2025;22-06;40000;18;11;Pan Dulcera 11;345;Rojas;48000;480;;;298737;10;Cambio de Bobina;2;20;False
-189803;01/08/2025;22-06;40000;18;13;Pan Dulcera 13;396;Calidad;13000;460;;;298738;14;Incidencia Papel;1;15;False
-189803;01/08/2025;22-06;40000;18;13;Pan Dulcera 13;396;Calidad;13000;460;;;298739;2;Limpieza en Proceso;1;15;False
-189803;01/08/2025;22-06;40000;18;13;Pan Dulcera 13;396;Calidad;13000;460;;;298740;4;Ajuste de mantenimiento;1;30;False
-189804;01/08/2025;22-06;40000;18;9;Pan Dulcera 9;385;Acuña;45000;450;;;298741;14;Incidencia Papel;2;20;False
-189804;01/08/2025;22-06;40000;18;9;Pan Dulcera 9;385;Acuña;45000;450;;;298742;10;Cambio de Bobina;2;20;False
-189805;02/08/2025;06-14;40000;;9;Pan Dulcera 9;189;Avendaño;41000;400;;;298743;10;Cambio de Bobina;2;20;False
-189805;02/08/2025;06-14;40000;;9;Pan Dulcera 9;189;Avendaño;41000;400;;;298744;14;Incidencia Papel;2;20;False
-189805;02/08/2025;06-14;40000;;9;Pan Dulcera 9;189;Avendaño;41000;400;;;298745;2;Limpieza en Proceso;2;40;False
-189806;02/08/2025;06-14;0;;10;Pan Dulcera 10;211;Alvarez;25500;310;;;298746;4;Ajuste de mantenimiento;1;30;False
-189806;02/08/2025;06-14;0;;10;Pan Dulcera 10;211;Alvarez;25500;310;;;298747;14;Incidencia Papel;1;15;False
-189806;02/08/2025;06-14;0;;10;Pan Dulcera 10;211;Alvarez;25500;310;;;298748;10;Cambio de Bobina;1;10;False
-189806;02/08/2025;06-14;0;;10;Pan Dulcera 10;211;Alvarez;25500;310;;;298749;2;Limpieza en Proceso;1;15;False
-189807;02/08/2025;06-14;0;;11;Pan Dulcera 11;397;Calidad;4500;275;;;298750;4;Ajuste de mantenimiento;2;60;False
-189807;02/08/2025;06-14;0;;11;Pan Dulcera 11;397;Calidad;4500;275;;;298751;2;Limpieza en Proceso;1;30;False
-189808;02/08/2025;14-22;40000;;13;Pan Dulcera 13;331;Torrez Pantoja;41400;410;;;298752;4;Ajuste de mantenimiento;2;30;False
-189808;02/08/2025;14-22;40000;;13;Pan Dulcera 13;331;Torrez Pantoja;41400;410;;;298753;2;Limpieza en Proceso;1;30;False
-189808;02/08/2025;14-22;40000;;13;Pan Dulcera 13;331;Torrez Pantoja;41400;410;;;298754;10;Cambio de Bobina;1;10;False
-189809;02/08/2025;14-22;40000;;9;Pan Dulcera 9;109;Pacheco;25000;255;;;298755;4;Ajuste de mantenimiento;2;120;False
-189809;02/08/2025;14-22;40000;;9;Pan Dulcera 9;109;Pacheco;25000;255;;;298756;2;Limpieza en Proceso;2;30;False
-189810;02/08/2025;14-22;40000;;10;Pan Dulcera 10;241;Villaroel;42500;430;;;298757;14;Incidencia Papel;2;20;False
-189810;02/08/2025;14-22;40000;;10;Pan Dulcera 10;241;Villaroel;42500;430;;;298758;10;Cambio de Bobina;2;20;False
-189811;02/08/2025;22-06;40000;;11;Pan Dulcera 11;345;Rojas;48000;480;;;298759;14;Incidencia Papel;2;20;False
-189811;02/08/2025;22-06;40000;;11;Pan Dulcera 11;345;Rojas;48000;480;;;298760;10;Cambio de Bobina;2;20;False
-189812;02/08/2025;22-06;40000;;13;Pan Dulcera 13;396;Calidad;13000;460;;;298761;14;Incidencia Papel;1;15;False
-189812;02/08/2025;22-06;40000;;13;Pan Dulcera 13;396;Calidad;13000;460;;;298762;2;Limpieza en Proceso;1;15;False
-189812;02/08/2025;22-06;40000;;13;Pan Dulcera 13;396;Calidad;13000;460;;;298763;4;Ajuste de mantenimiento;1;30;False
-189813;02/08/2025;22-06;40000;;9;Pan Dulcera 9;385;Acuña;45000;450;;;298764;14;Incidencia Papel;2;20;False
-189813;02/08/2025;22-06;40000;;9;Pan Dulcera 9;385;Acuña;45000;450;;;298765;10;Cambio de Bobina;2;20;False
-190058;30/08/2025;06-14;40000;0;9;Pan Dulcera 9;189;Avendaño;41000;400;;;299634;10;Cambio de Bobina;2;20;False
-190058;30/08/2025;06-14;40000;0;9;Pan Dulcera 9;189;Avendaño;41000;400;;;299635;14;Incidencia Papel;2;20;False
-190058;30/08/2025;06-14;40000;0;9;Pan Dulcera 9;189;Avendaño;41000;400;;;299636;2;Limpieza en Proceso;2;40;False
-190062;30/08/2025;06-14;0;;10;Pan Dulcera 10;211;Alvarez;25500;310;;;299637;4;Ajuste de mantenimiento;1;30;False
-190062;30/08/2025;06-14;0;;10;Pan Dulcera 10;211;Alvarez;25500;310;;;299638;14;Incidencia Papel;1;15;False
-190062;30/08/2025;06-14;0;;10;Pan Dulcera 10;211;Alvarez;25500;310;;;299639;10;Cambio de Bobina;1;10;False
-190062;30/08/2025;06-14;0;;10;Pan Dulcera 10;211;Alvarez;25500;310;;;299640;2;Limpieza en Proceso;1;15;False
-190069;30/08/2025;06-14;0;;11;Pan Dulcera 11;397;Calidad;4500;275;;;299641;4;Ajuste de mantenimiento;2;60;False
-190069;30/08/2025;06-14;0;;11;Pan Dulcera 11;397;Calidad;4500;275;;;299642;2;Limpieza en Proceso;1;30;False
-190070;30/08/2025;06-14;0;;13;Pan Dulcera 13;331;Torrez Pantoja;41400;410;;;299643;4;Ajuste de mantenimiento;2;30;False
-190070;30/08/2025;06-14;0;;13;Pan Dulcera 13;331;Torrez Pantoja;41400;410;;;299644;2;Limpieza en Proceso;1;30;False
-190070;30/08/2025;06-14;0;;13;Pan Dulcera 13;331;Torrez Pantoja;41400;410;;;299645;10;Cambio de Bobina;1;10;False
-190071;30/08/2025;14-22;40000;;9;Pan Dulcera 9;109;Pacheco;25000;255;;;299646;4;Ajuste de mantenimiento;2;120;False
-190071;30/08/2025;14-22;40000;;9;Pan Dulcera 9;109;Pacheco;25000;255;;;299647;2;Limpieza en Proceso;2;30;False
-190072;30/08/2025;14-22;40000;;10;Pan Dulcera 10;241;Villaroel;42500;430;;;299648;14;Incidencia Papel;2;20;False
-190072;30/08/2025;14-22;40000;;10;Pan Dulcera 10;241;Villaroel;42500;430;;;299649;10;Cambio de Bobina;2;20;False
-190073;30/08/2025;22-06;40000;;11;Pan Dulcera 11;345;Rojas;48000;480;;;299650;14;Incidencia Papel;2;20;False
-190073;30/08/2025;22-06;40000;;11;Pan Dulcera 11;345;Rojas;48000;480;;;299651;10;Cambio de Bobina;2;20;False
-190074;30/08/2025;22-06;40000;;13;Pan Dulcera 13;396;Calidad;13000;460;;;299652;14;Incidencia Papel;1;15;False
-190074;30/08/2025;22-06;40000;;13;Pan Dulcera 13;396;Calidad;13000;460;;;299653;2;Limpieza en Proceso;1;15;False
-190074;30/08/2025;22-06;40000;;13;Pan Dulcera 13;396;Calidad;13000;460;;;299654;4;Ajuste de mantenimiento;1;30;False
-190075;30/08/2025;22-06;40000;;9;Pan Dulcera 9;385;Acuña;45000;450;;;299655;14;Incidencia Papel;2;20;False
-190075;30/08/2025;22-06;40000;;9;Pan Dulcera 9;385;Acuña;45000;450;;;299656;10;Cambio de Bobina;2;20;False
-`;
-            function init() {
-                spinner.style.display = 'block';
-                try {
-                    const parser = d3.dsvFormat(";");
-                    const rawData = parser.parse(csvDataString);
-                    if (!rawData || rawData.length === 0) throw new Error("Los datos CSV están vacíos.");
-                    
-                    originalData = rawData.map(d => {
-                        if (!d.Fecha) return null;
-                        const [day, month, year] = d.Fecha.split('/');
-                        const fechaObj = new Date(Date.UTC(year, month - 1, day));
-                        
-                        return { ...d, Cantidad: +d.Cantidad||0, Minutos: +d.Minutos||0, Objetivo: +d.Objetivo||0, FechaObj: fechaObj, Operario: `${d.Operario} ${d.Apellido}`.trim() };
-                    }).filter(d => d && d.FechaObj instanceof Date && !isNaN(d.FechaObj));
+        <div class="tab-pane fade" id="tab-datos">
+          <div class="card p-3"><h5>Datos brutos</h5><table id="raw-table" class="display" style="width:100%"></table></div>
+        </div>
 
-                    populateFilters(originalData);
-                    setupEventListeners();
-                    updateDashboard(originalData);
-                } catch (error) {
-                    console.error("Fallo crítico en la inicialización:", error);
-                    alert(`Error al procesar los datos: ${error.message}.`);
-                } finally {
-                    spinner.style.display = 'none';
-                }
-            }
-            
-            function populateFilters(data) {
-                const machines = [...new Set(data.map(d => d.Descrip_Maquina))].sort();
-                const operators = [...new Set(data.map(d => d.Operario))].sort();
-                const shifts = [...new Set(data.map(d => d.Turno))].sort();
+      </div>
+    </div>
+  </div>
 
-                tomSelectMachines = new TomSelect('#machine-filter', { create: false, sortField: { field: "text", direction: "asc" } });
-                machines.forEach(m => tomSelectMachines.addOption({value: m, text: m}));
+  <div class="modal fade" id="modalDetails" tabindex="-1"><div class="modal-dialog modal-xl"><div class="modal-content"><div class="modal-header"><h5 class="modal-title">Detalles</h5><button class="btn-close" data-bs-dismiss="modal"></button></div><div class="modal-body"><div id="modal-body-content"></div></div></div></div></div>
 
-                const operatorFilter = document.getElementById('operator-filter');
-                operators.forEach(o => operatorFilter.innerHTML += `<option value="${o}">${o}</option>`);
-                const shiftFilter = document.getElementById('shift-filter');
-                shifts.forEach(s => shiftFilter.innerHTML += `<option value="${s}">${s}</option>`);
-            }
+  <script src="https://code.jquery.com/jquery-3.7.1.min.js"></script>
+  <script src="https://cdn.jsdelivr.net/npm/papaparse@5.3.2/papaparse.min.js"></script>
+  <script src="https://cdn.jsdelivr.net/npm/apexcharts"></script>
+  <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.3/dist/js/bootstrap.bundle.min.js"></script>
+  <script src="https://cdn.jsdelivr.net/npm/flatpickr"></script>
+  <script src="https://cdn.datatables.net/1.13.6/js/jquery.dataTables.min.js"></script>
+  <script src="https://cdn.datatables.net/buttons/2.4.1/js/dataTables.buttons.min.js"></script>
+  <script src="https://cdn.datatables.net/buttons/2.4.1/js/buttons.html5.min.js"></script>
 
-            function setupEventListeners() {
-                flatpickr("#date-range-picker", { mode: "range", dateFormat: "d/m/Y", locale: "es" });
-                document.getElementById('apply-filters').addEventListener('click', applyFilters);
-                document.getElementById('reset-filters').addEventListener('click', () => {
-                    document.getElementById('date-range-picker')._flatpickr.clear();
-                    tomSelectMachines.clear();
-                    document.getElementById('operator-filter').value = 'all';
-                    document.getElementById('shift-filter').value = 'all';
-                    applyFilters();
-                });
-                
-                document.querySelectorAll('input[name="operator-chart-toggle"]').forEach(radio => {
-                    radio.addEventListener('change', applyFilters);
-                });
-                document.getElementById('operator-top-n').addEventListener('change', applyFilters);
-            }
+  <script>
+    // ----------------- Mapeo de códigos según tabla proporcionada -----------------
+    const codigoCategoria = {
+      '00':'Planificado',
+      '01':'Setup',
+      '02':'Microparada',
+      '04':'Mantenimiento',
+      '05':'Mantenimiento',
+      '06':'Mantenimiento',
+      '07':'Mantenimiento',
+      '08':'Mantenimiento',
+      '09':'Material',
+      '10':'Setup',
+      '11':'Setup',
+      '12':'Otros',
+      '13':'Otros',
+      '14':'Microparada',
+      '15':'Microparada',
+      '16':'Otros',
+      '20':'Externo'
+    };
 
-            function applyFilters() {
-                const dateRange = document.getElementById('date-range-picker')._flatpickr.selectedDates;
-                const selectedMachines = tomSelectMachines.items;
-                const selectedOperator = document.getElementById('operator-filter').value;
-                const selectedShift = document.getElementById('shift-filter').value;
+    // ----------------- Estado -----------------
+    let rawData = []; let normalized = []; let charts = {};
 
-                let filteredData = originalData;
+    function normalizeHeader(h){ return (h||'').toString().trim().normalize('NFKD').replace(/\p{Diacritic}/gu,'').replace(/[^a-zA-Z0-9]+/g,'_').replace(/^_|_$/g,''); }
 
-                if (dateRange.length === 2) {
-                    const [start, end] = dateRange;
-                    end.setUTCHours(23, 59, 59, 999);
-                    filteredData = filteredData.filter(d => d.FechaObj >= start && d.FechaObj <= end);
-                }
-                if (selectedMachines.length > 0) filteredData = filteredData.filter(d => selectedMachines.includes(d.Descrip_Maquina));
-                if (selectedOperator !== 'all') filteredData = filteredData.filter(d => d.Operario === selectedOperator);
-                if (selectedShift !== 'all') filteredData = filteredData.filter(d => d.Turno === selectedShift);
-                
-                updateDashboard(filteredData);
-            }
+    function parseDateString(s){ if(!s) return null; if(/\d{1,2}\/\d{1,2}\/\d{2,4}/.test(s)){ const p=s.split('/').map(x=>parseInt(x,10)); return new Date(p[2],p[1]-1,p[0]); } const d=new Date(s); return isNaN(d)?null:d; }
 
-            function updateDashboard(data) {
-                const uniqueProductions = Array.from(new Map(data.map(item => [item.IdProduccion, item])).values());
-                
-                updateKPIs(data, uniqueProductions);
-                renderDowntimeChart(data);
-                renderProductionByMachineChart(uniqueProductions);
-                renderProductionEvolutionChart(data); // Usar data completa para recalcular por día
-                renderOperatorChart(data);
-            }
+    function loadCSVFromUrl(url){ Papa.parse(url,{download:true,header:true,skipEmptyLines:true,transformHeader:normalizeHeader,complete:(res)=>onDataLoaded(res.data)}); }
+    function loadCSVFromFile(file){ Papa.parse(file,{header:true,skipEmptyLines:true,transformHeader:normalizeHeader,complete:(res)=>onDataLoaded(res.data)}); }
 
-            function updateKPIs(allData, uniqueProductions) {
-                const totalProduction = d3.sum(uniqueProductions, d => d.Cantidad);
-                const totalDowntimeMinutes = d3.sum(allData, d => d.Minutos);
-                
-                const productionsWithTarget = uniqueProductions.filter(d => d.Objetivo > 0);
-                const targetProduction = d3.sum(productionsWithTarget, d => d.Cantidad);
-                const totalObjective = d3.sum(productionsWithTarget, d => d.Objetivo);
-                const efficiency = totalObjective > 0 ? (targetProduction / totalObjective) * 100 : 0;
+    function onDataLoaded(data){ rawData=data; normalized = data.map(r=>{ const o={}; for(const k in r) o[k]=r[k]; const dateCol = Object.keys(o).find(c=>/fecha/i.test(c))||'Fecha'; o._fecha = parseDateString(o[dateCol]); o._cantidad = Number(String(o['Cantidad']||o['cantidad']||0).replace(/[^0-9\-\.]/g,''))||0; o._minutos = Number(String(o['Minutos']||o['minutos']||0).replace(/[^0-9\-\.]/g,''))||0; o._hs_trab_min = Number(String(o['Hs_Trab']||o['hs_trab']||0).replace(/[^0-9\-\.]/g,''))||0; // codigo de incidencia
+      const codeKey = Object.keys(o).find(c=>/cod/i.test(c) && /incid/i.test(c) || c.toLowerCase()==='codigo' ) || Object.keys(o).find(c=>/codigo/i.test(c));
+      o._codigo = (codeKey && String(o[codeKey]).trim()) || (o['descrip_incidencia'] && o['descrip_incidencia'].trim() && null);
+      // If codigo is not present but descrip_incidencia contains code like '01 - Arranque', try to extract leading two digits
+      if(!o._codigo && o['descrip_incidencia']){
+        const m = String(o['descrip_incidencia']).match(/\b(\d{1,2})\b/);
+        if(m) o._codigo = m[1];
+      }
+      // Map category
+      o._categoria = codigoCategoria[o._codigo] || (o['descrip_incidencia']? 'Otros' : 'SinCodigo');
+      return o; }).filter(r=>r._fecha);
 
-                document.getElementById('kpi-total-production').textContent = totalProduction.toLocaleString('es-AR');
-                document.getElementById('kpi-total-downtime').textContent = (totalDowntimeMinutes / 60).toFixed(1);
-                document.getElementById('kpi-total-runs').textContent = uniqueProductions.length;
-                document.getElementById('kpi-target-efficiency').textContent = `${efficiency.toFixed(1)}%`;
-            }
-            
-            function renderDowntimeChart(data) {
-                const downtimeData = d3.rollup(data.filter(d => d.descrip_incidencia), v => d3.sum(v, d => d.Minutos), d => d.descrip_incidencia);
-                const sortedDowntime = Array.from(downtimeData, ([cat, val]) => ({ category:cat, value:val })).sort((a,b) => b.value - a.value).slice(0, 10);
-                
-                renderChart('downtime-chart', {
-                    series: [{ name: 'Minutos', data: sortedDowntime.map(d => d.value) }],
-                    chart: { type: 'bar', height: 350, toolbar: { show: true } },
-                    plotOptions: { bar: { borderRadius: 4, horizontal: true } },
-                    dataLabels: { enabled: true, formatter: val => val.toFixed(0) },
-                    xaxis: { categories: sortedDowntime.map(d => d.category) },
-                    tooltip: { y: { formatter: val => `${val.toLocaleString('es-AR')} minutos` } },
-                });
-            }
+      populateFilters(); applyFiltersAndRender(); document.getElementById('lastUpdated')?.innerText = new Date().toLocaleString(); }
 
-            function renderProductionByMachineChart(uniqueProductions) {
-                const machineData = d3.rollup(uniqueProductions, v => d3.sum(v, d => d.Cantidad), d => d.Descrip_Maquina);
-                const sortedMachineData = Array.from(machineData, ([cat, val]) => ({ category:cat, value:val })).sort((a,b) => b.value - a.value);
+    function populateFilters(){ const machines = [...new Set(normalized.map(r=>r.Descrip_Maquina||r['Descrip_Maquina']).filter(Boolean))].sort(); const selM=document.getElementById('filter-machines'); selM.innerHTML=''; machines.forEach(m=>selM.add(new Option(m,m))); const turns=[...new Set(normalized.map(r=>r.Turno).filter(Boolean))].sort(); const selT=document.getElementById('filter-shifts'); selT.innerHTML=''; turns.forEach(t=>selT.add(new Option(t,t))); const dates=normalized.map(r=>r._fecha).sort((a,b)=>a-b); if(dates.length) flatpickr('#date-range',{mode:'range',dateFormat:'d/m/Y',defaultDate:[dates[0],dates[dates.length-1]],onClose:applyFiltersAndRender}); }
 
-                renderChart('production-by-machine-chart', {
-                    series: [{ name: 'Unidades', data: sortedMachineData.map(d => d.value) }],
-                    chart: { type: 'bar', height: 350, toolbar: { show: true } },
-                    plotOptions: { bar: { columnWidth: '50%', distributed: true } },
-                    legend: { show: false },
-                    xaxis: { categories: sortedMachineData.map(d => d.category), labels: { rotate: -45, trim: true, style: { fontSize: '10px' } } },
-                });
-            }
-            
-            function renderProductionEvolutionChart(data) {
-                const dailyDataMap = new Map();
+    function getActiveFilters(){ const selM=Array.from(document.getElementById('filter-machines').selectedOptions).map(o=>o.value); const selT=Array.from(document.getElementById('filter-shifts').selectedOptions).map(o=>o.value); const dr=document.querySelector('#date-range')._flatpickr ? document.querySelector('#date-range')._flatpickr.selectedDates : []; return {machines:selM,shifts:selT,dateRange:dr}; }
 
-                // Agrupar por día
-                for (const row of data) {
-                    const day = row.FechaObj.toISOString().split('T')[0];
-                    if (!dailyDataMap.has(day)) {
-                        dailyDataMap.set(day, { productions: new Map(), date: row.FechaObj });
-                    }
-                    dailyDataMap.get(day).productions.set(row.IdProduccion, row);
-                }
+    // Aggregate unique productions by IdProduccion
+    function aggregateUnique(data){ const map=new Map(); const idKey = Object.keys(data[0]||{}).find(k=>/idproduccion/i.test(k))||'IdProduccion'; for(const r of data){ const id=r[idKey]||Math.random().toString(36); if(!map.has(id)) map.set(id, {cantidad:r._cantidad||0,hs_trab_min:r._hs_trab_min||0,downtime_min:r._minutos||0,machine:r.Descrip_Maquina||r['Descrip_Maquina'],turno:r.Turno,categoria:r._categoria}); else { const v=map.get(id); v.cantidad=Math.max(v.cantidad,r._cantidad||0); v.hs_trab_min=Math.max(v.hs_trab_min,r._hs_trab_min||0); v.downtime_min+=r._minutos||0; map.set(id,v);} } return Array.from(map.values()); }
 
-                // Calcular métricas diarias
-                const evolutionData = Array.from(dailyDataMap.values()).map(dayInfo => {
-                    const uniqueProds = Array.from(dayInfo.productions.values());
-                    const dailyProduction = d3.sum(uniqueProds, d => d.Cantidad);
-                    
-                    const prodsWithTarget = uniqueProds.filter(d => d.Objetivo > 0);
-                    const dailyTargetProduction = d3.sum(prodsWithTarget, d => d.Cantidad);
-                    const dailyTotalObjective = d3.sum(prodsWithTarget, d => d.Objetivo);
-                    const dailyCompliance = dailyTotalObjective > 0 ? (dailyTargetProduction / dailyTotalObjective) * 100 : 0;
-                    
-                    return { date: dayInfo.date, production: dailyProduction, compliance: dailyCompliance };
-                }).sort((a, b) => a.date - b.date);
+    function computeBenchmarks(data){ // velocidad estandar por maquina = mejor piezas/minuto observado
+      const perMachine ={}; for(const r of data){ const m = r.Descrip_Maquina||r['Descrip_Maquina']||'SinMaquina'; const piezas = Number(r.Cantidad||r._cantidad||0); const tiempo = Number(r.Hs_Trab||r._hs_trab_min||0) || Number(r._hs_trab_min||0); if(!tiempo || tiempo<=0) continue; const ppm = piezas / tiempo; if(!perMachine[m] || ppm>perMachine[m]) perMachine[m]=ppm; }
+      return perMachine; }
 
-                renderChart('production-evolution-chart', {
-                    series: [{ name: 'Cumplimiento', type: 'line', data: evolutionData.map(d => d.compliance.toFixed(1)) },
-                             { name: 'Producción', type: 'bar', data: evolutionData.map(d => d.production) }],
-                    chart: { type: 'line', height: 350, zoom: { enabled: true }, toolbar: { show: true } },
-                    stroke: { width: [3, 0], curve: 'smooth' },
-                    xaxis: { type: 'datetime', categories: evolutionData.map(d => d.date.getTime()) },
-                    yaxis: [
-                        { seriesName: 'Cumplimiento', opposite: false, title: { text: 'Cumplimiento (%)', style: { color: '#ff7f0e' } },
-                          labels: { formatter: (val) => `${val}%` }, max: 110,
-                          axisTicks: { show: true }, axisBorder: { show: true, color: '#ff7f0e' } },
-                        { seriesName: 'Producción', opposite: true, title: { text: 'Producción (Unidades)', style: { color: '#0d6efd' } },
-                          axisTicks: { show: true }, axisBorder: { show: true, color: '#0d6efd' } }
-                    ],
-                    colors: ['#ff7f0e', '#0d6efd'],
-                    tooltip: { x: { format: 'dd/MM/yyyy' } },
-                    legend: { horizontalAlign: 'left', offsetX: 40 }
-                });
-            }
-            
-            function renderOperatorChart(data) {
-                 const mode = document.getElementById('toggle-prod').checked ? 'production' : 'downtime';
-                 const topN = parseInt(document.getElementById('operator-top-n').value) || 10;
-                 
-                 let seriesName, rollupValue;
+    function calculateOEE(agg, benchmarks){ // agg is aggregated unique productions
+      const totalProduction = agg.reduce((s,x)=>s+x.cantidad,0);
+      const planned = agg.reduce((s,x)=>s + (x.hs_trab_min||0),0) || 1;
+      const downtime = agg.reduce((s,x)=>s + (x.downtime_min||0),0);
+      const run = Math.max(0, planned - downtime);
+      const availability = run / planned;
+      // performance via benchmarks: expected production = sum(run * benchmark_for_machine)
+      let expected = 0; for(const x of agg){ const bpm = benchmarks[x.machine] || (totalProduction/planned); expected += ( (x.hs_trab_min - (x.downtime_min||0)) * (benchmarks[x.machine]|| (totalProduction/planned)) ); }
+      const performance = expected>0 ? (totalProduction / expected) : 1;
+      // quality: deduce from categories mapped to 'Calidad' (none initially). We'll assume 100% if no quality categories.
+      // If there are records with category 'Calidad', we expect them to carry a field with defective count; absent that we treat minutes in Calidad as proxy (not ideal)
+      const quality_losses_codes = ['Calidad'];
+      // find any lines whose categoria equals Calidad — if exist, set quality <100 using a heuristic: lost_units = totalProduction * (minutes_in_calidad / planned)
+      const minutes_quality = agg.filter(a=>a.categoria==='Calidad').reduce((s,x)=>s+(x.downtime_min||0),0);
+      let quality = 1.0; if(minutes_quality>0){ const est_bad = totalProduction * (minutes_quality / planned); quality = Math.max(0, (totalProduction - est_bad)/totalProduction); }
+      const oee = availability * performance * quality;
+      return {totalProduction,planned,downtime,run,availability,performance,quality,oee}; }
 
-                 if(mode === 'production') {
-                    seriesName = 'Unidades Producidas';
-                    const uniqueProductions = Array.from(new Map(data.map(item => [item.IdProduccion, item])).values());
-                    rollupValue = d3.rollup(uniqueProductions, v => d3.sum(v, d => d.Cantidad), d => d.Operario);
-                 } else {
-                    seriesName = 'Minutos de Paro';
-                    rollupValue = d3.rollup(data, v => d3.sum(v, d => d.Minutos), d => d.Operario);
-                 }
-                 
-                const sortedData = Array.from(rollupValue, ([cat, val]) => ({ category:cat, value:val })).sort((a,b) => b.value - a.value).slice(0, topN);
+    function applyFiltersAndRender(){ const f=getActiveFilters(); let filtered = normalized.slice(); if(f.machines.length) filtered = filtered.filter(r=>f.machines.includes(r.Descrip_Maquina)); if(f.shifts && f.shifts.length) filtered = filtered.filter(r=>f.shifts.includes(r.Turno)); if(f.dateRange && f.dateRange.length===2){ const [a,b]=f.dateRange; filtered = filtered.filter(r=>r._fecha>=a && r._fecha<=b); }
+      // Aggregations
+      const agg = aggregateUnique(filtered);
+      const benchmarks = computeBenchmarks(filtered);
+      const oee = calculateOEE(agg,benchmarks);
+      renderKPIs(oee);
+      renderOEEDaily(agg,benchmarks);
+      renderOEEMachine(agg,benchmarks);
+      renderParadas(filtered);
+      renderTurnos(agg,benchmarks);
+      renderRawTable(filtered);
+    }
 
-                renderChart('operator-performance-chart', {
-                    series: [{ name: seriesName, data: sortedData.map(d => d.value) }],
-                    chart: { type: 'bar', height: 350 },
-                    xaxis: { categories: sortedData.map(d => d.category), labels: { style: { fontSize: '10px' } } },
-                    yaxis: { title: { text: seriesName } },
-                    plotOptions: { bar: { distributed: true } },
-                    legend: {show: false}
-                });
-            }
-            
-            function renderChart(elementId, options) {
-                if (charts[elementId]) {
-                    charts[elementId].updateOptions(options, true, true);
-                } else {
-                    const chart = new ApexCharts(document.querySelector(`#${elementId}`), options);
-                    chart.render();
-                    charts[elementId] = chart;
-                }
-            }
+    function renderKPIs(oee){ document.getElementById('kpi-oee').innerText = (oee.oee*100).toFixed(1)+'%'; document.getElementById('kpi-availability').innerText = (oee.availability*100).toFixed(1)+'%'; document.getElementById('kpi-performance').innerText = (oee.performance*100).toFixed(1)+'%'; document.getElementById('kpi-quality').innerText = (oee.quality*100).toFixed(1)+'%'; document.getElementById('oee-observations').innerText = `Producción: ${oee.totalProduction.toLocaleString()} piezas • Planned min: ${oee.planned.toLocaleString()} • Paradas min: ${oee.downtime.toLocaleString()}`; // benchmark table
+      const bench = computeBenchmarks(normalized);
+      let html = '<table class="table table-sm"><thead><tr><th>Máquina</th><th>piezas/min (benchmark)</th></tr></thead><tbody>';
+      for(const m in bench) html += `<tr><td>${m}</td><td>${bench[m].toFixed(3)}</td></tr>`;
+      html += '</tbody></table>'; document.getElementById('bench-table').innerHTML = html; }
 
-            init();
-        });
-    </script>
+    function renderOEEDaily(agg,bench){ // produce daily OEE time series
+      const byDate = {}; for(const a of agg){ const d = new Date(a.hs_trab_min?0:0); // placeholder
+        // we need dates: since agg lost date, approximate by searching original rows with same cantidad and machine
+      }
+      // Simpler approach: compute daily OEE from raw rows grouped by date
+      const grouped = {};
+      for(const r of normalized){ const d=r._fecha.toISOString().slice(0,10); if(!grouped[d]) grouped[d]=[]; grouped[d].push(r); }
+      const dates = Object.keys(grouped).sort(); const series=[];
+      for(const d of dates){ const a=aggregateUnique(grouped[d]); const b=computeBenchmarks(grouped[d]); const m=calculateOEE(a,b); series.push({x:d,y:(m.oee*100).toFixed(2)}); }
+      const cats = series.map(s=>s.x); const vals = series.map(s=>Number(s.y)); if(charts.oee) charts.oee.updateOptions({series:[{name:'OEE %',data:vals}], xaxis:{categories:cats}}); else { charts.oee = new ApexCharts(document.querySelector('#chart-oee'),{chart:{type:'line',height:320,toolbar:{show:true}},series:[{name:'OEE %',data:vals}],xaxis:{categories:cats},yaxis:{min:0,max:100}}); charts.oee.render(); }
+    }
+
+    function renderOEEMachine(agg,bench){ // OEE per machine
+      const byMachine = {};
+      const idKey = Object.keys(normalized[0]||{}).find(k=>/idproduccion/i.test(k))||'IdProduccion';
+      // create per-machine agg
+      for(const r of agg){ const m=r.machine||'SinMaquina'; if(!byMachine[m]) byMachine[m]=[]; byMachine[m].push(r); }
+      const cats=[]; const oeeVals=[];
+      for(const m in byMachine){ const a=byMachine[m]; const b={}; // build fake bench for this group
+        const benchVal = computeBenchmarks(normalized)[m] || (a.reduce((s,x)=>s+x.cantidad,0)/Math.max(1,a.reduce((s,x)=>s+x.hs_trab_min,0))); const res = calculateOEE(a,{[m]:benchVal}); cats.push(m); oeeVals.push(Number((res.oee*100).toFixed(2))); }
+      if(charts.oeeMachine) charts.oeeMachine.updateOptions({series:[{name:'OEE %',data:oeeVals}], xaxis:{categories:cats}}); else { charts.oeeMachine = new ApexCharts(document.querySelector('#chart-oee-machine'),{chart:{type:'bar',height:320},series:[{name:'OEE %',data:oeeVals}],xaxis:{categories:cats}}); charts.oeeMachine.render(); }
+    }
+
+    function renderParadas(filtered){ // pareto
+      const byCat = {};
+      for(const r of filtered){ const c = r._categoria || 'SinCodigo'; byCat[c]=(byCat[c]||0)+ (r._minutos||0); }
+      const cats = Object.keys(byCat).sort((a,b)=>byCat[b]-byCat[a]); const vals = cats.map(c=>byCat[c]); if(charts.paradas) charts.paradas.updateOptions({series:[{name:'Minutos',data:vals}], xaxis:{categories:cats}}); else { charts.paradas = new ApexCharts(document.querySelector('#chart-paradas'),{chart:{type:'bar',height:320},series:[{name:'Minutos',data:vals}],plotOptions:{bar:{horizontal:true}},xaxis:{categories:cats}}); charts.paradas.render(); }
+      // render table
+      const rows = Object.keys(byCat).map(c=>({categoria:c,minutos:byCat[c]})).sort((a,b)=>b.minutos-a.minutos);
+      if(window.paradasDT) window.paradasDT.clear().destroy(); $('#paradas-table').DataTable({data:rows,columns:[{title:'Categoria',data:'categoria'},{title:'Minutos',data:'minutos'}],dom:'Bfrtip',buttons:['csv']}); }
+
+    function renderTurnos(agg,bench){ // heatmap: machine x turno OEE
+      // prepare matrix
+      const machines = [...new Set(normalized.map(r=>r.Descrip_Maquina).filter(Boolean))]; const turns = [...new Set(normalized.map(r=>r.Turno).filter(Boolean))]; const matrix = {};
+      for(const m of machines) matrix[m] = {};
+      for(const r of normalized){ const key = r.Descrip_Maquina || 'SinMaquina'; const t = r.Turno || 'SinTurno'; if(!matrix[key][t]) matrix[key][t]=[]; matrix[key][t].push(r); }
+      const series = [];
+      for(const t of turns){ const data = []; for(const m of machines){ const group = matrix[m][t]||[]; if(!group.length){ data.push({x:m,y:0}); continue; } const a=aggregateUnique(group); const b=computeBenchmarks(group); const res=calculateOEE(a,b); data.push({x:m,y: Math.round(res.oee*100)}); } series.push({name:t,data:data}); }
+      // use Apex heatmap-like: we'll render as multiple series in bar chart (stacked) or as heatmap if many combos
+      if(window.heatmapChart) window.heatmapChart.destroy(); const options = {chart:{type:'heatmap',height:350},series:series,plotOptions:{heatmap:{shadeIntensity:0.5,distributed:false}},dataLabels:{enabled:false}}; window.heatmapChart = new ApexCharts(document.querySelector('#chart-heatmap'),options); window.heatmapChart.render();
+      // KPI per turno table
+      const turnoRows = turns.map(t=>{ const group = normalized.filter(r=>r.Turno===t); const a=aggregateUnique(group); const b=computeBenchmarks(group); const res=calculateOEE(a,b); return {turno:t,oee:(res.oee*100).toFixed(1),availability:(res.availability*100).toFixed(1),performance:(res.performance*100).toFixed(1),quality:(res.quality*100).toFixed(1)} });
+      let html = '<table class="table table-sm"><thead><tr><th>Turno</th><th>OEE%</th><th>Disp%</th><th>Perf%</th><th>Qual%</th></tr></thead><tbody>';
+      for(const r of turnoRows) html += `<tr><td>${r.turno}</td><td>${r.oee}</td><td>${r.availability}</td><td>${r.performance}</td><td>${r.quality}</td></tr>`;
+      html += '</tbody></table>'; document.getElementById('turno-table').innerHTML = html; }
+
+    function renderRawTable(data){ if(window.rawDT) window.rawDT.clear().destroy(); if(!data.length){ $('#raw-table').html('<p>No hay datos</p>'); return; } const cols = Object.keys(data[0]).filter(c=>!c.startsWith('_')).map(c=>({title:c,data:c})); window.rawDT = $('#raw-table').DataTable({data:data,columns:cols,dom:'Bfrtip',buttons:['csv','excel'],pageLength:25}); }
+
+    // events
+    document.getElementById('btn-load-sample').addEventListener('click', ()=> loadCSVFromUrl('exportProduccionyEventos.csv'));
+    document.getElementById('csv-upload').addEventListener('change', (e)=>{ const f=e.target.files[0]; if(f) loadCSVFromFile(f); });
+    document.getElementById('btn-reset').addEventListener('click', ()=>{ document.getElementById('filter-machines').selectedIndex=-1; document.getElementById('filter-shifts').selectedIndex=-1; applyFiltersAndRender(); });
+    document.getElementById('filter-machines').addEventListener('change', applyFiltersAndRender);
+    document.getElementById('filter-shifts').addEventListener('change', applyFiltersAndRender);
+    document.getElementById('btn-export-csv').addEventListener('click', ()=>{ const f=getActiveFilters(); let filtered = normalized.slice(); if(f.machines.length) filtered = filtered.filter(r=>f.machines.includes(r.Descrip_Maquina)); if(f.dateRange && f.dateRange.length==2){ const [a,b]=f.dateRange; filtered = filtered.filter(r=>r._fecha>=a && r._fecha<=b); } const csv = Papa.unparse(filtered); const blob=new Blob([csv],{type:'text/csv;charset=utf-8;'}); const url=URL.createObjectURL(blob); const a=document.createElement('a'); a.href=url; a.download='filtered_export.csv'; a.click(); });
+
+    // initial: try auto-load sample if available
+    // loadCSVFromUrl('exportProduccionyEventos.csv');
+  </script>
 </body>
 </html>
-
