@@ -3,7 +3,7 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Dashboard Industrial v2.6</title>
+    <title>Dashboard Industrial v2.7</title>
     <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.3/dist/css/bootstrap.min.css" rel="stylesheet">
     <link rel="preconnect" href="https://fonts.googleapis.com">
     <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
@@ -78,7 +78,7 @@
         #loading-overlay.d-none { opacity: 0; pointer-events: none; }
         .card {
             border: 1px solid var(--border-color);
-            border-radius: var(--border-radius);
+            border-radius: 12px;
             box-shadow: var(--card-shadow);
             background-color: var(--card-bg);
             transition: transform 0.2s ease, box-shadow 0.2s ease, background-color 0.3s, border-color 0.3s;
@@ -153,7 +153,7 @@
         <section class="row mb-4 g-4">
             <div class="col-lg-3 col-md-6"><div class="card p-3"><div class="card-body text-center"><h5 class="card-title text-muted">Producción Total</h5><p class="kpi-value" id="kpi-total-production">--</p></div></div></div>
             <div class="col-lg-3 col-md-6"><div class="card p-3"><div class="card-body text-center"><h5 class="card-title text-muted">Disponibilidad</h5><p class="kpi-value" id="kpi-availability">--</p></div></div></div>
-            <div class="col-lg-3 col-md-6"><div class="card p-3"><div class="card-body text-center"><h5 class="card-title text-muted">Eficiencia (Pzas/Turno)</h5><p class="kpi-value" id="kpi-efficiency">--</p></div></div></div>
+            <div class="col-lg-3 col-md-6"><div class="card p-3"><div class="card-body text-center"><h5 class="card-title text-muted">Eficiencia (Pzas/Hora)</h5><p class="kpi-value" id="kpi-efficiency">--</p></div></div></div>
             <div class="col-lg-3 col-md-6"><div class="card p-3"><div class="card-body text-center"><h5 class="card-title text-muted">Horas de Parada</h5><p class="kpi-value" id="kpi-total-downtime">--</p></div></div></div>
         </section>
         
@@ -164,7 +164,7 @@
         <section class="row g-4">
             <div class="col-lg-12 mb-4"><div class="card"><div class="card-header">Producción Diaria</div><div class="card-body"><div id="chart-daily-production"></div></div></div></div>
             <div class="col-lg-6 mb-4"><div class="card"><div class="card-header">Producción por Máquina</div><div class="card-body"><div id="chart-prod-by-machine"></div></div></div></div>
-            <div class="col-lg-6 mb-4"><div class="card"><div class="card-header">Eficiencia por Operario (Pzas / Turno)</div><div class="card-body"><div id="chart-prod-by-operator"></div></div></div></div>
+            <div class="col-lg-6 mb-4"><div class="card"><div class="card-header">Producción por Operario (Pzas / Turno 8hs)</div><div class="card-body"><div id="chart-prod-by-operator"></div></div></div></div>
             <div class="col-lg-12 mb-4"><div class="card"><div class="card-header">Análisis de Paradas: Tiempo vs. Frecuencia</div><div class="card-body"><div id="chart-downtime-combo"></div></div></div></div>
         </section>
     </main>
@@ -188,6 +188,7 @@
             const themeToggle = document.getElementById('theme-toggle');
             const chartColors = ['#5E35B1', '#039BE5', '#00897B', '#FDD835', '#E53935', '#8E24AA', '#3949AB'];
 
+            // Helper para formatear números
             const formatNumber = (val) => val ? val.toLocaleString('es-ES') : val;
 
             function applyTheme(theme) {
@@ -343,11 +344,11 @@
                 });
                 const productionValues = Array.from(uniqueProductions.values());
                 const totalProduction = productionValues.reduce((sum, item) => sum + item.cantidad, 0);
-                const plannedMinutes = productionValues.reduce((sum, item) => sum + item.hsTrab, 0) * 60; // Convert hours to minutes
+                const plannedMinutes = productionValues.reduce((sum, item) => sum + item.hsTrab, 0) * 60; // Horas a minutos
                 const totalDowntimeMinutes = data.reduce((sum, row) => sum + row.Minutos, 0);
                 const runTimeMinutes = plannedMinutes - totalDowntimeMinutes;
                 const availability = plannedMinutes > 0 ? (runTimeMinutes / plannedMinutes) : 0;
-                const efficiency = runTimeMinutes > 0 ? totalProduction / (runTimeMinutes / 60) : 0; // efficiency is pzas/hr
+                const efficiency = runTimeMinutes > 0 ? totalProduction / (runTimeMinutes / 60) : 0; // Piezas por hora
                 return {
                     totalProduction, totalDowntimeHours: totalDowntimeMinutes / 60,
                     availability: Math.max(0, availability), efficiency
@@ -381,10 +382,18 @@
                 const prodByMachineData = aggregateAndSort(data, 'Descrip_Maquina', 'Cantidad', true);
                 renderChart('chart-prod-by-machine', 'bar', { categories: prodByMachineData.map(d => d.category), series: [{ name: 'Producción', data: prodByMachineData.map(d => d.value) }], horizontal: true });
                 
-                // ======================= INICIO DE LA CORRECCIÓN JS =======================
+                // ======================= INICIO DE LA MODIFICACIÓN =======================
+                // 1. Se llama a la nueva función para calcular la eficiencia del operario
                 const prodByOperatorData = calculateOperatorEfficiency(data);
-                renderChart('chart-prod-by-operator', 'bar', { categories: prodByOperatorData.map(d => d.category), series: [{ name: 'Pzas / Turno', data: prodByOperatorData.map(d => d.value) }], horizontal: false });
-                // ======================== FIN DE LA CORRECCIÓN JS =========================
+                
+                // 2. Se actualiza el nombre de la serie y se añade un tooltip personalizado
+                renderChart('chart-prod-by-operator', 'bar', { 
+                    categories: prodByOperatorData.map(d => d.category), 
+                    series: [{ name: 'Pzas / Turno 8hs', data: prodByOperatorData.map(d => d.value) }], 
+                    horizontal: false,
+                    tooltip: { theme: (localStorage.getItem('dashboardTheme') || 'light'), y: { formatter: (val) => `${formatNumber(val.toFixed(0))} pzas/turno` } }
+                });
+                // ======================== FIN DE LA MODIFICACIÓN =========================
                 
                 const downtimeComboData = aggregateDowntime(data).sort((a,b) => b.totalMinutes - a.totalMinutes);
                 renderChart('chart-downtime-combo', 'combo', downtimeComboData);
@@ -408,7 +417,15 @@
                                 shortMonths: ['Ene', 'Feb', 'Mar', 'Abr', 'May', 'Jun', 'Jul', 'Ago', 'Sep', 'Oct', 'Nov', 'Dic'],
                                 days: ['Domingo', 'Lunes', 'Martes', 'Miércoles', 'Jueves', 'Viernes', 'Sábado'],
                                 shortDays: ['Dom', 'Lun', 'Mar', 'Mié', 'Jue', 'Vie', 'Sáb'],
-                                toolbar: { download: 'Descargar SVG', selection: 'Selección', selectionZoom: 'Zoom de selección', zoomIn: 'Acercar', zoomOut: 'Alejar', pan: 'Navegación', reset: 'Restablecer Zoom' }
+                                toolbar: {
+                                    download: 'Descargar SVG',
+                                    selection: 'Selección',
+                                    selectionZoom: 'Zoom de selección',
+                                    zoomIn: 'Acercar',
+                                    zoomOut: 'Alejar',
+                                    pan: 'Navegación',
+                                    reset: 'Restablecer Zoom'
+                                }
                             }
                         }],
                         defaultLocale: 'es'
@@ -425,19 +442,23 @@
                         ...commonOptions, chart: {...commonOptions.chart, type: 'line'}, series: chartData.series,
                         stroke: { curve: 'smooth', width: 3 },
                         markers: { size: 5 },
-                        dataLabels: { enabled: true, offsetY: -15, formatter: (val) => formatNumber(val), style: { colors: ["#000000"] }, background: { enabled: true, foreColor: '#000', borderRadius: 3, padding: 5, opacity: 0.9, borderColor: '#BDE5F8', backgroundColor: '#BDE5F8' } },
+                        dataLabels: { enabled: false },
                         xaxis: { type: 'datetime', categories: chartData.categories, labels: { style: { colors: textColor }, datetimeUTC: false, format: 'dd MMM' } },
                         yaxis: { labels: { style: { colors: textColor }, formatter: (val) => formatNumber(val) } },
-                        tooltip: { theme: currentTheme, x: { format: 'dddd dd/MM/yyyy' }, y: { formatter: (val) => `${formatNumber(val)} pzas.` } }
+                        tooltip: { 
+                            theme: currentTheme, 
+                            x: { format: 'dddd dd/MM/yyyy' }, 
+                            y: { formatter: (val) => `${formatNumber(val)} pzas.` } 
+                        }
                     };
                 } else if (type === 'bar') {
                      options = {
                         ...commonOptions, chart: {...commonOptions.chart, type: 'bar'}, series: chartData.series,
                         plotOptions: { bar: { horizontal: chartData.horizontal || false, borderRadius: 4, dataLabels: { position: 'top' } } },
-                        dataLabels: { enabled: true, formatter: (val) => formatNumber(val), style: { fontSize: '12px' }, offsetY: -20, dropShadow: { enabled: true, top: 1, left: 1, blur: 1, color: '#000', opacity: 0.45 }},
+                        dataLabels: { enabled: true, formatter: (val) => formatNumber(Math.round(val)), style: { fontSize: '12px' }, offsetY: -20, dropShadow: { enabled: true, top: 1, left: 1, blur: 1, color: '#000', opacity: 0.45 }},
                         xaxis: { categories: chartData.categories, labels: { style: { colors: textColor, fontSize: '12px' }, trim: true, maxHeight: 100 } },
                         yaxis: { labels: { style: { colors: textColor }, formatter: (val) => formatNumber(val) } },
-                        tooltip: { theme: currentTheme, y: { formatter: (val) => formatNumber(val) } }
+                        tooltip: chartData.tooltip || { theme: currentTheme, y: { formatter: (val) => formatNumber(val) } }
                     };
                     if (chartData.horizontal) { options.dataLabels.style.colors = ["#fff"]; options.dataLabels.offsetX = -10; } 
                     else { options.dataLabels.style.colors = [textColor]; }
@@ -454,7 +475,19 @@
                             { seriesName: 'Tiempo (Horas)', axisTicks: { show: true }, axisBorder: { show: true, color: chartColors[0] }, labels: { style: { colors: chartColors[0] }, formatter: (val) => formatNumber(val) }, title: { text: "Tiempo Total (Horas)", style: { color: chartColors[0] } }},
                             { seriesName: 'Frecuencia', opposite: true, axisTicks: { show: true }, axisBorder: { show: true, color: chartColors[1] }, labels: { style: { colors: chartColors[1] }, formatter: (val) => formatNumber(val) }, title: { text: "Frecuencia (Nro. de Veces)", style: { color: chartColors[1] } }}
                         ],
-                        tooltip: { theme: currentTheme, y: { formatter: function(val, { seriesIndex }) { if(val === undefined) return val; if (seriesIndex === 0) { return val.toLocaleString('es-ES', { minimumFractionDigits: 2, maximumFractionDigits: 2 }) + " Hs"; } else { return val.toLocaleString('es-ES') + " veces"; } } } },
+                        tooltip: { 
+                            theme: currentTheme,
+                            y: {
+                                formatter: function(val, { seriesIndex }) {
+                                    if(val === undefined) return val;
+                                    if (seriesIndex === 0) {
+                                        return val.toLocaleString('es-ES', { minimumFractionDigits: 2, maximumFractionDigits: 2 }) + " Hs";
+                                    } else {
+                                        return val.toLocaleString('es-ES') + " veces";
+                                    }
+                                }
+                            }
+                        },
                         legend: { horizontalAlign: 'left', offsetX: 40 }
                     };
                 }
@@ -483,7 +516,10 @@
                 const sorted = Object.keys(aggregation).sort((a, b) => new Date(a) - new Date(b));
                 return {
                     series: [{ name: 'Producción', data: sorted.map(key => aggregation[key]) }],
-                    categories: sorted.map(key => { const parts = key.split('-'); return new Date(parts[0], parts[1] - 1, parts[2]).getTime(); })
+                    categories: sorted.map(key => {
+                        const parts = key.split('-');
+                        return new Date(parts[0], parts[1] - 1, parts[2]).getTime();
+                    })
                 };
             }
 
@@ -502,43 +538,46 @@
                 return aggregatedArray.sort((a, b) => b.value - a.value);
             }
 
-            // ======================= INICIO DE NUEVA FUNCIÓN JS =======================
+            // ======================= INICIO DE LA MODIFICACIÓN =======================
+            // 3. Nueva función creada exclusivamente para el gráfico de operarios
             function calculateOperatorEfficiency(data) {
                 const aggregation = {};
-                
+                const seenProdRuns = new Set(); // Para no duplicar producciones por operario
+
                 data.forEach(row => {
                     const operator = row.Apellido;
-                    if (!operator || !row.IdProduccion) return;
+                    const prodId = row.IdProduccion;
+                    if (!operator || !prodId) return;
+
+                    const uniqueKey = `${operator}-${prodId}`;
+                    if (seenProdRuns.has(uniqueKey)) {
+                        return; // Si ya procesamos esta producción para este operario, la saltamos
+                    }
+                    seenProdRuns.add(uniqueKey);
 
                     if (!aggregation[operator]) {
-                        aggregation[operator] = {
-                            totalQuantity: 0,
-                            totalTimeHours: 0,
-                            seenProdIds: new Set()
-                        };
+                        aggregation[operator] = { totalQuantity: 0, totalMinutes: 0 };
                     }
-                    
-                    if (!aggregation[operator].seenProdIds.has(row.IdProduccion)) {
-                        aggregation[operator].totalQuantity += row.Cantidad || 0;
-                        aggregation[operator].totalTimeHours += row.Hs_Trab || 0;
-                        aggregation[operator].seenProdIds.add(row.IdProduccion);
-                    }
+
+                    aggregation[operator].totalQuantity += row.Cantidad;
+                    aggregation[operator].totalMinutes += row.Hs_Trab * 60; // Convertimos horas a minutos
                 });
 
-                const results = Object.keys(aggregation).map(operator => {
+                const result = Object.keys(aggregation).map(operator => {
                     const opData = aggregation[operator];
-                    const totalMinutes = opData.totalTimeHours * 60;
-                    const value = totalMinutes > 0 ? (opData.totalQuantity / totalMinutes) * 480 : 0;
-
+                    const piecesPerMinute = opData.totalMinutes > 0 ? (opData.totalQuantity / opData.totalMinutes) : 0;
+                    const efficiencyPerShift = piecesPerMinute * 480; // Ponderamos a un turno de 480 mins (8hs)
+                    
                     return {
                         category: operator,
-                        value: Math.round(value)
+                        value: efficiencyPerShift
                     };
                 });
-
-                return results.sort((a, b) => b.value - a.value);
+                
+                // Ordenamos de mayor a menor eficiencia
+                return result.sort((a, b) => b.value - a.value);
             }
-            // ======================== FIN DE NUEVA FUNCIÓN JS =========================
+            // ======================== FIN DE LA MODIFICACIÓN =========================
 
             function aggregateDowntime(data) {
                 const aggregation = {};
