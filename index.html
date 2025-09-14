@@ -492,7 +492,13 @@
                 const sorted = Object.keys(aggregation).sort((a, b) => new Date(a) - new Date(b));
                 return {
                     series: [{ name: 'Producción', data: sorted.map(key => aggregation[key]) }],
-                    categories: sorted.map(key => new Date(key).getTime())
+                    // ======================= INICIO DE LA CORRECCIÓN =======================
+                    categories: sorted.map(key => {
+                        const parts = key.split('-'); // key es "YYYY-MM-DD"
+                        // Creamos la fecha como new Date(año, mes - 1, día) para forzar la zona horaria local
+                        return new Date(parts[0], parts[1] - 1, parts[2]).getTime();
+                    })
+                    // ======================== FIN DE LA CORRECCIÓN =========================
                 };
             }
 
