@@ -164,7 +164,7 @@
         <section class="row g-4">
             <div class="col-lg-12 mb-4"><div class="card"><div class="card-header">Producción Diaria</div><div class="card-body"><div id="chart-daily-production"></div></div></div></div>
             <div class="col-lg-6 mb-4"><div class="card"><div class="card-header">Producción por Máquina</div><div class="card-body"><div id="chart-prod-by-machine"></div></div></div></div>
-            <div class="col-lg-6 mb-4"><div class="card"><div class="card-header">Producción por Operario</div><div class="card-body"><div id="chart-prod-by-operator"></div></div></div></div>
+            <div class="col-lg-6 mb-4"><div class="card"><div class="card-header">Producción Promedio por Operario y Turno</div><div class="card-body"><div id="chart-prod-by-operator"></div></div></div></div>
             <div class="col-lg-12 mb-4"><div class="card"><div class="card-header">Análisis de Paradas: Tiempo vs. Frecuencia</div><div class="card-body"><div id="chart-downtime-combo"></div></div></div></div>
         </section>
     </main>
@@ -189,13 +189,15 @@
             const chartColors = ['#5E35B1', '#039BE5', '#00897B', '#FDD835', '#E53935', '#8E24AA', '#3949AB'];
 
             // Helper para formatear números
-            const formatNumber = (val) => val ? val.toLocaleString('es-ES') : val;
+            const formatNumber = (val) => val ? val.toLocaleString('es-ES', { maximumFractionDigits: 0 }) : val;
 
             function applyTheme(theme) {
                 document.body.setAttribute('data-theme', theme);
                 themeToggle.checked = theme === 'dark';
                 Object.values(charts).forEach(chart => {
-                    chart.updateOptions({ theme: { mode: theme }, chart: { background: 'transparent' } });
+                    if (chart.chart) { // Check if chart is initialized
+                        chart.updateOptions({ theme: { mode: theme }, chart: { background: 'transparent' } });
+                    }
                 });
             }
 
@@ -358,7 +360,7 @@
             function renderKPIs(kpiData) {
                 document.getElementById('kpi-total-production').textContent = formatNumber(kpiData.totalProduction);
                 document.getElementById('kpi-availability').textContent = `${(kpiData.availability * 100).toFixed(1)}%`;
-                document.getElementById('kpi-efficiency').textContent = formatNumber(kpiData.efficiency.toFixed(0));
+                document.getElementById('kpi-efficiency').textContent = formatNumber(kpiData.efficiency);
                 document.getElementById('kpi-total-downtime').textContent = kpiData.totalDowntimeHours.toFixed(1);
             }
             
@@ -380,10 +382,12 @@
                 renderChart('chart-daily-production', 'line', dailyProdData);
                 
                 const prodByMachineData = aggregateAndSort(data, 'Descrip_Maquina', 'Cantidad', true);
-                renderChart('chart-prod-by-machine', 'bar', { categories: prodByMachineData.map(d => d.category), series: [{ name: 'Producción', data: prodByMachineData.map(d => d.value) }], horizontal: true });
+                renderChart('chart-prod-by-machine', 'bar', { seriesName: 'Producción', data: prodByMachineData, horizontal: true });
                 
-                const prodByOperatorData = aggregateAndSort(data, 'Apellido', 'Cantidad', true);
-                renderChart('chart-prod-by-operator', 'bar', { categories: prodByOperatorData.map(d => d.category), series: [{ name: 'Producción', data: prodByOperatorData.map(d => d.value) }], horizontal: false });
+                // ======================= INICIO DE LA MODIFICACIÓN =======================
+                const avgProdByOperatorData = calculateAverageProductionByShift(data);
+                renderChart('chart-prod-by-operator', 'bar', { seriesName: 'Producción Promedio/Turno', data: avgProdByOperatorData, horizontal: false });
+                // ======================== FIN DE LA MODIFICACIÓN =========================
                 
                 const downtimeComboData = aggregateDowntime(data).sort((a,b) => b.totalMinutes - a.totalMinutes);
                 renderChart('chart-downtime-combo', 'combo', downtimeComboData);
@@ -449,20 +453,20 @@
                         },
                         xaxis: { type: 'datetime', categories: chartData.categories, labels: { style: { colors: textColor }, datetimeUTC: false, format: 'dd MMM' } },
                         yaxis: { labels: { style: { colors: textColor }, formatter: (val) => formatNumber(val) } },
-                        // ======================= INICIO DE LA CORRECCIÓN =======================
                         tooltip: { 
                             theme: currentTheme, 
                             x: { format: 'dddd dd/MM/yyyy' }, 
                             y: { formatter: (val) => `${formatNumber(val)} pzas.` } 
                         }
-                        // ======================== FIN DE LA CORRECCIÓN =========================
                     };
                 } else if (type === 'bar') {
                      options = {
-                        ...commonOptions, chart: {...commonOptions.chart, type: 'bar'}, series: chartData.series,
+                        ...commonOptions, 
+                        chart: {...commonOptions.chart, type: 'bar'}, 
+                        series: [{ name: chartData.seriesName, data: chartData.data.map(d => d.value) }],
                         plotOptions: { bar: { horizontal: chartData.horizontal || false, borderRadius: 4, dataLabels: { position: 'top' } } },
                         dataLabels: { enabled: true, formatter: (val) => formatNumber(val), style: { fontSize: '12px' }, offsetY: -20, dropShadow: { enabled: true, top: 1, left: 1, blur: 1, color: '#000', opacity: 0.45 }},
-                        xaxis: { categories: chartData.categories, labels: { style: { colors: textColor, fontSize: '12px' }, trim: true, maxHeight: 100 } },
+                        xaxis: { categories: chartData.data.map(d => d.category), labels: { style: { colors: textColor, fontSize: '12px' }, trim: true, maxHeight: 100 } },
                         yaxis: { labels: { style: { colors: textColor }, formatter: (val) => formatNumber(val) } },
                         tooltip: { theme: currentTheme, y: { formatter: (val) => formatNumber(val) } }
                     };
@@ -543,6 +547,53 @@
                 let aggregatedArray = Object.keys(aggregation).map(key => ({ category: key, value: aggregation[key] }));
                 return aggregatedArray.sort((a, b) => b.value - a.value);
             }
+
+            // ======================= INICIO DE LA NUEVA FUNCIÓN =======================
+            function calculateAverageProductionByShift(data) {
+                const operatorStats = {}; // { "Apellido": { totalProduction: 123, shifts: Set('2025-08-01;06-14', ...) } }
+                const seenProdIds = new Set();
+
+                data.forEach(row => {
+                    const operator = row.Apellido;
+                    if (!operator) return;
+
+                    // Inicializar si el operario es nuevo
+                    if (!operatorStats[operator]) {
+                        operatorStats[operator] = {
+                            totalProduction: 0,
+                            shifts: new Set()
+                        };
+                    }
+
+                    // Sumar producción evitando duplicados por IdProduccion
+                    const uniqueProdKey = `${row.IdProduccion}-${operator}`;
+                    if (!seenProdIds.has(uniqueProdKey)) {
+                        operatorStats[operator].totalProduction += row.Cantidad;
+                        seenProdIds.add(uniqueProdKey);
+                    }
+                    
+                    // Contar turnos únicos (combinación de fecha y turno)
+                    if (row.Turno && row.Fecha) {
+                        const dateString = row.Fecha.toISOString().split('T')[0];
+                        operatorStats[operator].shifts.add(`${dateString};${row.Turno}`);
+                    }
+                });
+
+                // Calcular el promedio y formatear para el gráfico
+                const result = Object.keys(operatorStats).map(operator => {
+                    const stats = operatorStats[operator];
+                    const shiftCount = stats.shifts.size;
+                    const average = shiftCount > 0 ? stats.totalProduction / shiftCount : 0;
+                    return {
+                        category: operator,
+                        value: average
+                    };
+                });
+                
+                // Ordenar por el valor del promedio de mayor a menor
+                return result.sort((a, b) => b.value - a.value);
+            }
+            // ======================== FIN DE LA NUEVA FUNCIÓN =========================
 
             function aggregateDowntime(data) {
                 const aggregation = {};
