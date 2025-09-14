@@ -395,7 +395,31 @@
                 const gridBorderColor = currentTheme === 'dark' ? '#444' : '#e7e7e7';
                 
                 const commonOptions = {
-                    chart: { height: 350, fontFamily: 'Inter, sans-serif', toolbar: { show: true }, background: 'transparent' },
+                    chart: { 
+                        height: 350, 
+                        fontFamily: 'Inter, sans-serif', 
+                        toolbar: { show: true }, 
+                        background: 'transparent',
+                        locales: [{
+                            name: 'es',
+                            options: {
+                                months: ['Enero', 'Febrero', 'Marzo', 'Abril', 'Mayo', 'Junio', 'Julio', 'Agosto', 'Septiembre', 'Octubre', 'Noviembre', 'Diciembre'],
+                                shortMonths: ['Ene', 'Feb', 'Mar', 'Abr', 'May', 'Jun', 'Jul', 'Ago', 'Sep', 'Oct', 'Nov', 'Dic'],
+                                days: ['Domingo', 'Lunes', 'Martes', 'Miércoles', 'Jueves', 'Viernes', 'Sábado'],
+                                shortDays: ['Dom', 'Lun', 'Mar', 'Mié', 'Jue', 'Vie', 'Sáb'],
+                                toolbar: {
+                                    download: 'Descargar SVG',
+                                    selection: 'Selección',
+                                    selectionZoom: 'Zoom de selección',
+                                    zoomIn: 'Acercar',
+                                    zoomOut: 'Alejar',
+                                    pan: 'Navegación',
+                                    reset: 'Restablecer Zoom'
+                                }
+                            }
+                        }],
+                        defaultLocale: 'es'
+                    },
                     theme: { mode: currentTheme },
                     colors: chartColors,
                     grid: { borderColor: gridBorderColor },
@@ -425,7 +449,13 @@
                         },
                         xaxis: { type: 'datetime', categories: chartData.categories, labels: { style: { colors: textColor }, datetimeUTC: false, format: 'dd MMM' } },
                         yaxis: { labels: { style: { colors: textColor }, formatter: (val) => formatNumber(val) } },
-                        tooltip: { theme: currentTheme, x: { format: 'dd/MM/yyyy' }, y: { formatter: (val) => formatNumber(val) } }
+                        // ======================= INICIO DE LA CORRECCIÓN =======================
+                        tooltip: { 
+                            theme: currentTheme, 
+                            x: { format: 'dddd dd/MM/yyyy' }, 
+                            y: { formatter: (val) => `${formatNumber(val)} pzas.` } 
+                        }
+                        // ======================== FIN DE LA CORRECCIÓN =========================
                     };
                 } else if (type === 'bar') {
                      options = {
@@ -492,13 +522,10 @@
                 const sorted = Object.keys(aggregation).sort((a, b) => new Date(a) - new Date(b));
                 return {
                     series: [{ name: 'Producción', data: sorted.map(key => aggregation[key]) }],
-                    // ======================= INICIO DE LA CORRECCIÓN =======================
                     categories: sorted.map(key => {
-                        const parts = key.split('-'); // key es "YYYY-MM-DD"
-                        // Creamos la fecha como new Date(año, mes - 1, día) para forzar la zona horaria local
+                        const parts = key.split('-');
                         return new Date(parts[0], parts[1] - 1, parts[2]).getTime();
                     })
-                    // ======================== FIN DE LA CORRECCIÓN =========================
                 };
             }
 
