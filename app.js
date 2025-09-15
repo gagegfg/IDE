@@ -312,6 +312,9 @@ document.addEventListener('DOMContentLoaded', function () {
         
         const downtimeComboData = aggregateDowntime(data).sort((a,b) => b.totalMinutes - a.totalMinutes);
         renderChart('chart-downtime-combo', 'combo', downtimeComboData);
+
+        const dailyTimeData = aggregateDailyTimeDistribution(data);
+        renderChart('chart-daily-time-distribution', 'stackedBar', dailyTimeData);
     }
     
     function renderChart(elementId, type, chartData) {
@@ -442,6 +445,56 @@ document.addEventListener('DOMContentLoaded', function () {
             };
         }
 
+        } else if (type === 'stackedBar') {
+            options = {
+                ...commonOptions,
+                chart: {
+                    ...commonOptions.chart,
+                    id: elementId,
+                    type: 'bar',
+                    stacked: true,
+                },
+                plotOptions: {
+                    bar: {
+                        horizontal: false,
+                    },
+                },
+                series: chartData.series,
+                xaxis: {
+                    categories: chartData.categories,
+                    labels: {
+                        style: {
+                            colors: textColor
+                        }
+                    }
+                },
+                yaxis: {
+                    title: {
+                        text: 'Horas',
+                        style: {
+                            color: textColor
+                        }
+                    },
+                    labels: {
+                        style: {
+                            colors: textColor
+                        }
+                    }
+                },
+                tooltip: {
+                    y: {
+                        formatter: function (val) {
+                            return val.toFixed(2) + " horas";
+                        }
+                    }
+                },
+                legend: {
+                    position: 'top',
+                    horizontalAlign: 'left'
+                }
+            };
+        }
+
         if (charts[elementId]) {
             charts[elementId].updateOptions(options, true, true, true);
         } else {
@@ -558,6 +611,69 @@ document.addEventListener('DOMContentLoaded', function () {
             totalMinutes: aggregation[reason].totalMinutes,
             totalFrequency: aggregation[reason].totalFrequency
         }));
+    }
+
+    function aggregateDailyTimeDistribution(data) {
+        const timeByDay = {};
+
+        // First, get all unique downtime reasons
+        const downtimeReasons = [...new Set(data.map(row => row.descrip_incidencia).filter(Boolean))];
+
+        // Group data by day
+        const dataByDay = data.reduce((acc, row) => {
+            const day = row.Fecha.toISOString().split('T')[0];
+            if (!acc[day]) {
+                acc[day] = [];
+            }
+            acc[day].push(row);
+            return acc;
+        }, {});
+
+        const sortedDays = Object.keys(dataByDay).sort();
+
+        const series = downtimeReasons.map(reason => ({
+            name: reason,
+            data: []
+        }));
+        series.push({ name: 'Producción', data: [] });
+
+        sortedDays.forEach(day => {
+            const dayData = dataByDay[day];
+            const uniqueProductions = new Map();
+            dayData.forEach(row => {
+                if (row.IdProduccion && !uniqueProductions.has(row.IdProduccion)) {
+                    uniqueProductions.set(row.IdProduccion, { hsTrab: row.Hs_Trab });
+                }
+            });
+
+            const totalPlannedMinutes = Array.from(uniqueProductions.values()).reduce((sum, item) => sum + item.hsTrab, 0);
+            const totalDowntimeMinutes = dayData.reduce((sum, row) => sum + row.Minutos, 0);
+            const productionMinutes = totalPlannedMinutes - totalDowntimeMinutes;
+
+            const downtimeTotals = downtimeReasons.reduce((acc, reason) => {
+                acc[reason] = 0;
+                return acc;
+            }, {});
+
+            dayData.forEach(row => {
+                if (row.descrip_incidencia) {
+                    downtimeTotals[row.descrip_incidencia] += row.Minutos;
+                }
+            });
+
+            series.forEach(s => {
+                if (s.name === 'Producción') {
+                    s.data.push(productionMinutes / 60); // Convert to hours
+                } else {
+                    s.data.push(downtimeTotals[s.name] / 60); // Convert to hours
+                }
+            });
+        });
+
+        return {
+            series: series,
+            categories: sortedDays.map(d => new Date(d).toLocaleDateString('es-ES', {day: 'numeric', month: 'short'}))
+        };
     }
 
     // --- AI Assistant Chat Functions ---
