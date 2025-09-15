@@ -419,14 +419,33 @@ document.addEventListener('DOMContentLoaded', function () {
             options = {
                 ...commonOptions, chart: {...commonOptions.chart, id: elementId, type: 'line', stacked: false},
                 series: [
-                    { name: 'Tiempo (Horas)', type: 'column', data: chartData.map(d => parseFloat((d.totalMinutes / 60).toFixed(2))) },
+                    { name: 'Tiempo (Horas)', type: 'column', data: chartData.map(d => parseFloat((d.totalMinutes / 60).toFixed(1))) },
                     { name: 'Frecuencia', type: 'line', data: chartData.map(d => d.totalFrequency) }
                 ],
                 stroke: { width: [0, 4], curve: 'smooth' },
                 xaxis: { categories: chartData.map(d => d.reason), labels: { style: { colors: textColor, fontSize: '11px' }, trim: true, rotate: -45, hideOverlappingLabels: true, maxHeight: 120 } },
                 yaxis: [
-                    { seriesName: 'Tiempo (Horas)', axisTicks: { show: true }, axisBorder: { show: true, color: chartColors[0] }, labels: { style: { colors: chartColors[0] }, formatter: (val) => formatNumber(val) }, title: { text: "Tiempo Total (Horas)", style: { color: chartColors[0] } }},
-                    { seriesName: 'Frecuencia', opposite: true, axisTicks: { show: true }, axisBorder: { show: true, color: chartColors[1] }, labels: { style: { colors: chartColors[1] }, formatter: (val) => formatNumber(val) }, title: { text: "Frecuencia (Nro. de Veces)", style: { color: chartColors[1] } }}
+                    { 
+                        seriesName: 'Tiempo (Horas)', 
+                        axisTicks: { show: true }, 
+                        axisBorder: { show: true, color: chartColors[0] }, 
+                        labels: { 
+                            style: { colors: chartColors[0] }, 
+                            formatter: (val) => { return val.toFixed(1); } 
+                        }, 
+                        title: { text: "Tiempo Total (Horas)", style: { color: chartColors[0] } }
+                    },
+                    { 
+                        seriesName: 'Frecuencia', 
+                        opposite: true, 
+                        axisTicks: { show: true }, 
+                        axisBorder: { show: true, color: chartColors[1] }, 
+                        labels: { 
+                            style: { colors: chartColors[1] }, 
+                            formatter: (val) => formatNumber(val) 
+                        }, 
+                        title: { text: "Frecuencia (Nro. de Veces)", style: { color: chartColors[1] } }
+                    }
                 ],
                 tooltip: { 
                     theme: currentTheme,
@@ -434,7 +453,7 @@ document.addEventListener('DOMContentLoaded', function () {
                         formatter: function(val, { seriesIndex }) {
                             if(val === undefined) return val;
                             if (seriesIndex === 0) {
-                                return val.toLocaleString('es-ES', { minimumFractionDigits: 2, maximumFractionDigits: 2 }) + " Hs";
+                                return val.toLocaleString('es-ES', { minimumFractionDigits: 1, maximumFractionDigits: 1 }) + " Hs";
                             } else {
                                 return val.toLocaleString('es-ES') + " veces";
                             }
