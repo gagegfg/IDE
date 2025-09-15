@@ -195,14 +195,12 @@ document.addEventListener('DOMContentLoaded', function () {
         const runTimeMinutes = plannedMinutes - totalDowntimeMinutes;
 
         const availability = plannedMinutes > 0 ? (runTimeMinutes / plannedMinutes) : 0;
-        const performance = (totalTarget > 0 && runTimeMinutes > 0) ? (totalProduction / runTimeMinutes) / (totalTarget / plannedMinutes) : 0;
         const efficiency = runTimeMinutes > 0 ? totalProduction / (runTimeMinutes / 60) : 0;
 
         return {
             totalProduction,
             totalDowntimeHours: totalDowntimeMinutes / 60,
             availability: Math.max(0, availability),
-            performance: Math.min(1, Math.max(0, performance)), // Clamp between 0 and 1
             efficiency
         };
     }
@@ -210,7 +208,7 @@ document.addEventListener('DOMContentLoaded', function () {
     function renderKPIs(kpiData) {
         document.getElementById('kpi-total-production').textContent = formatNumber(kpiData.totalProduction);
         document.getElementById('kpi-availability').textContent = `${(kpiData.availability * 100).toFixed(1)}%`;
-        document.getElementById('kpi-performance').textContent = `${(kpiData.performance * 100).toFixed(1)}%`;
+        
         document.getElementById('kpi-efficiency').textContent = formatNumber(kpiData.efficiency);
         document.getElementById('kpi-total-downtime').textContent = kpiData.totalDowntimeHours.toFixed(1);
     }
