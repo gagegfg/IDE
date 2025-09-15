@@ -500,8 +500,9 @@ document.addEventListener('DOMContentLoaded', function () {
                 },
                 tooltip: {
                     y: {
+                        // MODIFICADO: Tooltip ahora muestra 1 decimal en lugar de 2
                         formatter: function (val) {
-                            return val.toFixed(2) + " horas";
+                            return val.toFixed(1) + " horas";
                         }
                     }
                 },
@@ -789,7 +790,7 @@ Eres un asistente de IA de élite, especializado en el análisis de datos de pro
 
 **Cómo Debes Analizar y Razonar:**
 1.  **Prioriza el Contexto del Dashboard:** Tu primera fuente de verdad es el resumen del dashboard que se te proporciona a continuación. Esto simula tu "visión" de la pantalla. Basa tu respuesta en esta información.
-2.  **Consulta los Datos Crudos como Último Recurso:** Junto con el contexto, recibirás una porción de los datos en formato CSV. Úsalos solo cuando necesites verificar un detalle muy específico que no esté en el resumen para responder la pregunta del usuario.
+2.  **Consulta los Datos Crudos como Último Recuro:** Junto con el contexto, recibirás una porción de los datos en formato CSV. Úsalos solo cuando necesites verificar un detalle muy específico que no esté en el resumen para responder la pregunta del usuario.
 3.  **Sé Proactivo:** Si los datos revelan un problema crítico (ej. una máquina con un tiempo de inactividad desproporcionado), menciónalo brevemente.
 
 **Reglas Estrictas para tus Respuestas:**
