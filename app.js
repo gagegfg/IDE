@@ -621,6 +621,10 @@ document.addEventListener('DOMContentLoaded', function () {
 
         // Group data by day
         const dataByDay = data.reduce((acc, row) => {
+            // Ensure row.Fecha is a valid Date object before proceeding
+            if (!row.Fecha || !(row.Fecha instanceof Date) || isNaN(row.Fecha)) {
+                return acc; // Skip this row if Fecha is invalid
+            }
             const day = row.Fecha.toISOString().split('T')[0];
             if (!acc[day]) {
                 acc[day] = [];
