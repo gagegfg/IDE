@@ -1,10 +1,4 @@
 ﻿IdProduccion;Fecha;Turno;Objetivo;Encargado;Máquina_Prod;Descrip_Maquina;Operario;Apellido;Cantidad;Hs Trab;Hs Descanso;Observaciones;IdIncidencia;NroIncidencia;descrip_incidencia;Frecuencia;Minutos;SinOperario;IdProducto;Tipo_Producto;Descripcion_Producto
-189777;02/01/2024;07-16;1000;;26;Coloc. Conos Semiauto;388;Moyano;3700;450;;;298647;13;Refrigerio;1;30;False;4007;Rosca;185 x 050 (18 x 5)
-189777;02/01/2024;07-16;1000;;26;Coloc. Conos Semiauto;388;Moyano;3700;450;;;298648;1;Arranque / Puesta a Punto;1;30;False;4007;Rosca;185 x 050 (18 x 5)
-189777;02/01/2024;07-16;1000;;26;Coloc. Conos Semiauto;388;Moyano;3700;450;;;298649;2;Limpieza en Proceso;1;30;False;4007;Rosca;185 x 050 (18 x 5)
-189778;02/01/2024;07-16;1000;;7;Pan Dulcera 7;401;Zayra;2600;460;;;298650;1;Arranque / Puesta a Punto;1;20;False;3013;Bizcochuelo;185 x 40 (18 x 4)
-189778;02/01/2024;07-16;1000;;7;Pan Dulcera 7;401;Zayra;2600;460;;;298651;13;Refrigerio;1;30;False;3013;Bizcochuelo;185 x 40 (18 x 4)
-189778;02/01/2024;07-16;1000;;7;Pan Dulcera 7;401;Zayra;2600;460;;;298652;2;Limpieza en Proceso;1;30;False;3013;Bizcochuelo;185 x 40 (18 x 4)
 189796;01/08/2025;06-14;4000;18;9;Pan Dulcera 9;189;Avendaño;41000;400;;;298720;10;Cambio de Bobina;2;20;False;1011;Pan Dulce;130 x 120 - 700g
 189796;01/08/2025;06-14;4000;18;9;Pan Dulcera 9;189;Avendaño;41000;400;;;298721;14;Incidencia Papel;2;20;False;1011;Pan Dulce;130 x 120 - 700g
 189796;01/08/2025;06-14;4000;18;9;Pan Dulcera 9;189;Avendaño;41000;400;;;298722;2;Limpieza en Proceso;2;40;False;1011;Pan Dulce;130 x 120 - 700g
