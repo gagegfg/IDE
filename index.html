@@ -109,9 +109,12 @@
 
     <!-- AI Assistant Chat Window -->
     <div id="ai-chat-container" class="card shadow-lg">
-        <div class="card-header bg-primary text-white">
+        <div class="card-header bg-primary text-white d-flex justify-content-between align-items-center">
             <h5 class="mb-0">Asistente de IA</h5>
-            <button id="close-chat-btn" type="button" class="btn-close btn-close-white" aria-label="Close"></button>
+            <div>
+                <button id="maximize-chat-btn" type="button" class="btn btn-sm btn-icon text-white" aria-label="Maximize"><i class="fas fa-expand"></i></button>
+                <button id="close-chat-btn" type="button" class="btn-close btn-close-white" aria-label="Close"></button>
+            </div>
         </div>
         <div class="card-body" id="chat-body">
             <div class="chat-message bot-message">

@@ -570,6 +570,19 @@ document.addEventListener('DOMContentLoaded', function () {
                 sendMessage();
             }
         });
+        const maximizeChatBtn = document.getElementById('maximize-chat-btn');
+        maximizeChatBtn.addEventListener('click', () => {
+            const icon = maximizeChatBtn.querySelector('i');
+            if (chatContainer.classList.contains('ai-chat-container-maximized')) {
+                chatContainer.classList.remove('ai-chat-container-maximized');
+                icon.classList.remove('fa-compress');
+                icon.classList.add('fa-expand');
+            } else {
+                chatContainer.classList.add('ai-chat-container-maximized');
+                icon.classList.remove('fa-expand');
+                icon.classList.add('fa-compress');
+            }
+        });
     }
 
     function toggleChat(show) {
@@ -605,8 +618,12 @@ document.addEventListener('DOMContentLoaded', function () {
         const dataSummary = Papa.unparse(filteredData.slice(0, 50)); // Enviar solo una muestra de los datos
 
         const prompt = `Eres un asistente de IA experto en análisis de datos de producción industrial. 
+        Tu objetivo es responder a las preguntas del usuario de la forma más concisa y resumida posible.
+        No incluyas en tu respuesta los datos que te proporciono ni el código que utilizas para analizarlos.
+        Simplemente, responde a la pregunta del usuario.
+
         Analiza los siguientes datos (en formato CSV) y responde la pregunta del usuario.
-        
+
         Datos:
         ${dataSummary}
         
