@@ -601,63 +601,109 @@ document.addEventListener('DOMContentLoaded', function () {
     }
 
     async function sendMessage() {
-        const userInput = chatInput.value.trim();
-        if (!userInput) return;
+    const userInput = chatInput.value.trim();
+    if (!userInput) return;
 
-        addMessage(userInput, 'user');
-        chatInput.value = '';
-        toggleLoading(true);
+    addMessage(userInput, 'user');
+    chatInput.value = '';
+    toggleLoading(true);
 
-        if (API_KEY === 'YOUR_API_KEY') {
-            addMessage('Por favor, reemplaza YOUR_API_KEY en app.js con tu clave de API de Google AI Studio.', 'bot');
-            toggleLoading(false);
-            return;
-        }
-
-        const filteredData = getFilteredData();
-        const dataSummary = Papa.unparse(filteredData.slice(0, 50)); // Enviar solo una muestra de los datos
-
-        const prompt = `Eres un asistente de IA experto en análisis de datos de producción industrial. 
-        Tu objetivo es responder a las preguntas del usuario de la forma más concisa y resumida posible.
-        No incluyas en tu respuesta los datos que te proporciono ni el código que utilizas para analizarlos.
-        Simplemente, responde a la pregunta del usuario.
-
-        Analiza los siguientes datos (en formato CSV) y responde la pregunta del usuario.
-
-        Datos:
-        ${dataSummary}
-        
-        Pregunta: ${userInput}`;
-
-        try {
-            const response = await fetch(API_URL, {
-                method: 'POST',
-                headers: {
-                    'Content-Type': 'application/json',
-                },
-                body: JSON.stringify({
-                    contents: [{
-                        parts: [{
-                            text: prompt,
-                        }],
-                    }],
-                }),
-            });
-
-            if (!response.ok) {
-                throw new Error(`HTTP error! status: ${response.status}`);
-            }
-
-            const data = await response.json();
-            const botResponse = data.candidates[0].content.parts[0].text;
-            addMessage(botResponse, 'bot');
-        } catch (error) {
-            console.error('Error en la API de Gemini:', error);
-            addMessage('Hubo un error al contactar al asistente de IA. Revisa la consola para más detalles.', 'bot');
-        } finally {
-            toggleLoading(false);
-        }
+    if (API_KEY === 'YOUR_API_KEY') {
+        addMessage('Por favor, reemplaza YOUR_API_KEY en app.js con tu clave de API de Google AI Studio.', 'bot');
+        toggleLoading(false);
+        return;
     }
+
+    const filteredData = getFilteredData();
+    const kpiData = calculateKPIs(filteredData);
+    const downtimeSummary = aggregateDowntime(filteredData).sort((a, b) => b.totalMinutes - a.totalMinutes).slice(0, 5);
+    const prodByMachineSummary = aggregateAndSort(filteredData, 'Descrip_Maquina', 'Cantidad', true).slice(0, 5);
+
+    const dateRange = datepicker.selectedDates.map(d => d.toLocaleDateString('es-ES')).join(' al ');
+    const selectedMachines = choicesMachine.getValue(true);
+    const selectedShifts = choicesShift.getValue(true);
+
+    const dashboardContext = `
+    **Contexto Actual del Dashboard:**
+
+    *   **Filtros Activos:**
+        *   Rango de Fechas: ${dateRange || 'No especificado'}
+        *   Máquinas: ${selectedMachines.length > 0 ? selectedMachines.join(', ') : 'Todas'}
+        *   Turnos: ${selectedShifts.length > 0 ? selectedShifts.join(', ') : 'Todos'}
+
+    *   **KPIs Principales:**
+        *   Producción Total: ${formatNumber(kpiData.totalProduction)} pzas.
+        *   Disponibilidad: ${(kpiData.availability * 100).toFixed(1)}%
+        *   Eficiencia (Pzas/Turno): ${formatNumber(kpiData.efficiency)}
+        *   Horas de Parada Totales: ${kpiData.totalDowntimeHours.toFixed(1)} hs.
+
+    *   **Resumen de Gráficos:**
+        *   Top 5 Máquinas por Producción:
+            ${prodByMachineSummary.map(item => `- ${item.category}: ${formatNumber(item.value)} pzas.`).join('\n            ')}
+        *   Top 5 Causas de Parada por Tiempo:
+            ${downtimeSummary.map(item => `- ${item.reason}: ${(item.totalMinutes / 60).toFixed(1)} hs.`).join('\n            ')}
+    `;
+
+    const dataSummary = Papa.unparse(filteredData.slice(0, 200)); 
+
+    const prompt = `
+**Instrucciones:**
+Eres un asistente de IA de élite, especializado en el análisis de datos de producción industrial. Tu único propósito es actuar como un analista experto para el usuario, proporcionando respuestas concisas, claras y directas.
+
+**Cómo Debes Analizar y Razonar:**
+1.  **Prioriza el Contexto del Dashboard:** Tu primera fuente de verdad es el resumen del dashboard que se te proporciona a continuación. Esto simula tu "visión" de la pantalla. Basa tu respuesta en esta información.
+2.  **Consulta los Datos Crudos como Último Recurso:** Junto con el contexto, recibirás una porción de los datos en formato CSV. Úsalos solo cuando necesites verificar un detalle muy específico que no esté en el resumen para responder la pregunta del usuario.
+3.  **Sé Proactivo:** Si los datos revelan un problema crítico (ej. una máquina con un tiempo de inactividad desproporcionado), menciónalo brevemente.
+
+**Reglas Estrictas para tus Respuestas:**
+*   **NUNCA Muestres tu Trabajo:** Jamás incluyas código, los datos CSV, o una descripción de tu proceso de análisis.
+*   **Sé Extremadamente Conciso:** Ve directo al grano.
+*   **Habla como un Humano Experto:** No uses frases como "Analizando los datos...". Simplemente presenta los hechos.
+
+---
+
+${dashboardContext}
+
+---
+
+**Datos Crudos de Referencia (CSV):**
+${dataSummary}
+
+---
+
+**Pregunta del Usuario:**
+${userInput}
+`;
+
+    try {
+        const response = await fetch(API_URL, {
+            method: 'POST',
+            headers: {
+                'Content-Type': 'application/json',
+            },
+            body: JSON.stringify({
+                contents: [{
+                    parts: [{
+                        text: prompt,
+                    }],
+                }],
+            }),
+        });
+
+        if (!response.ok) {
+            throw new Error(`HTTP error! status: ${response.status}`);
+        }
+
+        const data = await response.json();
+        const botResponse = data.candidates[0].content.parts[0].text;
+        addMessage(botResponse, 'bot');
+    } catch (error) {
+        console.error('Error en la API de Gemini:', error);
+        addMessage('Hubo un error al contactar al asistente de IA. Revisa la consola para más detalles.', 'bot');
+    } finally {
+        toggleLoading(false);
+    }
+}
 
     init();
 });
