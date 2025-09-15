@@ -474,6 +474,20 @@ document.addEventListener('DOMContentLoaded', function () {
                 plotOptions: {
                     bar: {
                         horizontal: false,
+                        // MODIFICACIÓN FINAL: Habilitar y formatear las etiquetas de datos
+                        dataLabels: {
+                            enabled: true,
+                            formatter: function (val) {
+                                if (val < 0.1) return ''; // Opcional: no mostrar etiquetas para valores muy pequeños
+                                return val.toFixed(1);
+                            },
+                            style: {
+                                colors: ['#fff'],
+                                fontSize: '11px',
+                                fontWeight: 400
+                            },
+                            offsetY: 4
+                        }
                     },
                 },
                 series: chartData.series,
@@ -500,7 +514,6 @@ document.addEventListener('DOMContentLoaded', function () {
                 },
                 tooltip: {
                     y: {
-                        // MODIFICADO: Tooltip ahora muestra 1 decimal en lugar de 2
                         formatter: function (val) {
                             return val.toFixed(1) + " horas";
                         }
