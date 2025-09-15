@@ -443,8 +443,6 @@ document.addEventListener('DOMContentLoaded', function () {
                 },
                 legend: { horizontalAlign: 'left', offsetX: 40 }
             };
-        }
-
         } else if (type === 'stackedBar') {
             options = {
                 ...commonOptions,
@@ -746,21 +744,21 @@ document.addEventListener('DOMContentLoaded', function () {
     const dashboardContext = `
     **Contexto Actual del Dashboard:**
 
-    *   **Filtros Activos:**
-        *   Rango de Fechas: ${dateRange || 'No especificado'}
-        *   Máquinas: ${selectedMachines.length > 0 ? selectedMachines.join(', ') : 'Todas'}
-        *   Turnos: ${selectedShifts.length > 0 ? selectedShifts.join(', ') : 'Todos'}
+    * **Filtros Activos:**
+        * Rango de Fechas: ${dateRange || 'No especificado'}
+        * Máquinas: ${selectedMachines.length > 0 ? selectedMachines.join(', ') : 'Todas'}
+        * Turnos: ${selectedShifts.length > 0 ? selectedShifts.join(', ') : 'Todos'}
 
-    *   **KPIs Principales:**
-        *   Producción Total: ${formatNumber(kpiData.totalProduction)} pzas.
-        *   Disponibilidad: ${(kpiData.availability * 100).toFixed(1)}%
-        *   Eficiencia (Pzas/Turno): ${formatNumber(kpiData.efficiency)}
-        *   Horas de Parada Totales: ${kpiData.totalDowntimeHours.toFixed(1)} hs.
+    * **KPIs Principales:**
+        * Producción Total: ${formatNumber(kpiData.totalProduction)} pzas.
+        * Disponibilidad: ${(kpiData.availability * 100).toFixed(1)}%
+        * Eficiencia (Pzas/Turno): ${formatNumber(kpiData.efficiency)}
+        * Horas de Parada Totales: ${kpiData.totalDowntimeHours.toFixed(1)} hs.
 
-    *   **Resumen de Gráficos:**
-        *   Top 5 Máquinas por Producción:
+    * **Resumen de Gráficos:**
+        * Top 5 Máquinas por Producción:
             ${prodByMachineSummary.map(item => `- ${item.category}: ${formatNumber(item.value)} pzas.`).join('\n            ')}
-        *   Top 5 Causas de Parada por Tiempo:
+        * Top 5 Causas de Parada por Tiempo:
             ${downtimeSummary.map(item => `- ${item.reason}: ${(item.totalMinutes / 60).toFixed(1)} hs.`).join('\n            ')}
     `;
 
@@ -776,9 +774,9 @@ Eres un asistente de IA de élite, especializado en el análisis de datos de pro
 3.  **Sé Proactivo:** Si los datos revelan un problema crítico (ej. una máquina con un tiempo de inactividad desproporcionado), menciónalo brevemente.
 
 **Reglas Estrictas para tus Respuestas:**
-*   **NUNCA Muestres tu Trabajo:** Jamás incluyas código, los datos CSV, o una descripción de tu proceso de análisis.
-*   **Sé Extremadamente Conciso:** Ve directo al grano.
-*   **Habla como un Humano Experto:** No uses frases como "Analizando los datos...". Simplemente presenta los hechos.
+* **NUNCA Muestres tu Trabajo:** Jamás incluyas código, los datos CSV, o una descripción de tu proceso de análisis.
+* **Sé Extremadamente Conciso:** Ve directo al grano.
+* **Habla como un Humano Experto:** No uses frases como "Analizando los datos...". Simplemente presenta los hechos.
 
 ---
 
