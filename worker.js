@@ -120,53 +120,96 @@ function createSummaryData(kpiData, downtimeData) {
     };
 }
 
+function generateDateRange(startDate, endDate) {
+    const dates = [];
+    let currentDate = new Date(startDate);
+    currentDate.setHours(0, 0, 0, 0);
+    const finalEndDate = new Date(endDate);
+    finalEndDate.setHours(0, 0, 0, 0);
+
+    while (currentDate <= finalEndDate) {
+        dates.push(new Date(currentDate));
+        currentDate.setDate(currentDate.getDate() + 1);
+    }
+    return dates;
+}
+
 function aggregateDailyProduction(data, dateRange, isExtended) {
-    const diffTime = dateRange[1] ? Math.abs(new Date(dateRange[1]) - new Date(dateRange[0])) : 0;
+    if (!dateRange || dateRange.length < 2) return { series: [], categories: [] };
+    
+    const diffTime = Math.abs(new Date(dateRange[1]) - new Date(dateRange[0]));
     const diffDays = Math.ceil(diffTime / (1000 * 60 * 60 * 24));
 
     if (isExtended && diffDays > 90) {
-        return aggregateWeeklyProduction(data);
+        return aggregateWeeklyProduction(data, dateRange);
     }
-    return aggregateDaily(data);
+    return aggregateDaily(data, dateRange);
 }
 
-function aggregateDaily(data) {
-    const aggregation = {};
+function aggregateDaily(data, dateRange) {
+    const aggregation = new Map();
+    const allDays = generateDateRange(dateRange[0], dateRange[1]);
+
+    allDays.forEach(day => {
+        const dateCategory = day.toISOString().split('T')[0];
+        aggregation.set(dateCategory, 0);
+    });
+
     const seenProdIds = new Set();
     data.forEach(row => {
         if (row.Fecha) {
             const dateCategory = new Date(row.Fecha).toISOString().split('T')[0];
             const uniqueKey = `${dateCategory}-${row.IdProduccion}`;
             if (row.IdProduccion && !seenProdIds.has(uniqueKey)) {
-                aggregation[dateCategory] = (aggregation[dateCategory] || 0) + row.Cantidad;
+                if (aggregation.has(dateCategory)) {
+                    aggregation.set(dateCategory, aggregation.get(dateCategory) + row.Cantidad);
+                }
                 seenProdIds.add(uniqueKey);
             }
         }
     });
-    const sorted = Object.keys(aggregation).sort((a, b) => new Date(a) - new Date(b));
+
+    const sortedCategories = [...aggregation.keys()].sort();
+    const seriesData = sortedCategories.map(key => aggregation.get(key));
+
     return {
-        series: [{ name: 'Producción Diaria', data: sorted.map(key => aggregation[key]) }],
-        categories: sorted.map(key => new Date(key).getTime())
+        series: [{ name: 'Producción Diaria', data: seriesData }],
+        categories: sortedCategories.map(key => new Date(key).getTime())
     };
 }
 
-function aggregateWeeklyProduction(data) {
-    const aggregation = {};
+function aggregateWeeklyProduction(data, dateRange) {
+    const aggregation = new Map();
+    if (!dateRange || dateRange.length < 2) return { series: [], categories: [] };
+
+    let currentDate = getStartOfWeek(dateRange[0]);
+    const endDate = new Date(dateRange[1]);
+
+    while(currentDate <= endDate) {
+        aggregation.set(currentDate.toISOString().split('T')[0], 0);
+        currentDate.setDate(currentDate.getDate() + 7);
+    }
+
     const seenProdIds = new Set();
     data.forEach(row => {
         if (row.Fecha) {
             const weekStartDate = getStartOfWeek(row.Fecha).toISOString().split('T')[0];
             const uniqueKey = `${weekStartDate}-${row.IdProduccion}`;
             if (row.IdProduccion && !seenProdIds.has(uniqueKey)) {
-                aggregation[weekStartDate] = (aggregation[weekStartDate] || 0) + row.Cantidad;
-                seenIds.add(uniqueKey);
+                if(aggregation.has(weekStartDate)){
+                    aggregation.set(weekStartDate, aggregation.get(weekStartDate) + row.Cantidad);
+                }
+                seenProdIds.add(uniqueKey);
             }
         }
     });
-    const sorted = Object.keys(aggregation).sort((a, b) => new Date(a) - new Date(b));
+    
+    const sortedCategories = [...aggregation.keys()].sort();
+    const seriesData = sortedCategories.map(key => aggregation.get(key));
+
     return {
-        series: [{ name: 'Producción Semanal', data: sorted.map(key => aggregation[key]) }],
-        categories: sorted.map(key => new Date(key).getTime())
+        series: [{ name: 'Producción Semanal', data: seriesData }],
+        categories: sortedCategories.map(key => new Date(key).getTime())
     };
 }
 
@@ -224,27 +267,39 @@ function calculateAverageProductionByShift(data) {
     return result.sort((a, b) => b.value - a.value);
 }
 
-function aggregateDailyTimeDistribution(data) {
-    const timeByDay = {};
+function aggregateDailyTimeDistribution(data, dateRange) {
+    if (!dateRange || dateRange.length < 2) return { series: [], categories: [] };
+
     const allDowntimeReasons = [...new Set(data.map(row => row.descrip_incidencia).filter(Boolean))];
-    const dataByDay = data.reduce((acc, row) => {
-        if (!row.Fecha) return acc;
-        const day = new Date(row.Fecha).toISOString().split('T')[0];
-        if (!acc[day]) acc[day] = [];
-        acc[day].push(row);
-        return acc;
-    }, {});
+    const dataByDay = new Map();
+    const allDays = generateDateRange(dateRange[0], dateRange[1]);
 
-    const sortedDays = Object.keys(dataByDay).sort();
+    allDays.forEach(day => {
+        const dayKey = day.toISOString().split('T')[0];
+        dataByDay.set(dayKey, []);
+    });
 
-    // Initialize series: first 'Producción', then all downtime reasons
+    data.forEach(row => {
+        if (!row.Fecha) return;
+        const dayKey = new Date(row.Fecha).toISOString().split('T')[0];
+        if (dataByDay.has(dayKey)) {
+            dataByDay.get(dayKey).push(row);
+        }
+    });
+
+    const sortedDays = [...dataByDay.keys()].sort();
+
     const series = [{ name: 'Producción', data: [] }];
     allDowntimeReasons.forEach(reason => {
         series.push({ name: reason, data: [] });
     });
+    const reasonToIndexMap = allDowntimeReasons.reduce((acc, reason, index) => {
+        acc[reason] = index + 1; // +1 because 'Producción' is at index 0
+        return acc;
+    }, {});
 
     sortedDays.forEach(day => {
-        const dayData = dataByDay[day];
+        const dayData = dataByDay.get(day);
         const uniqueProductions = new Map();
         dayData.forEach(row => {
             if (row.IdProduccion && !uniqueProductions.has(row.IdProduccion)) {
@@ -254,25 +309,34 @@ function aggregateDailyTimeDistribution(data) {
 
         const totalPlannedMinutes = Array.from(uniqueProductions.values()).reduce((sum, item) => sum + item.hsTrab, 0);
         const totalDowntimeMinutes = dayData.reduce((sum, row) => sum + row.Minutos, 0);
-        let productionMinutes = totalPlannedMinutes - totalDowntimeMinutes;
+        let productionMinutes = Math.max(0, totalPlannedMinutes - totalDowntimeMinutes);
 
-        // Ensure productionMinutes is not negative
-        productionMinutes = Math.max(0, productionMinutes);
+        series[0].data.push(parseFloat((productionMinutes / 60).toFixed(1)));
 
-        const downtimeTotals = allDowntimeReasons.reduce((acc, reason) => ({...acc, [reason]: 0}), {});
-
+        const downtimeTotals = {};
         dayData.forEach(row => {
             if (row.descrip_incidencia) {
-                downtimeTotals[row.descrip_incidencia] += row.Minutos;
+                downtimeTotals[row.descrip_incidencia] = (downtimeTotals[row.descrip_incidencia] || 0) + row.Minutos;
             }
         });
 
-        // Push data to the series in the correct order for stacking
-        series[0].data.push((productionMinutes / 60).toFixed(1)); // 'Producción' series
-
-        allDowntimeReasons.forEach((reason, index) => {
-            series[index + 1].data.push(((downtimeTotals[reason] || 0) / 60).toFixed(1));
+        allDowntimeReasons.forEach(reason => {
+            const seriesIndex = reasonToIndexMap[reason];
+            const minutes = downtimeTotals[reason] || 0;
+            // Ensure data array exists before pushing
+            if (!series[seriesIndex].data) {
+                series[seriesIndex].data = [];
+            }
+            series[seriesIndex].data.push(parseFloat((minutes / 60).toFixed(1)));
         });
+    });
+
+    // Ensure all series have the same length, filling with 0 for days without specific downtime
+    const numDays = sortedDays.length;
+    series.forEach(s => {
+        while (s.data.length < numDays) {
+            s.data.push(0);
+        }
     });
 
     return {
@@ -290,9 +354,11 @@ self.onmessage = function(e) {
     if (type === 'load_data') {
         Papa.parse(payload.url, {
             download: true, header: true, delimiter: ';', skipEmptyLines: true,
-            transformHeader: header => header.trim().replace(/[\][\W]+/g, '_'),
+            transformHeader: header => header.trim().replace(/[\W]+/g, '_'),
             complete: function(results) {
                 originalData = processData(results.data);
+                const today = new Date();
+                const startOfPreviousMonth = new Date(today.getFullYear(), today.getMonth() - 1, 1);
                 self.postMessage({
                     type: 'data_loaded',
                     payload: {
@@ -301,7 +367,7 @@ self.onmessage = function(e) {
                     }
                 });
                 // Also trigger the first dashboard update
-                applyFiltersAndPost({ dateRange: [], selectedMachines: [], selectedShifts: [], isExtended: false });
+                applyFiltersAndPost({ dateRange: [startOfPreviousMonth, today], selectedMachines: [], selectedShifts: [], isExtended: false });
             },
             error: err => {
                 self.postMessage({ type: 'error', payload: `Error al cargar CSV: ${err.message}` });
@@ -334,7 +400,7 @@ function applyFiltersAndPost(filters) {
         prodByMachineData: aggregateAndSort(filteredData, 'Descrip_Maquina', 'Cantidad', true),
         avgProdByOperatorData: calculateAverageProductionByShift(filteredData),
         downtimeComboData: downtimeData,
-        dailyTimeData: aggregateDailyTimeDistribution(filteredData)
+        dailyTimeData: aggregateDailyTimeDistribution(filteredData, dateRange)
     };
 
     self.postMessage({ type: 'progress', payload: { progress: 95, status: 'Finalizando...' } });
