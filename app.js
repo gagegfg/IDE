@@ -3,32 +3,65 @@ document.addEventListener('DOMContentLoaded', function () {
     const API_KEY = 'AIzaSyAYLOGw5vncaz1jN3uTsRvup3WeS1MBgQI'; // ¡¡¡REEMPLAZAR CON TU API KEY!!!
     const API_URL = `https://generativelanguage.googleapis.com/v1beta/models/gemini-1.5-flash-latest:generateContent?key=${API_KEY}`;
 
-    let originalData = [];
+    // --- STATE MANAGEMENT ---
     let charts = {};
     let choicesMachine, choicesShift, datepicker;
     let detailModal;
+    let currentFilteredData = []; // Holds the currently filtered data for drill-downs and AI context
+    let currentKpiData = {}; // Holds the current KPIs for the AI context
 
+    // --- UI ELEMENTS ---
     const loadingOverlay = document.getElementById('loading-overlay');
     const themeToggle = document.getElementById('theme-toggle');
-    const chartColors = ['#5E35B1', '#039BE5', '#00897B', '#FDD835', '#E53935', '#8E24AA', '#3949AB'];
-
     const aiAssistantBtn = document.getElementById('ai-assistant-btn');
     const chatContainer = document.getElementById('ai-chat-container');
     const closeChatBtn = document.getElementById('close-chat-btn');
     const chatInput = document.getElementById('chat-input');
     const sendChatBtn = document.getElementById('send-chat-btn');
     const chatBody = document.getElementById('chat-body');
-
+    
+    const chartColors = ['#5E35B1', '#039BE5', '#00897B', '#FDD835', '#E53935', '#8E24AA', '#3949AB'];
     const formatNumber = (val) => val ? val.toLocaleString('es-ES', { maximumFractionDigits: 0 }) : val;
 
-    function applyTheme(theme) {
-        document.body.setAttribute('data-theme', theme);
-        themeToggle.checked = theme === 'dark';
-        Object.values(charts).forEach(chart => {
-            if (chart.chart) {
-                chart.updateOptions({ theme: { mode: theme }, chart: { background: 'transparent' } });
-            }
-        });
+    // --- WEB WORKER ---
+    const worker = new Worker('worker.js');
+
+    worker.onmessage = function(e) {
+        const { type, payload } = e.data;
+
+        switch (type) {
+            case 'data_loaded':
+                populateFilters(payload.uniqueMachines, payload.uniqueShifts);
+                addEventListeners();
+                // Set initial date range and trigger the first data load
+                const today = new Date();
+                const startOfPreviousMonth = new Date(today.getFullYear(), today.getMonth() - 1, 1);
+                datepicker.setDate([startOfPreviousMonth, today], true);
+                document.getElementById('last-updated').textContent = `Actualizado: ${new Date().toLocaleString('es-ES')}`;
+                break;
+            
+            case 'update_dashboard':
+                // The worker has finished processing. Let's update the UI.
+                currentFilteredData = payload.filteredData;
+                currentKpiData = payload.kpiData;
+                updateDashboard(payload.kpiData, payload.chartsData, payload.summaryData);
+                break;
+
+            case 'error':
+                console.error("Error from worker:", payload);
+                alert("Ocurrió un error al procesar los datos. Revisa la consola.");
+                toggleLoading(false);
+                break;
+        }
+    };
+
+    // --- INITIALIZATION ---
+    function init() {
+        initTheme();
+        initAIChat();
+        detailModal = new bootstrap.Modal(document.getElementById('detailModal'));
+        toggleLoading(true);
+        worker.postMessage({ type: 'load_data', payload: { url: CSV_URL } });
     }
 
     function initTheme() {
@@ -41,74 +74,42 @@ document.addEventListener('DOMContentLoaded', function () {
         });
     }
 
-    function toggleLoading(show) {
-        loadingOverlay.style.display = show ? 'flex' : 'none';
-    }
-
-    function init() {
-        initTheme();
-        initAIChat();
-        detailModal = new bootstrap.Modal(document.getElementById('detailModal'));
-        toggleLoading(true);
-        Papa.parse(CSV_URL, {
-            download: true, header: true, delimiter: ';', skipEmptyLines: true,
-            transformHeader: header => header.trim().replace(/[\s\W]+/g, '_'),
-            complete: function(results) {
-                originalData = processData(results.data);
-                populateFilters(originalData);
-                addEventListeners();
-                
-                const today = new Date();
-                const startOfPreviousMonth = new Date(today.getFullYear(), today.getMonth() - 1, 1);
-                datepicker.setDate([startOfPreviousMonth, today], true);
-                
-                document.getElementById('last-updated').textContent = `Actualizado: ${new Date().toLocaleString('es-ES')}`;
-            },
-            error: err => {
-                console.error("Error al cargar o parsear el CSV:", err);
-                alert("No se pudo cargar el archivo de datos. Revisa la consola para más detalles.");
-                toggleLoading(false);
-            }
-        });
-    }
-
-    function processData(data) {
-        return data.map(row => {
-            row.Cantidad = parseInt(row.Cantidad) || 0;
-            row.Minutos = parseInt(row.Minutos) || 0;
-            row.Frecuencia = parseInt(row.Frecuencia) || 0;
-            row.Hs_Trab = parseFloat(String(row.Hs_Trab).replace(',', '.')) || 0;
-            row.Objetivo = parseInt(row.Objetivo) || 0;
-            row.Fecha = parseDate(row.Fecha);
-            return row;
-        }).filter(row => row.Fecha instanceof Date && !isNaN(row.Fecha));
-    }
-
-    function parseDate(dateString) {
-        if (!dateString) return null;
-        const parts = dateString.split('/');
-        if (parts.length === 3) {
-            const day = parseInt(parts[0], 10), month = parseInt(parts[1], 10) - 1, year = parseInt(parts[2], 10);
-            if (!isNaN(day) && !isNaN(month) && !isNaN(year)) return new Date(year, month, day);
-        }
-        return null;
-    }
-
-    function populateFilters(data) {
-        const uniqueMachines = [...new Set(data.map(row => row.Descrip_Maquina))].filter(Boolean).sort();
-        const uniqueShifts = [...new Set(data.map(row => row.Turno))].filter(Boolean).sort();
+    function populateFilters(uniqueMachines, uniqueShifts) {
         const machineFilterEl = document.getElementById('machine-filter');
         uniqueMachines.forEach(machine => machineFilterEl.add(new Option(machine, machine)));
         const shiftFilterEl = document.getElementById('shift-filter');
         uniqueShifts.forEach(shift => shiftFilterEl.add(new Option(shift, shift)));
+        
         choicesMachine = new Choices(machineFilterEl, { removeItemButton: true, placeholder: true, placeholderValue: 'Todas las máquinas...' });
         choicesShift = new Choices(shiftFilterEl, { removeItemButton: true, placeholder: true, placeholderValue: 'Todos los turnos...' });
     }
 
     function addEventListeners() {
-        datepicker = flatpickr("#date-range-picker", { mode: "range", dateFormat: "d/m/Y", locale: "es", onChange: () => applyFilters() });
+        datepicker = flatpickr("#date-range-picker", {
+            mode: "range",
+            dateFormat: "d/m/Y",
+            locale: "es",
+            onChange: function(selectedDates, dateStr, instance) {
+                const isExtended = document.getElementById('extended-analysis-toggle').checked;
+                if (!isExtended && selectedDates.length === 2) {
+                    const diffTime = Math.abs(selectedDates[1] - selectedDates[0]);
+                    const diffDays = Math.ceil(diffTime / (1000 * 60 * 60 * 24)); 
+                    if (diffDays > 122) { // Approx 4 months
+                        alert("El rango no puede ser mayor a 4 meses en el modo de análisis normal. Active 'Análisis Extendido' para rangos más largos.");
+                        // Revert to a valid range (e.g., 4 months from start)
+                        const newEndDate = new Date(selectedDates[0]);
+                        newEndDate.setMonth(newEndDate.getMonth() + 4);
+                        instance.setDate([selectedDates[0], newEndDate]);
+                        return; // Stop further processing
+                    }
+                }
+                applyFilters();
+            }
+        });
+
         document.getElementById('machine-filter').addEventListener('change', applyFilters);
         document.getElementById('shift-filter').addEventListener('change', applyFilters);
+        document.getElementById('extended-analysis-toggle').addEventListener('change', applyFilters);
         
         const today = new Date();
         
@@ -121,8 +122,7 @@ document.addEventListener('DOMContentLoaded', function () {
         
         document.getElementById('btnSemanaActual').addEventListener('click', () => {
             const first = today.getDate() - today.getDay() + (today.getDay() === 0 ? -6 : 1);
-            const startOfWeek = new Date(new Date().setDate(first));
-            datepicker.setDate([startOfWeek, new Date()], true);
+            datepicker.setDate([new Date(new Date().setDate(first)), new Date()], true);
         });
          document.getElementById('btnSemanaAnterior').addEventListener('click', () => {
             const before = new Date();
@@ -140,104 +140,74 @@ document.addEventListener('DOMContentLoaded', function () {
             datepicker.setDate([startOfPreviousMonth, today], true);
             choicesMachine.removeActiveItems();
             choicesShift.removeActiveItems();
+            document.getElementById('extended-analysis-toggle').checked = false;
         });
     }
+
+    // --- DATA FLOW & UI UPDATES ---
 
     function applyFilters() {
         toggleLoading(true);
-        setTimeout(() => {
-            const filteredData = getFilteredData();
-            updateDashboard(filteredData);
-        }, 50);
+        const filterValues = {
+            dateRange: datepicker.selectedDates,
+            selectedMachines: choicesMachine.getValue(true),
+            selectedShifts: choicesShift.getValue(true),
+            isExtended: document.getElementById('extended-analysis-toggle').checked
+        };
+        worker.postMessage({ type: 'apply_filters', payload: filterValues });
     }
 
-    function getFilteredData() {
-        const dateRange = datepicker.selectedDates;
-        const selectedMachines = choicesMachine.getValue(true);
-        const selectedShifts = choicesShift.getValue(true);
-        
-        return originalData.filter(row => {
-            const rowDate = row.Fecha;
-            const startDate = dateRange[0] ? new Date(dateRange[0].setHours(0,0,0,0)) : null;
-            const endDate = dateRange[1] ? new Date(dateRange[1].setHours(23,59,59,999)) : null;
-            const isDateInRange = dateRange.length === 2 ? rowDate >= startDate && rowDate <= endDate : true;
-            const isMachineSelected = selectedMachines.length > 0 ? selectedMachines.includes(row.Descrip_Maquina) : true;
-            const isShiftSelected = selectedShifts.length > 0 ? selectedShifts.includes(row.Turno) : true;
-            return isDateInRange && isMachineSelected && isShiftSelected;
-        });
-    }
-    
-    function updateDashboard(data) {
-        const kpiData = calculateKPIs(data);
-        renderKPIs(kpiData);
-        updateCharts(data);
-        updateSummary(data, kpiData);
-        toggleLoading(false);
+    function toggleLoading(show) {
+        loadingOverlay.style.display = show ? 'flex' : 'none';
     }
 
-    function calculateKPIs(data) {
-        const uniqueProductions = new Map();
-        data.forEach(row => {
-            if (row.IdProduccion && !uniqueProductions.has(row.IdProduccion)) {
-                uniqueProductions.set(row.IdProduccion, { 
-                    cantidad: row.Cantidad, 
-                    hsTrab: row.Hs_Trab,
-                    objetivo: row.Objetivo
-                });
+    function applyTheme(theme) {
+        document.body.setAttribute('data-theme', theme);
+        themeToggle.checked = theme === 'dark';
+        Object.values(charts).forEach(chart => {
+            if (chart.chart) {
+                chart.updateOptions({ theme: { mode: theme }, chart: { background: 'transparent' } });
             }
         });
-        
-        const productionValues = Array.from(uniqueProductions.values());
-        const totalProduction = productionValues.reduce((sum, item) => sum + item.cantidad, 0);
-        const totalTarget = productionValues.reduce((sum, item) => sum + item.objetivo, 0);
-        const plannedMinutes = productionValues.reduce((sum, item) => sum + item.hsTrab, 0);
-        const totalDowntimeMinutes = data.reduce((sum, row) => sum + row.Minutos, 0);
-        const runTimeMinutes = plannedMinutes - totalDowntimeMinutes;
+    }
 
-        const availability = plannedMinutes > 0 ? (runTimeMinutes / plannedMinutes) : 0;
-        const efficiency = runTimeMinutes > 0 ? totalProduction / (runTimeMinutes / 60) : 0;
-
-        return {
-            totalProduction,
-            totalDowntimeHours: totalDowntimeMinutes / 60,
-            availability: Math.max(0, availability),
-            efficiency
-        };
+    function updateDashboard(kpiData, chartsData, summaryData) {
+        renderKPIs(kpiData);
+        updateCharts(chartsData);
+        updateSummary(summaryData);
+        toggleLoading(false);
     }
 
     function renderKPIs(kpiData) {
         document.getElementById('kpi-total-production').textContent = formatNumber(kpiData.totalProduction);
         document.getElementById('kpi-availability').textContent = `${(kpiData.availability * 100).toFixed(1)}%`;
-        
         document.getElementById('kpi-efficiency').textContent = formatNumber(kpiData.efficiency);
         document.getElementById('kpi-total-downtime').textContent = kpiData.totalDowntimeHours.toFixed(1);
     }
     
-    function updateSummary(data, kpiData) {
-        if (data.length === 0) {
-            document.getElementById('summary-text').textContent = "No hay datos para el período o filtros seleccionados."; return;
+    function updateSummary(summaryData) {
+        if (!summaryData || summaryData.topReason === 'N/A') {
+            document.getElementById('summary-text').textContent = "No hay datos para el período o filtros seleccionados.";
+            return;
         }
-        const downtimeByReason = aggregateDowntime(data).sort((a,b) => b.totalMinutes - a.totalMinutes);
-        const topReason = downtimeByReason[0] ? downtimeByReason[0].reason : "N/A";
-        const topReasonMins = downtimeByReason[0] ? downtimeByReason[0].totalMinutes : 0;
-        const totalDowntimeMins = kpiData.totalDowntimeHours * 60;
-        const topReasonPercentage = totalDowntimeMins > 0 ? (topReasonMins / totalDowntimeMins * 100).toFixed(0) : 0;
-        const summary = `El KPI de <strong>Disponibilidad</strong> se sitúa en un <strong>${(kpiData.availability * 100).toFixed(1)}%</strong>. La principal causa de inactividad es <strong>\"${topReason}\"</strong>, responsable del <strong>${topReasonPercentage}%</strong> del tiempo total de parada.`;
+        const summary = `El KPI de <strong>Disponibilidad</strong> se sitúa en un <strong>${summaryData.availabilityPercentage}%</strong>. La principal causa de inactividad es <strong>\"${summaryData.topReason}\"</strong>, responsable del <strong>${summaryData.topReasonPercentage}%</strong> del tiempo total de parada.`;
         document.getElementById('summary-text').innerHTML = summary;
     }
 
-    function showDrillDownModal(category, type = 'machine') {
-        const dateRange = datepicker.selectedDates;
-        const startDate = dateRange[0];
-        const endDate = dateRange[1];
+    function updateCharts(chartsData) {
+        renderChart('chart-daily-production', 'line', chartsData.dailyProdData);
+        renderChart('chart-prod-by-machine', 'bar', { seriesName: 'Producción', data: chartsData.prodByMachineData, horizontal: true });
+        renderChart('chart-prod-by-operator', 'bar', { seriesName: 'Producción Promedio/Turno', data: chartsData.avgProdByOperatorData, horizontal: false });
+        renderChart('chart-downtime-combo', 'combo', chartsData.downtimeComboData);
+        renderChart('chart-daily-time-distribution', 'stackedBar', chartsData.dailyTimeData);
+    }
 
+    function showDrillDownModal(category, type = 'machine') {
         let detailData, modalTitleText, tableHeader, tableBody = '';
+        const parseWorkerDate = (dateStr) => dateStr ? new Date(dateStr) : null;
 
         if (type === 'machine') {
-            detailData = originalData.filter(row => {
-                const isDateInRange = row.Fecha >= startDate && row.Fecha <= endDate;
-                return row.Descrip_Maquina === category && isDateInRange;
-            });
+            detailData = currentFilteredData.filter(row => row.Descrip_Maquina === category);
             modalTitleText = `Detalle de Producción para: ${category}`;
             tableHeader = `<th>Fecha</th><th>Turno</th><th>Operario</th><th>Cantidad</th><th>Incidencia</th><th>Minutos Parada</th>`;
             
@@ -250,7 +220,7 @@ document.addEventListener('DOMContentLoaded', function () {
                 }
                 tableBody += `
                     <tr>
-                        <td>${row.Fecha.toLocaleDateString('es-ES')}</td>
+                        <td>${parseWorkerDate(row.Fecha).toLocaleDateString('es-ES')}</td>
                         <td>${row.Turno || '--'}</td>
                         <td>${row.Apellido || '--'}</td>
                         <td>${isNewProd ? formatNumber(row.Cantidad) : ''}</td>
@@ -261,17 +231,14 @@ document.addEventListener('DOMContentLoaded', function () {
             });
 
         } else if (type === 'downtime') {
-            detailData = originalData.filter(row => {
-                const isDateInRange = row.Fecha >= startDate && row.Fecha <= endDate;
-                return row.descrip_incidencia === category && isDateInRange;
-            });
+            detailData = currentFilteredData.filter(row => row.descrip_incidencia === category);
             modalTitleText = `Detalle de Paradas por: ${category}`;
             tableHeader = `<th>Fecha</th><th>Máquina</th><th>Turno</th><th>Operario</th><th>Minutos Parada</th>`;
             
             detailData.forEach(row => {
                 tableBody += `
                     <tr>
-                        <td>${row.Fecha.toLocaleDateString('es-ES')}</td>
+                        <td>${parseWorkerDate(row.Fecha).toLocaleDateString('es-ES')}</td>
                         <td>${row.Descrip_Maquina || '--'}</td>
                         <td>${row.Turno || '--'}</td>
                         <td>${row.Apellido || '--'}</td>
@@ -286,7 +253,7 @@ document.addEventListener('DOMContentLoaded', function () {
         
         modalTitle.textContent = modalTitleText;
         
-        if (detailData.length === 0) {
+        if (!detailData || detailData.length === 0) {
             modalBody.innerHTML = "<p>No hay datos detallados para la selección actual.</p>";
         } else {
             modalBody.innerHTML = `
@@ -299,34 +266,18 @@ document.addEventListener('DOMContentLoaded', function () {
         
         detailModal.show();
     }
-
-    function updateCharts(data) {
-        const dailyProdData = aggregateDailyProduction(data);
-        renderChart('chart-daily-production', 'line', dailyProdData);
-        
-        const prodByMachineData = aggregateAndSort(data, 'Descrip_Maquina', 'Cantidad', true);
-        renderChart('chart-prod-by-machine', 'bar', { seriesName: 'Producción', data: prodByMachineData, horizontal: true });
-        
-        const avgProdByOperatorData = calculateAverageProductionByShift(data);
-        renderChart('chart-prod-by-operator', 'bar', { seriesName: 'Producción Promedio/Turno', data: avgProdByOperatorData, horizontal: false });
-        
-        const downtimeComboData = aggregateDowntime(data).sort((a,b) => b.totalMinutes - a.totalMinutes);
-        renderChart('chart-downtime-combo', 'combo', downtimeComboData);
-
-        const dailyTimeData = aggregateDailyTimeDistribution(data);
-        renderChart('chart-daily-time-distribution', 'stackedBar', dailyTimeData);
-    }
     
     function renderChart(elementId, type, chartData) {
+        if (!chartData) { console.warn(`No data for chart: ${elementId}`); return; }
         const currentTheme = localStorage.getItem('dashboardTheme') || 'light';
         const textColor = currentTheme === 'dark' ? '#e0e0e0' : '#333';
         const gridBorderColor = currentTheme === 'dark' ? '#444' : '#e7e7e7';
         
         const commonOptions = {
-            chart: { 
-                height: 350, 
-                fontFamily: 'Inter, sans-serif', 
-                toolbar: { show: true }, 
+            chart: {
+                height: 350,
+                fontFamily: 'Inter, sans-serif',
+                toolbar: { show: true },
                 background: 'transparent',
                 events: {
                     dataPointSelection: function(event, chartContext, config) {
@@ -340,13 +291,8 @@ document.addEventListener('DOMContentLoaded', function () {
                         }
                     }
                 },
-                zoom: {
-                    enabled: false
-                },
-                pan: {
-                    enabled: true,
-                    key: 'ctrl'
-                },
+                zoom: { enabled: false },
+                pan: { enabled: true, key: 'ctrl' },
                 locales: [{
                     name: 'es',
                     options: {
@@ -379,32 +325,32 @@ document.addEventListener('DOMContentLoaded', function () {
                 ...commonOptions, chart: {...commonOptions.chart, id: elementId, type: 'line'}, series: chartData.series,
                 stroke: { curve: 'smooth', width: 3 },
                 markers: { size: 5 },
-                dataLabels: { 
-                    enabled: true, 
-                    offsetY: -15, 
+                dataLabels: {
+                    enabled: true,
+                    offsetY: -15,
                     formatter: (val) => formatNumber(val),
                     style: { colors: ["#000000"] }, 
-                    background: { 
-                        enabled: true, 
-                        foreColor: '#000', 
-                        borderRadius: 3, 
-                        padding: 5, 
-                        opacity: 0.9, 
+                    background: {
+                        enabled: true,
+                        foreColor: '#000',
+                        borderRadius: 3,
+                        padding: 5,
+                        opacity: 0.9,
                         borderColor: '#BDE5F8',
                         backgroundColor: '#BDE5F8'
-                    } 
+                    }
                 },
                 xaxis: { type: 'datetime', categories: chartData.categories, labels: { style: { colors: textColor }, datetimeUTC: false, format: 'dd MMM' } },
                 yaxis: { labels: { style: { colors: textColor }, formatter: (val) => formatNumber(val) } },
-                tooltip: { 
-                    theme: currentTheme, 
-                    x: { format: 'dddd dd/MM/yyyy' }, 
-                    y: { formatter: (val) => `${formatNumber(val)} pzas.` } 
+                tooltip: {
+                    theme: currentTheme,
+                    x: { format: 'dddd dd/MM/yyyy' },
+                    y: { formatter: (val) => `${formatNumber(val)} pzas.` }
                 }
             };
         } else if (type === 'bar') {
              options = {
-                ...commonOptions, 
+                ...commonOptions,
                 chart: {...commonOptions.chart, id: elementId, type: 'bar'},
                 series: [{ name: chartData.seriesName, data: chartData.data.map(d => d.value) }],
                 plotOptions: { bar: { horizontal: chartData.horizontal || false, borderRadius: 4, dataLabels: { position: 'top' } } },
@@ -425,38 +371,15 @@ document.addEventListener('DOMContentLoaded', function () {
                 stroke: { width: [0, 4], curve: 'smooth' },
                 xaxis: { categories: chartData.map(d => d.reason), labels: { style: { colors: textColor, fontSize: '11px' }, trim: true, rotate: -45, hideOverlappingLabels: true, maxHeight: 120 } },
                 yaxis: [
-                    { 
-                        seriesName: 'Tiempo (Horas)', 
-                        axisTicks: { show: true }, 
-                        axisBorder: { show: true, color: chartColors[0] }, 
-                        labels: { 
-                            style: { colors: chartColors[0] }, 
-                            formatter: (val) => { return val.toFixed(1); } 
-                        }, 
-                        title: { text: "Tiempo Total (Horas)", style: { color: chartColors[0] } }
-                    },
-                    { 
-                        seriesName: 'Frecuencia', 
-                        opposite: true, 
-                        axisTicks: { show: true }, 
-                        axisBorder: { show: true, color: chartColors[1] }, 
-                        labels: { 
-                            style: { colors: chartColors[1] }, 
-                            formatter: (val) => formatNumber(val) 
-                        }, 
-                        title: { text: "Frecuencia (Nro. de Veces)", style: { color: chartColors[1] } }
-                    }
+                    { seriesName: 'Tiempo (Horas)', axisTicks: { show: true }, axisBorder: { show: true, color: chartColors[0] }, labels: { style: { colors: chartColors[0] }, formatter: (val) => val.toFixed(1) }, title: { text: "Tiempo Total (Horas)", style: { color: chartColors[0] } }},
+                    { seriesName: 'Frecuencia', opposite: true, axisTicks: { show: true }, axisBorder: { show: true, color: chartColors[1] }, labels: { style: { colors: chartColors[1] }, formatter: (val) => formatNumber(val) }, title: { text: "Frecuencia (Nro. de Veces)", style: { color: chartColors[1] } }}
                 ],
-                tooltip: { 
+                tooltip: {
                     theme: currentTheme,
                     y: {
                         formatter: function(val, { seriesIndex }) {
                             if(val === undefined) return val;
-                            if (seriesIndex === 0) {
-                                return val.toLocaleString('es-ES', { minimumFractionDigits: 1, maximumFractionDigits: 1 }) + " Hs";
-                            } else {
-                                return val.toLocaleString('es-ES') + " veces";
-                            }
+                            return seriesIndex === 0 ? `${val.toLocaleString('es-ES', { minimumFractionDigits: 1, maximumFractionDigits: 1 })} Hs` : `${val.toLocaleString('es-ES')} veces`;
                         }
                     }
                 },
@@ -465,64 +388,13 @@ document.addEventListener('DOMContentLoaded', function () {
         } else if (type === 'stackedBar') {
             options = {
                 ...commonOptions,
-                chart: {
-                    ...commonOptions.chart,
-                    id: elementId,
-                    type: 'bar',
-                    stacked: true,
-                },
-                plotOptions: {
-                    bar: {
-                        horizontal: false,
-                        // MODIFICACIÓN FINAL: Habilitar y formatear las etiquetas de datos
-                        dataLabels: {
-                            enabled: true,
-                            formatter: function (val) {
-                                if (val < 0.1) return ''; // Opcional: no mostrar etiquetas para valores muy pequeños
-                                return val.toFixed(1);
-                            },
-                            style: {
-                                colors: ['#fff'],
-                                fontSize: '11px',
-                                fontWeight: 400
-                            },
-                            offsetY: 4
-                        }
-                    },
-                },
+                chart: { ...commonOptions.chart, id: elementId, type: 'bar', stacked: true },
+                plotOptions: { bar: { horizontal: false, dataLabels: { enabled: true, formatter: (val) => val < 0.1 ? '' : val.toFixed(1), style: { colors: ['#fff'], fontSize: '11px', fontWeight: 400 }, offsetY: 4 }}},
                 series: chartData.series,
-                xaxis: {
-                    categories: chartData.categories,
-                    labels: {
-                        style: {
-                            colors: textColor
-                        }
-                    }
-                },
-                yaxis: {
-                    title: {
-                        text: 'Horas',
-                        style: {
-                            color: textColor
-                        }
-                    },
-                    labels: {
-                        style: {
-                            colors: textColor
-                        }
-                    }
-                },
-                tooltip: {
-                    y: {
-                        formatter: function (val) {
-                            return val.toFixed(1) + " horas";
-                        }
-                    }
-                },
-                legend: {
-                    position: 'top',
-                    horizontalAlign: 'left'
-                }
+                xaxis: { categories: chartData.categories, labels: { style: { colors: textColor }}},
+                yaxis: { title: { text: 'Horas', style: { color: textColor }}, labels: { style: { colors: textColor }}},
+                tooltip: { y: { formatter: (val) => `${val.toFixed(1)} horas` }},
+                legend: { position: 'top', horizontalAlign: 'left' }
             };
         }
 
@@ -536,11 +408,7 @@ document.addEventListener('DOMContentLoaded', function () {
                     chartEl.addEventListener('wheel', (event) => {
                         if (event.ctrlKey) {
                             event.preventDefault();
-                            if (event.deltaY < 0) {
-                                charts[elementId].zoomIn();
-                            } else {
-                                charts[elementId].zoomOut();
-                            }
+                            charts[elementId][event.deltaY < 0 ? 'zoomIn' : 'zoomOut']();
                         }
                     });
                 }
@@ -548,199 +416,24 @@ document.addEventListener('DOMContentLoaded', function () {
         }
     }
     
-    function aggregateDailyProduction(data) {
-        const aggregation = {};
-        const seenProdIds = new Set();
-        data.forEach(row => {
-            if (row.Fecha) {
-                const dateCategory = row.Fecha.toISOString().split('T')[0];
-                const uniqueKey = `${dateCategory}-${row.IdProduccion}`;
-                if (row.IdProduccion && !seenProdIds.has(uniqueKey)) {
-                    aggregation[dateCategory] = (aggregation[dateCategory] || 0) + row.Cantidad;
-                    seenProdIds.add(uniqueKey);
-                }
-            }
-        });
-        const sorted = Object.keys(aggregation).sort((a, b) => new Date(a) - new Date(b));
-        return {
-            series: [{ name: 'Producción', data: sorted.map(key => aggregation[key]) }],
-            categories: sorted.map(key => {
-                const parts = key.split('-');
-                return new Date(parts[0], parts[1] - 1, parts[2]).getTime();
-            })
-        };
-    }
-
-    function aggregateAndSort(data, categoryField, valueField, uniqueByIdProd = false) {
-        const aggregation = {}; const seenIds = new Set();
-        data.forEach(row => {
-            const category = row[categoryField];
-            if (!category) return;
-            const value = row[valueField] || 0;
-            if (uniqueByIdProd) {
-                const uniqueKey = `${row.IdProduccion}-${category}`;
-                if (!seenIds.has(uniqueKey)) { aggregation[category] = (aggregation[category] || 0) + value; seenIds.add(uniqueKey); }
-            } else { aggregation[category] = (aggregation[category] || 0) + value; }
-        });
-        let aggregatedArray = Object.keys(aggregation).map(key => ({ category: key, value: aggregation[key] }));
-        return aggregatedArray.sort((a, b) => b.value - a.value);
-    }
-
-    function calculateAverageProductionByShift(data) {
-        const operatorStats = {};
-        const seenProdIds = new Set();
-
-        data.forEach(row => {
-            const operator = row.Apellido;
-            if (!operator) return;
-
-            if (!operatorStats[operator]) {
-                operatorStats[operator] = {
-                    totalProduction: 0,
-                    shifts: new Set()
-                };
-            }
-
-            const uniqueProdKey = `${row.IdProduccion}-${operator}`;
-            if (!seenProdIds.has(uniqueProdKey)) {
-                operatorStats[operator].totalProduction += row.Cantidad;
-                seenProdIds.add(uniqueProdKey);
-            }
-            
-            if (row.Turno && row.Fecha) {
-                const dateString = row.Fecha.toISOString().split('T')[0];
-                operatorStats[operator].shifts.add(`${dateString};${row.Turno}`);
-            }
-        });
-
-        const result = Object.keys(operatorStats).map(operator => {
-            const stats = operatorStats[operator];
-            const shiftCount = stats.shifts.size;
-            const average = shiftCount > 0 ? stats.totalProduction / shiftCount : 0;
-            return {
-                category: operator,
-                value: average
-            };
-        });
-        
-        return result.sort((a, b) => b.value - a.value);
-    }
-
-    function aggregateDowntime(data) {
-        const aggregation = {};
-        data.forEach(row => {
-            const reason = row.descrip_incidencia;
-            if (!reason) return;
-            if (!aggregation[reason]) {
-                aggregation[reason] = { totalMinutes: 0, totalFrequency: 0 };
-            }
-            aggregation[reason].totalMinutes += row.Minutos || 0;
-            aggregation[reason].totalFrequency += row.Frecuencia || 0;
-        });
-        return Object.keys(aggregation).map(reason => ({
-            reason: reason,
-            totalMinutes: aggregation[reason].totalMinutes,
-            totalFrequency: aggregation[reason].totalFrequency
-        }));
-    }
-
-    function aggregateDailyTimeDistribution(data) {
-        const timeByDay = {};
-
-        // First, get all unique downtime reasons
-        const downtimeReasons = [...new Set(data.map(row => row.descrip_incidencia).filter(Boolean))];
-
-        // Group data by day
-        const dataByDay = data.reduce((acc, row) => {
-            // Ensure row.Fecha is a valid Date object before proceeding
-            if (!row.Fecha || !(row.Fecha instanceof Date) || isNaN(row.Fecha)) {
-                return acc; // Skip this row if Fecha is invalid
-            }
-            const day = row.Fecha.toISOString().split('T')[0];
-            if (!acc[day]) {
-                acc[day] = [];
-            }
-            acc[day].push(row);
-            return acc;
-        }, {});
-
-        const sortedDays = Object.keys(dataByDay).sort();
-
-        const series = downtimeReasons.map(reason => ({
-            name: reason,
-            data: []
-        }));
-        series.push({ name: 'Producción', data: [] });
-
-        sortedDays.forEach(day => {
-            const dayData = dataByDay[day];
-            const uniqueProductions = new Map();
-            dayData.forEach(row => {
-                if (row.IdProduccion && !uniqueProductions.has(row.IdProduccion)) {
-                    uniqueProductions.set(row.IdProduccion, { hsTrab: row.Hs_Trab });
-                }
-            });
-
-            const totalPlannedMinutes = Array.from(uniqueProductions.values()).reduce((sum, item) => sum + item.hsTrab, 0);
-            const totalDowntimeMinutes = dayData.reduce((sum, row) => sum + row.Minutos, 0);
-            const productionMinutes = totalPlannedMinutes - totalDowntimeMinutes;
-
-            const downtimeTotals = downtimeReasons.reduce((acc, reason) => {
-                acc[reason] = 0;
-                return acc;
-            }, {});
-
-            dayData.forEach(row => {
-                if (row.descrip_incidencia) {
-                    downtimeTotals[row.descrip_incidencia] += row.Minutos;
-                }
-            });
-
-            series.forEach(s => {
-                if (s.name === 'Producción') {
-                    s.data.push(productionMinutes / 60); // Convert to hours
-                } else {
-                    s.data.push(downtimeTotals[s.name] / 60); // Convert to hours
-                }
-            });
-        });
-
-        return {
-            series: series,
-            categories: sortedDays.map(d => new Date(d).toLocaleDateString('es-ES', {day: 'numeric', month: 'short'}))
-        };
-    }
-
     // --- AI Assistant Chat Functions ---
     function initAIChat() {
         aiAssistantBtn.addEventListener('click', () => toggleChat(true));
         closeChatBtn.addEventListener('click', () => toggleChat(false));
         sendChatBtn.addEventListener('click', sendMessage);
-        chatInput.addEventListener('keypress', (e) => {
-            if (e.key === 'Enter') {
-                sendMessage();
-            }
-        });
+        chatInput.addEventListener('keypress', (e) => { if (e.key === 'Enter') sendMessage(); });
+        
         const maximizeChatBtn = document.getElementById('maximize-chat-btn');
         maximizeChatBtn.addEventListener('click', () => {
             const icon = maximizeChatBtn.querySelector('i');
-            if (chatContainer.classList.contains('ai-chat-container-maximized')) {
-                chatContainer.classList.remove('ai-chat-container-maximized');
-                icon.classList.remove('fa-compress');
-                icon.classList.add('fa-expand');
-            } else {
-                chatContainer.classList.add('ai-chat-container-maximized');
-                icon.classList.remove('fa-expand');
-                icon.classList.add('fa-compress');
-            }
+            const isMaximized = chatContainer.classList.toggle('ai-chat-container-maximized');
+            icon.className = isMaximized ? 'fas fa-compress' : 'fas fa-expand';
         });
     }
 
     function toggleChat(show) {
         chatContainer.style.display = show ? 'flex' : 'none';
-        if (show) {
-            chatInput.focus();
-        }
+        if (show) chatInput.focus();
     }
 
     function addMessage(message, sender) {
@@ -752,109 +445,72 @@ document.addEventListener('DOMContentLoaded', function () {
     }
 
     async function sendMessage() {
-    const userInput = chatInput.value.trim();
-    if (!userInput) return;
+        const userInput = chatInput.value.trim();
+        if (!userInput) return;
 
-    addMessage(userInput, 'user');
-    chatInput.value = '';
-    toggleLoading(true);
+        addMessage(userInput, 'user');
+        chatInput.value = '';
+        toggleLoading(true);
 
-    if (API_KEY === 'YOUR_API_KEY') {
-        addMessage('Por favor, reemplaza YOUR_API_KEY en app.js con tu clave de API de Google AI Studio.', 'bot');
-        toggleLoading(false);
-        return;
-    }
-
-    const filteredData = getFilteredData();
-    const kpiData = calculateKPIs(filteredData);
-    const downtimeSummary = aggregateDowntime(filteredData).sort((a, b) => b.totalMinutes - a.totalMinutes).slice(0, 5);
-    const prodByMachineSummary = aggregateAndSort(filteredData, 'Descrip_Maquina', 'Cantidad', true).slice(0, 5);
-
-    const dateRange = datepicker.selectedDates.map(d => d.toLocaleDateString('es-ES')).join(' al ');
-    const selectedMachines = choicesMachine.getValue(true);
-    const selectedShifts = choicesShift.getValue(true);
-
-    const dashboardContext = `
-    **Contexto Actual del Dashboard:**
-
-    * **Filtros Activos:**
-        * Rango de Fechas: ${dateRange || 'No especificado'}
-        * Máquinas: ${selectedMachines.length > 0 ? selectedMachines.join(', ') : 'Todas'}
-        * Turnos: ${selectedShifts.length > 0 ? selectedShifts.join(', ') : 'Todos'}
-
-    * **KPIs Principales:**
-        * Producción Total: ${formatNumber(kpiData.totalProduction)} pzas.
-        * Disponibilidad: ${(kpiData.availability * 100).toFixed(1)}%
-        * Eficiencia (Pzas/Turno): ${formatNumber(kpiData.efficiency)}
-        * Horas de Parada Totales: ${kpiData.totalDowntimeHours.toFixed(1)} hs.
-
-    * **Resumen de Gráficos:**
-        * Top 5 Máquinas por Producción:
-            ${prodByMachineSummary.map(item => `- ${item.category}: ${formatNumber(item.value)} pzas.`).join('\n            ')}
-        * Top 5 Causas de Parada por Tiempo:
-            ${downtimeSummary.map(item => `- ${item.reason}: ${(item.totalMinutes / 60).toFixed(1)} hs.`).join('\n            ')}
-    `;
-
-    const dataSummary = Papa.unparse(filteredData.slice(0, 200)); 
-
-    const prompt = `
-**Instrucciones:**
-Eres un asistente de IA de élite, especializado en el análisis de datos de producción industrial. Tu único propósito es actuar como un analista experto para el usuario, proporcionando respuestas concisas, claras y directas.
-
-**Cómo Debes Analizar y Razonar:**
-1.  **Prioriza el Contexto del Dashboard:** Tu primera fuente de verdad es el resumen del dashboard que se te proporciona a continuación. Esto simula tu "visión" de la pantalla. Basa tu respuesta en esta información.
-2.  **Consulta los Datos Crudos como Último Recuro:** Junto con el contexto, recibirás una porción de los datos en formato CSV. Úsalos solo cuando necesites verificar un detalle muy específico que no esté en el resumen para responder la pregunta del usuario.
-3.  **Sé Proactivo:** Si los datos revelan un problema crítico (ej. una máquina con un tiempo de inactividad desproporcionado), menciónalo brevemente.
-
-**Reglas Estrictas para tus Respuestas:**
-* **NUNCA Muestres tu Trabajo:** Jamás incluyas código, los datos CSV, o una descripción de tu proceso de análisis.
-* **Sé Extremadamente Conciso:** Ve directo al grano.
-* **Habla como un Humano Experto:** No uses frases como "Analizando los datos...". Simplemente presenta los hechos.
-
----
-
-${dashboardContext}
-
----
-
-**Datos Crudos de Referencia (CSV):**
-${dataSummary}
-
----
-
-**Pregunta del Usuario:**
-${userInput}
-`;
-
-    try {
-        const response = await fetch(API_URL, {
-            method: 'POST',
-            headers: {
-                'Content-Type': 'application/json',
-            },
-            body: JSON.stringify({
-                contents: [{
-                    parts: [{
-                        text: prompt,
-                    }],
-                }],
-            }),
-        });
-
-        if (!response.ok) {
-            throw new Error(`HTTP error! status: ${response.status}`);
+        if (API_KEY === 'YOUR_API_KEY') {
+            addMessage('Por favor, reemplaza YOUR_API_KEY en app.js con tu clave de API de Google AI Studio.', 'bot');
+            toggleLoading(false);
+            return;
         }
 
-        const data = await response.json();
-        const botResponse = data.candidates[0].content.parts[0].text;
-        addMessage(botResponse, 'bot');
-    } catch (error) {
-        console.error('Error en la API de Gemini:', error);
-        addMessage('Hubo un error al contactar al asistente de IA. Revisa la consola para más detalles.', 'bot');
-    } finally {
-        toggleLoading(false);
-    }
-}
+        const dateRange = datepicker.selectedDates.map(d => d.toLocaleDateString('es-ES')).join(' al ');
+        const selectedMachines = choicesMachine.getValue(true);
+        const selectedShifts = choicesShift.getValue(true);
 
+        const dashboardContext = `
+        **Contexto Actual del Dashboard:**
+
+        * **Filtros Activos:**
+            * Rango de Fechas: ${dateRange || 'No especificado'}
+            * Máquinas: ${selectedMachines.length > 0 ? selectedMachines.join(', ') : 'Todas'}
+            * Turnos: ${selectedShifts.length > 0 ? selectedShifts.join(', ') : 'Todos'}
+
+        * **KPIs Principales:**
+            * Producción Total: ${formatNumber(currentKpiData.totalProduction)} pzas.
+            * Disponibilidad: ${(currentKpiData.availability * 100).toFixed(1)}%
+            * Eficiencia (Pzas/Turno): ${formatNumber(currentKpiData.efficiency)}
+            * Horas de Parada Totales: ${currentKpiData.totalDowntimeHours.toFixed(1)} hs.
+        `;
+
+        const dataSummary = Papa.unparse(currentFilteredData.slice(0, 100));
+
+        const prompt = `
+            **Instrucciones:** Eres un asistente de IA experto en análisis de producción industrial. Sé conciso y directo.
+            ---
+            ${dashboardContext}
+            ---
+            **Datos Crudos de Referencia (CSV):**
+            ${dataSummary}
+            ---
+            **Pregunta del Usuario:**
+            ${userInput}
+        `;
+
+        try {
+            const response = await fetch(API_URL, {
+                method: 'POST',
+                headers: { 'Content-Type': 'application/json' },
+                body: JSON.stringify({ contents: [{ parts: [{ text: prompt }] }] }),
+            });
+
+            if (!response.ok) throw new Error(`HTTP error! status: ${response.status}`);
+
+            const data = await response.json();
+            const botResponse = data.candidates[0].content.parts[0].text;
+            addMessage(botResponse, 'bot');
+        } catch (error) {
+            console.error('Error en la API de Gemini:', error);
+            addMessage('Hubo un error al contactar al asistente de IA.', 'bot');
+        } finally {
+            toggleLoading(false);
+        }
+    }
+
+    // --- START ---
     init();
 });
