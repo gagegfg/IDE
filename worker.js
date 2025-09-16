@@ -53,29 +53,38 @@ function getFilteredData(filters) {
 }
 
 function calculateKPIs(data) {
-    const uniqueProductions = new Map();
+    const productions = new Map();
+    let totalDowntimeMinutes = 0;
+
     data.forEach(row => {
-        if (row.IdProduccion && !uniqueProductions.has(row.IdProduccion)) {
-            uniqueProductions.set(row.IdProduccion, { 
-                cantidad: row.Cantidad,
-                hsTrab: row.Hs_Trab
+        totalDowntimeMinutes += row.Minutos || 0;
+        const prodId = row.IdProduccion;
+        if (prodId && !productions.has(prodId)) {
+            productions.set(prodId, {
+                cantidad: row.Cantidad || 0,
+                hsTrab: row.Hs_Trab || 0,
+                shiftKey: `${new Date(row.Fecha).toISOString().split('T')[0]}-${row.Turno}`
             });
         }
     });
-    
-    const productionValues = Array.from(uniqueProductions.values());
-    const totalProduction = productionValues.reduce((sum, item) => sum + item.cantidad, 0);
-    const plannedMinutes = productionValues.reduce((sum, item) => sum + item.hsTrab, 0) * 60;
-    const totalDowntimeMinutes = data.reduce((sum, row) => sum + row.Minutos, 0);
-    const runTimeMinutes = plannedMinutes - totalDowntimeMinutes;
 
-    const availability = plannedMinutes > 0 ? (runTimeMinutes / plannedMinutes) : 0;
-    const efficiency = runTimeMinutes > 0 ? totalProduction / (runTimeMinutes / 60) : 0;
+    const productionValues = Array.from(productions.values());
+    const totalProduction = productionValues.reduce((sum, p) => sum + p.cantidad, 0);
+    const plannedMinutes = productionValues.reduce((sum, p) => sum + p.hsTrab, 0) * 60;
+
+    // Availability calculation
+    const runTimeMinutes = plannedMinutes - totalDowntimeMinutes;
+    const availability = plannedMinutes > 0 ? Math.max(0, runTimeMinutes / plannedMinutes) : 0;
+
+    // Efficiency (Piezas por Turno) calculation
+    const uniqueShifts = new Set(productionValues.map(p => p.shiftKey));
+    const numberOfShifts = uniqueShifts.size;
+    const efficiency = numberOfShifts > 0 ? totalProduction / numberOfShifts : 0;
 
     return {
         totalProduction,
         totalDowntimeHours: totalDowntimeMinutes / 60,
-        availability: Math.max(0, availability),
+        availability,
         efficiency
     };
 }
@@ -169,8 +178,13 @@ function aggregateAndSort(data, categoryField, valueField, uniqueByIdProd = fals
         const value = row[valueField] || 0;
         if (uniqueByIdProd) {
             const uniqueKey = `${row.IdProduccion}-${category}`;
-            if (!seenIds.has(uniqueKey)) { aggregation[category] = (aggregation[category] || 0) + value; seenIds.add(uniqueKey); }
-        } else { aggregation[category] = (aggregation[category] || 0) + value; }
+            if (row.IdProduccion && !seenIds.has(uniqueKey)) { 
+                aggregation[category] = (aggregation[category] || 0) + value; 
+                seenIds.add(uniqueKey); 
+            }
+        } else { 
+            aggregation[category] = (aggregation[category] || 0) + value; 
+        }
     });
     let aggregatedArray = Object.keys(aggregation).map(key => ({ category: key, value: aggregation[key] }));
     return aggregatedArray.sort((a, b) => b.value - a.value);
@@ -189,7 +203,7 @@ function calculateAverageProductionByShift(data) {
         }
 
         const uniqueProdKey = `${row.IdProduccion}-${operator}`;
-        if (!seenProdIds.has(uniqueProdKey)) {
+        if (row.IdProduccion && !seenProdIds.has(uniqueProdKey)) {
             operatorStats[operator].totalProduction += row.Cantidad;
             seenProdIds.add(uniqueProdKey);
         }
