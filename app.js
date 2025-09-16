@@ -38,7 +38,7 @@ document.addEventListener('DOMContentLoaded', function () {
             case 'update_dashboard':
                 // The worker has finished processing. Let's update the UI.
                 currentFilteredData = payload.filteredData;
-                updateDashboard(payload.kpiData, payload.chartsData);
+                updateDashboard(payload.kpiData, payload.chartsData, payload.summaryData);
                 break;
 
             case 'progress':
@@ -179,8 +179,9 @@ document.addEventListener('DOMContentLoaded', function () {
         });
     }
 
-    function updateDashboard(kpiData, chartsData) {
+    function updateDashboard(kpiData, chartsData, summaryData) {
         renderKPIs(kpiData);
+        renderSummary(summaryData);
         updateCharts(chartsData);
         toggleProgress(false);
         toggleOverlay(false); // Also hide the initial overlay if it was visible
@@ -191,6 +192,21 @@ document.addEventListener('DOMContentLoaded', function () {
         document.getElementById('kpi-availability').textContent = `${(kpiData.availability * 100).toFixed(1)}%`;
         document.getElementById('kpi-efficiency').textContent = formatNumber(kpiData.efficiency);
         document.getElementById('kpi-total-downtime').textContent = kpiData.totalDowntimeHours.toFixed(1);
+    }
+
+    function renderSummary(summaryData) {
+        const summaryElement = document.getElementById('management-summary');
+        if (!summaryData || summaryData.topReason === 'N/A') {
+            summaryElement.innerHTML = 'No hay datos suficientes para generar un resumen.';
+            return;
+        }
+
+        let summaryHTML = `
+            La <strong>disponibilidad</strong> general fue de un <strong>${summaryData.availabilityPercentage}%</strong>. 
+            La principal causa de parada fue "<strong>${summaryData.topReason}</strong>", 
+            representando un <strong>${summaryData.topReasonPercentage}%</strong> del tiempo total de inactividad.
+        `;
+        summaryElement.innerHTML = summaryHTML;
     }
     
     function updateCharts(chartsData) {
