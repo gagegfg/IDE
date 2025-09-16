@@ -250,7 +250,10 @@ function aggregateDailyTimeDistribution(data) {
 
         const totalPlannedMinutes = Array.from(uniqueProductions.values()).reduce((sum, item) => sum + item.hsTrab, 0);
         const totalDowntimeMinutes = dayData.reduce((sum, row) => sum + row.Minutos, 0);
-        const productionMinutes = totalPlannedMinutes - totalDowntimeMinutes;
+        let productionMinutes = totalPlannedMinutes - totalDowntimeMinutes;
+
+        // Ensure productionMinutes is not negative
+        productionMinutes = Math.max(0, productionMinutes);
 
         const downtimeTotals = downtimeReasons.reduce((acc, reason) => ({...acc, [reason]: 0}), {});
 
@@ -262,9 +265,9 @@ function aggregateDailyTimeDistribution(data) {
 
         series.forEach(s => {
             if (s.name === 'Producción') {
-                s.data.push(productionMinutes / 60);
+                s.data.push((productionMinutes / 60).toFixed(1));
             } else {
-                s.data.push((downtimeTotals[s.name] || 0) / 60);
+                s.data.push(((downtimeTotals[s.name] || 0) / 60).toFixed(1));
             }
         });
     });
