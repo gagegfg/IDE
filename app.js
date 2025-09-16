@@ -12,6 +12,10 @@ document.addEventListener('DOMContentLoaded', function () {
 
     // --- UI ELEMENTS ---
     const loadingOverlay = document.getElementById('loading-overlay');
+    const progressContainer = document.getElementById('progress-container');
+    const progressCircle = document.querySelector('.progress-circle');
+    const progressText = document.querySelector('.progress-text');
+    const progressStatusText = document.getElementById('progress-status-text');
     const themeToggle = document.getElementById('theme-toggle');
     const aiAssistantBtn = document.getElementById('ai-assistant-btn');
     const chatContainer = document.getElementById('ai-chat-container');
@@ -47,10 +51,14 @@ document.addEventListener('DOMContentLoaded', function () {
                 updateDashboard(payload.kpiData, payload.chartsData, payload.summaryData);
                 break;
 
+            case 'progress':
+                toggleProgress(true, payload.progress, payload.status);
+                break;
+
             case 'error':
                 console.error("Error from worker:", payload);
                 alert("Ocurrió un error al procesar los datos. Revisa la consola.");
-                toggleLoading(false);
+                toggleProgress(false);
                 break;
         }
     };
@@ -60,7 +68,7 @@ document.addEventListener('DOMContentLoaded', function () {
         initTheme();
         initAIChat();
         detailModal = new bootstrap.Modal(document.getElementById('detailModal'));
-        toggleLoading(true);
+        toggleOverlay(true);
         worker.postMessage({ type: 'load_data', payload: { url: CSV_URL } });
     }
 
@@ -147,7 +155,7 @@ document.addEventListener('DOMContentLoaded', function () {
     // --- DATA FLOW & UI UPDATES ---
 
     function applyFilters() {
-        toggleLoading(true);
+        toggleProgress(true, 0, 'Filtrando datos...');
         const filterValues = {
             dateRange: datepicker.selectedDates,
             selectedMachines: choicesMachine.getValue(true),
@@ -157,8 +165,19 @@ document.addEventListener('DOMContentLoaded', function () {
         worker.postMessage({ type: 'apply_filters', payload: filterValues });
     }
 
-    function toggleLoading(show) {
+    function toggleOverlay(show) {
         loadingOverlay.style.display = show ? 'flex' : 'none';
+    }
+
+    function toggleProgress(show, progress = 0, status = 'Cargando...') {
+        if (show) {
+            progressContainer.style.display = 'flex';
+            progressText.textContent = `${Math.round(progress)}%`;
+            progressCircle.style.background = `conic-gradient(var(--primary-color) ${progress * 3.6}deg, #444 0deg)`;
+            progressStatusText.textContent = status;
+        } else {
+            progressContainer.style.display = 'none';
+        }
     }
 
     function applyTheme(theme) {
@@ -175,7 +194,8 @@ document.addEventListener('DOMContentLoaded', function () {
         renderKPIs(kpiData);
         updateCharts(chartsData);
         updateSummary(summaryData);
-        toggleLoading(false);
+        toggleProgress(false);
+        toggleOverlay(false); // Also hide the initial overlay if it was visible
     }
 
     function renderKPIs(kpiData) {
@@ -190,7 +210,7 @@ document.addEventListener('DOMContentLoaded', function () {
             document.getElementById('summary-text').textContent = "No hay datos para el período o filtros seleccionados.";
             return;
         }
-        const summary = `El KPI de <strong>Disponibilidad</strong> se sitúa en un <strong>${summaryData.availabilityPercentage}%</strong>. La principal causa de inactividad es <strong>\"${summaryData.topReason}\"</strong>, responsable del <strong>${summaryData.topReasonPercentage}%</strong> del tiempo total de parada.`;
+        const summary = `El KPI de <strong>Disponibilidad</strong> se sitúa en un <strong>${summaryData.availabilityPercentage}%</strong>. La principal causa de inactividad es <strong>"${summaryData.topReason}"</strong>, responsable del <strong>${summaryData.topReasonPercentage}%</strong> del tiempo total de parada.`;
         document.getElementById('summary-text').innerHTML = summary;
     }
 
@@ -450,11 +470,11 @@ document.addEventListener('DOMContentLoaded', function () {
 
         addMessage(userInput, 'user');
         chatInput.value = '';
-        toggleLoading(true);
+        toggleOverlay(true);
 
         if (API_KEY === 'YOUR_API_KEY') {
             addMessage('Por favor, reemplaza YOUR_API_KEY en app.js con tu clave de API de Google AI Studio.', 'bot');
-            toggleLoading(false);
+            toggleOverlay(false);
             return;
         }
 
@@ -507,7 +527,7 @@ document.addEventListener('DOMContentLoaded', function () {
             console.error('Error en la API de Gemini:', error);
             addMessage('Hubo un error al contactar al asistente de IA.', 'bot');
         } finally {
-            toggleLoading(false);
+            toggleOverlay(false);
         }
     }
 
