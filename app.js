@@ -1,14 +1,11 @@
 document.addEventListener('DOMContentLoaded', function () {
     const CSV_URL = 'exportProduccionyEventos.csv';
-    const API_KEY = 'AIzaSyAYLOGw5vncaz1jN3uTsRvup3WeS1MBgQI'; // ¡¡¡REEMPLAZAR CON TU API KEY!!!
-    const API_URL = `https://generativelanguage.googleapis.com/v1beta/models/gemini-1.5-flash-latest:generateContent?key=${API_KEY}`;
 
     // --- STATE MANAGEMENT ---
     let charts = {};
     let choicesMachine, choicesShift, datepicker;
     let detailModal;
-    let currentFilteredData = []; // Holds the currently filtered data for drill-downs and AI context
-    let currentKpiData = {}; // Holds the current KPIs for the AI context
+    let currentFilteredData = []; // Holds the currently filtered data for drill-downs
 
     // --- UI ELEMENTS ---
     const loadingOverlay = document.getElementById('loading-overlay');
@@ -17,12 +14,6 @@ document.addEventListener('DOMContentLoaded', function () {
     const progressText = document.querySelector('.progress-text');
     const progressStatusText = document.getElementById('progress-status-text');
     const themeToggle = document.getElementById('theme-toggle');
-    const aiAssistantBtn = document.getElementById('ai-assistant-btn');
-    const chatContainer = document.getElementById('ai-chat-container');
-    const closeChatBtn = document.getElementById('close-chat-btn');
-    const chatInput = document.getElementById('chat-input');
-    const sendChatBtn = document.getElementById('send-chat-btn');
-    const chatBody = document.getElementById('chat-body');
     
     const chartColors = ['#5E35B1', '#039BE5', '#00897B', '#FDD835', '#E53935', '#8E24AA', '#3949AB'];
     const formatNumber = (val) => val ? val.toLocaleString('es-ES', { maximumFractionDigits: 0 }) : val;
@@ -47,8 +38,7 @@ document.addEventListener('DOMContentLoaded', function () {
             case 'update_dashboard':
                 // The worker has finished processing. Let's update the UI.
                 currentFilteredData = payload.filteredData;
-                currentKpiData = payload.kpiData;
-                updateDashboard(payload.kpiData, payload.chartsData, payload.summaryData);
+                updateDashboard(payload.kpiData, payload.chartsData);
                 break;
 
             case 'progress':
@@ -66,7 +56,6 @@ document.addEventListener('DOMContentLoaded', function () {
     // --- INITIALIZATION ---
     function init() {
         initTheme();
-        initAIChat();
         detailModal = new bootstrap.Modal(document.getElementById('detailModal'));
         toggleOverlay(true);
         worker.postMessage({ type: 'load_data', payload: { url: CSV_URL } });
@@ -190,10 +179,9 @@ document.addEventListener('DOMContentLoaded', function () {
         });
     }
 
-    function updateDashboard(kpiData, chartsData, summaryData) {
+    function updateDashboard(kpiData, chartsData) {
         renderKPIs(kpiData);
         updateCharts(chartsData);
-        updateSummary(summaryData);
         toggleProgress(false);
         toggleOverlay(false); // Also hide the initial overlay if it was visible
     }
@@ -205,15 +193,6 @@ document.addEventListener('DOMContentLoaded', function () {
         document.getElementById('kpi-total-downtime').textContent = kpiData.totalDowntimeHours.toFixed(1);
     }
     
-    function updateSummary(summaryData) {
-        if (!summaryData || summaryData.topReason === 'N/A') {
-            document.getElementById('summary-text').textContent = "No hay datos para el período o filtros seleccionados.";
-            return;
-        }
-        const summary = `El KPI de <strong>Disponibilidad</strong> se sitúa en un <strong>${summaryData.availabilityPercentage}%</strong>. La principal causa de inactividad es <strong>"${summaryData.topReason}"</strong>, responsable del <strong>${summaryData.topReasonPercentage}%</strong> del tiempo total de parada.`;
-        document.getElementById('summary-text').innerHTML = summary;
-    }
-
     function updateCharts(chartsData) {
         renderChart('chart-daily-production', 'line', chartsData.dailyProdData);
         renderChart('chart-prod-by-machine', 'bar', { seriesName: 'Producción', data: chartsData.prodByMachineData, horizontal: true });
@@ -436,101 +415,6 @@ document.addEventListener('DOMContentLoaded', function () {
         }
     }
     
-    // --- AI Assistant Chat Functions ---
-    function initAIChat() {
-        aiAssistantBtn.addEventListener('click', () => toggleChat(true));
-        closeChatBtn.addEventListener('click', () => toggleChat(false));
-        sendChatBtn.addEventListener('click', sendMessage);
-        chatInput.addEventListener('keypress', (e) => { if (e.key === 'Enter') sendMessage(); });
-        
-        const maximizeChatBtn = document.getElementById('maximize-chat-btn');
-        maximizeChatBtn.addEventListener('click', () => {
-            const icon = maximizeChatBtn.querySelector('i');
-            const isMaximized = chatContainer.classList.toggle('ai-chat-container-maximized');
-            icon.className = isMaximized ? 'fas fa-compress' : 'fas fa-expand';
-        });
-    }
-
-    function toggleChat(show) {
-        chatContainer.style.display = show ? 'flex' : 'none';
-        if (show) chatInput.focus();
-    }
-
-    function addMessage(message, sender) {
-        const messageElement = document.createElement('div');
-        messageElement.classList.add('chat-message', `${sender}-message`);
-        messageElement.textContent = message;
-        chatBody.appendChild(messageElement);
-        chatBody.scrollTop = chatBody.scrollHeight;
-    }
-
-    async function sendMessage() {
-        const userInput = chatInput.value.trim();
-        if (!userInput) return;
-
-        addMessage(userInput, 'user');
-        chatInput.value = '';
-        toggleOverlay(true);
-
-        if (API_KEY === 'YOUR_API_KEY') {
-            addMessage('Por favor, reemplaza YOUR_API_KEY en app.js con tu clave de API de Google AI Studio.', 'bot');
-            toggleOverlay(false);
-            return;
-        }
-
-        const dateRange = datepicker.selectedDates.map(d => d.toLocaleDateString('es-ES')).join(' al ');
-        const selectedMachines = choicesMachine.getValue(true);
-        const selectedShifts = choicesShift.getValue(true);
-
-        const dashboardContext = `
-        **Contexto Actual del Dashboard:**
-
-        * **Filtros Activos:**
-            * Rango de Fechas: ${dateRange || 'No especificado'}
-            * Máquinas: ${selectedMachines.length > 0 ? selectedMachines.join(', ') : 'Todas'}
-            * Turnos: ${selectedShifts.length > 0 ? selectedShifts.join(', ') : 'Todos'}
-
-        * **KPIs Principales:**
-            * Producción Total: ${formatNumber(currentKpiData.totalProduction)} pzas.
-            * Disponibilidad: ${(currentKpiData.availability * 100).toFixed(1)}%
-            * Eficiencia (Pzas/Turno): ${formatNumber(currentKpiData.efficiency)}
-            * Horas de Parada Totales: ${currentKpiData.totalDowntimeHours.toFixed(1)} hs.
-        `;
-
-        const dataSummary = Papa.unparse(currentFilteredData.slice(0, 100));
-
-        const prompt = `
-            **Instrucciones:** Eres un asistente de IA experto en análisis de producción industrial. Sé conciso y directo.
-            ---
-            ${dashboardContext}
-            ---
-            **Datos Crudos de Referencia (CSV):**
-            ${dataSummary}
-            ---
-            **Pregunta del Usuario:**
-            ${userInput}
-        `;
-
-        try {
-            const response = await fetch(API_URL, {
-                method: 'POST',
-                headers: { 'Content-Type': 'application/json' },
-                body: JSON.stringify({ contents: [{ parts: [{ text: prompt }] }] }),
-            });
-
-            if (!response.ok) throw new Error(`HTTP error! status: ${response.status}`);
-
-            const data = await response.json();
-            const botResponse = data.candidates[0].content.parts[0].text;
-            addMessage(botResponse, 'bot');
-        } catch (error) {
-            console.error('Error en la API de Gemini:', error);
-            addMessage('Hubo un error al contactar al asistente de IA.', 'bot');
-        } finally {
-            toggleOverlay(false);
-        }
-    }
-
     // --- START ---
     init();
 });
