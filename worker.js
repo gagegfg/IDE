@@ -70,7 +70,7 @@ function calculateKPIs(data) {
 
     const productionValues = Array.from(productions.values());
     const totalProduction = productionValues.reduce((sum, p) => sum + p.cantidad, 0);
-    const plannedMinutes = productionValues.reduce((sum, p) => sum + p.hsTrab, 0) * 60;
+    const plannedMinutes = productionValues.reduce((sum, p) => sum + p.hsTrab, 0);
 
     // Availability calculation
     const runTimeMinutes = plannedMinutes - totalDowntimeMinutes;
@@ -248,7 +248,7 @@ function aggregateDailyTimeDistribution(data) {
             }
         });
 
-        const totalPlannedMinutes = Array.from(uniqueProductions.values()).reduce((sum, item) => sum + item.hsTrab, 0) * 60;
+        const totalPlannedMinutes = Array.from(uniqueProductions.values()).reduce((sum, item) => sum + item.hsTrab, 0);
         const totalDowntimeMinutes = dayData.reduce((sum, row) => sum + row.Minutos, 0);
         const productionMinutes = totalPlannedMinutes - totalDowntimeMinutes;
 
