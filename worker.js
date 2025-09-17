@@ -112,7 +112,7 @@ function aggregateDowntime(data) {
         reason: reason,
         totalMinutes: aggregation[reason].totalMinutes,
         totalFrequency: aggregation[reason].totalFrequency
-    })).sort((a,b) => b.totalMinutes - a.totalMinutes);
+    }));
 }
 
 function createSummaryData(kpiData, downtimeData) {

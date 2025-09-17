@@ -226,7 +226,7 @@ document.addEventListener('DOMContentLoaded', function () {
 
     function filterAndRenderDowntimeChart() {
         const filterValue = downtimeFilter.value;
-        let dataToRender = [...fullDowntimeData];
+        let dataToRender = [...fullDowntimeData]; // Create a copy to avoid modifying the original data
 
         if (filterValue === 'top5_time') {
             dataToRender.sort((a, b) => b.totalMinutes - a.totalMinutes);
@@ -234,8 +234,10 @@ document.addEventListener('DOMContentLoaded', function () {
         } else if (filterValue === 'top5_freq') {
             dataToRender.sort((a, b) => b.totalFrequency - a.totalFrequency);
             dataToRender = dataToRender.slice(0, 5);
+        } else { // 'all' case
+            // Default sort for the 'all' view should be by time, as it was originally
+            dataToRender.sort((a, b) => b.totalMinutes - a.totalMinutes);
         }
-        // 'all' case just uses the full data
 
         renderChart('chart-downtime-combo', 'combo', dataToRender);
     }
