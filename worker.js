@@ -11,6 +11,14 @@ function getStartOfWeek(d) {
     return new Date(date.setDate(diff));
 }
 
+function getLocalDateString(d) {
+    const date = new Date(d);
+    const year = date.getFullYear();
+    const month = String(date.getMonth() + 1).padStart(2, '0');
+    const day = String(date.getDate()).padStart(2, '0');
+    return `${year}-${month}-${day}`;
+}
+
 // --- DATA PROCESSING FUNCTIONS ---
 
 function processData(data) {
@@ -63,7 +71,7 @@ function calculateKPIs(data) {
             productions.set(prodId, {
                 cantidad: row.Cantidad || 0,
                 hsTrab: row.Hs_Trab || 0,
-                shiftKey: `${new Date(row.Fecha).toISOString().split('T')[0]}-${row.Turno}`
+                shiftKey: `${getLocalDateString(row.Fecha)}-${row.Turno}`
             });
         }
     });
@@ -151,14 +159,14 @@ function aggregateDaily(data, dateRange) {
     const allDays = generateDateRange(dateRange[0], dateRange[1]);
 
     allDays.forEach(day => {
-        const dateCategory = day.toISOString().split('T')[0];
+        const dateCategory = getLocalDateString(day);
         aggregation.set(dateCategory, 0);
     });
 
     const seenProdIds = new Set();
     data.forEach(row => {
         if (row.Fecha) {
-            const dateCategory = new Date(row.Fecha).toISOString().split('T')[0];
+            const dateCategory = getLocalDateString(row.Fecha);
             const uniqueKey = `${dateCategory}-${row.IdProduccion}`;
             if (row.IdProduccion && !seenProdIds.has(uniqueKey)) {
                 if (aggregation.has(dateCategory)) {
@@ -186,14 +194,15 @@ function aggregateWeeklyProduction(data, dateRange) {
     const endDate = new Date(dateRange[1]);
 
     while(currentDate <= endDate) {
-        aggregation.set(currentDate.toISOString().split('T')[0], 0);
+        aggregation.set(getLocalDateString(currentDate), 0);
         currentDate.setDate(currentDate.getDate() + 7);
     }
 
     const seenProdIds = new Set();
     data.forEach(row => {
         if (row.Fecha) {
-            const weekStartDate = getStartOfWeek(row.Fecha).toISOString().split('T')[0];
+            const d = getStartOfWeek(row.Fecha);
+            const weekStartDate = getLocalDateString(d);
             const uniqueKey = `${weekStartDate}-${row.IdProduccion}`;
             if (row.IdProduccion && !seenProdIds.has(uniqueKey)) {
                 if(aggregation.has(weekStartDate)){
@@ -252,7 +261,7 @@ function calculateAverageProductionByShift(data) {
         }
         
         if (row.Turno && row.Fecha) {
-            const dateString = new Date(row.Fecha).toISOString().split('T')[0];
+            const dateString = getLocalDateString(row.Fecha);
             operatorStats[operator].shifts.add(`${dateString};${row.Turno}`);
         }
     });
@@ -275,13 +284,13 @@ function aggregateDailyTimeDistribution(data, dateRange) {
     const allDays = generateDateRange(dateRange[0], dateRange[1]);
 
     allDays.forEach(day => {
-        const dayKey = day.toISOString().split('T')[0];
+        const dayKey = getLocalDateString(day);
         dataByDay.set(dayKey, []);
     });
 
     data.forEach(row => {
         if (!row.Fecha) return;
-        const dayKey = new Date(row.Fecha).toISOString().split('T')[0];
+        const dayKey = getLocalDateString(row.Fecha);
         if (dataByDay.has(dayKey)) {
             dataByDay.get(dayKey).push(row);
         }
