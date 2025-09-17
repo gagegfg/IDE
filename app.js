@@ -6,6 +6,7 @@ document.addEventListener('DOMContentLoaded', function () {
     let choicesMachine, choicesShift, datepicker;
     let detailModal;
     let currentFilteredData = []; // Holds the currently filtered data for drill-downs
+    let fullDowntimeData = []; // Holds the original, unfiltered downtime data
 
     // --- UI ELEMENTS ---
     const loadingOverlay = document.getElementById('loading-overlay');
@@ -14,6 +15,7 @@ document.addEventListener('DOMContentLoaded', function () {
     const progressText = document.querySelector('.progress-text');
     const progressStatusText = document.getElementById('progress-status-text');
     const themeToggle = document.getElementById('theme-toggle');
+    let downtimeFilter;
     
     const chartColors = ['#5E35B1', '#039BE5', '#00897B', '#FDD835', '#E53935', '#8E24AA', '#3949AB'];
     const formatNumber = (val) => val ? val.toLocaleString('es-ES', { maximumFractionDigits: 0 }) : val;
@@ -38,6 +40,7 @@ document.addEventListener('DOMContentLoaded', function () {
             case 'update_dashboard':
                 // The worker has finished processing. Let's update the UI.
                 currentFilteredData = payload.filteredData;
+                fullDowntimeData = payload.chartsData.downtimeComboData || [];
                 updateDashboard(payload.kpiData, payload.chartsData, payload.summaryData);
                 break;
 
@@ -108,6 +111,9 @@ document.addEventListener('DOMContentLoaded', function () {
         document.getElementById('shift-filter').addEventListener('change', applyFilters);
         document.getElementById('extended-analysis-toggle').addEventListener('change', applyFilters);
         
+        downtimeFilter = document.getElementById('downtime-filter');
+        downtimeFilter.addEventListener('change', filterAndRenderDowntimeChart);
+
         const today = new Date();
         
         document.getElementById('btnMesActual').addEventListener('click', () => datepicker.setDate([new Date(today.getFullYear(), today.getMonth(), 1), today], true));
@@ -138,6 +144,7 @@ document.addEventListener('DOMContentLoaded', function () {
             choicesMachine.removeActiveItems();
             choicesShift.removeActiveItems();
             document.getElementById('extended-analysis-toggle').checked = false;
+            downtimeFilter.value = 'all';
         });
     }
 
@@ -213,8 +220,24 @@ document.addEventListener('DOMContentLoaded', function () {
         renderChart('chart-daily-production', 'line', chartsData.dailyProdData);
         renderChart('chart-prod-by-machine', 'bar', { seriesName: 'Producción', data: chartsData.prodByMachineData, horizontal: true });
         renderChart('chart-prod-by-operator', 'bar', { seriesName: 'Producción Promedio/Turno', data: chartsData.avgProdByOperatorData, horizontal: false });
-        renderChart('chart-downtime-combo', 'combo', chartsData.downtimeComboData);
+        filterAndRenderDowntimeChart();
         renderChart('chart-daily-time-distribution', 'stackedBar', chartsData.dailyTimeData);
+    }
+
+    function filterAndRenderDowntimeChart() {
+        const filterValue = downtimeFilter.value;
+        let dataToRender = [...fullDowntimeData];
+
+        if (filterValue === 'top5_time') {
+            dataToRender.sort((a, b) => b.totalMinutes - a.totalMinutes);
+            dataToRender = dataToRender.slice(0, 5);
+        } else if (filterValue === 'top5_freq') {
+            dataToRender.sort((a, b) => b.totalFrequency - a.totalFrequency);
+            dataToRender = dataToRender.slice(0, 5);
+        }
+        // 'all' case just uses the full data
+
+        renderChart('chart-downtime-combo', 'combo', dataToRender);
     }
 
     function showDrillDownModal(category, type = 'machine') {
@@ -306,7 +329,7 @@ document.addEventListener('DOMContentLoaded', function () {
                         }
                     }
                 },
-                zoom: { enabled: false },
+                zoom: { enabled: true, type: 'xy' },
                 pan: { enabled: true, key: 'ctrl' },
                 locales: [{
                     name: 'es',
