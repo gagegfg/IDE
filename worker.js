@@ -174,7 +174,7 @@ function aggregateDaily(data, dateRange) {
 
     return {
         series: [{ name: 'Producción Diaria', data: seriesData }],
-        categories: sortedCategories.map(key => new Date(key).getTime())
+        categories: sortedCategories.map(key => new Date(`${key}T00:00:00`).getTime())
     };
 }
 
@@ -209,7 +209,7 @@ function aggregateWeeklyProduction(data, dateRange) {
 
     return {
         series: [{ name: 'Producción Semanal', data: seriesData }],
-        categories: sortedCategories.map(key => new Date(key).getTime())
+        categories: sortedCategories.map(key => new Date(`${key}T00:00:00`).getTime())
     };
 }
 
