@@ -354,14 +354,25 @@ document.addEventListener('DOMContentLoaded', function () {
 
         let options = {};
         if (type === 'line') {
+            const dailyAgg = document.querySelector('input[name="dailyAgg"]:checked')?.value || 'total';
+            let diffDays = 0;
+            if (datepicker.selectedDates.length === 2) {
+                const diffTime = Math.abs(datepicker.selectedDates[1] - datepicker.selectedDates[0]);
+                diffDays = Math.ceil(diffTime / (1000 * 60 * 60 * 24));
+            }
+            const showLabels = dailyAgg === 'total' || diffDays <= 7;
+
             options = {
                 ...commonOptions, chart: {...commonOptions.chart, id: elementId, type: 'line'}, series: chartData.series,
                 stroke: { curve: 'smooth', width: 3 },
                 markers: { size: 5 },
                 dataLabels: {
-                    enabled: true,
+                    enabled: showLabels,
                     offsetY: -15,
-                    formatter: (val) => formatNumber(val),
+                    formatter: (val) => {
+                        if (val === null || val === undefined) return '';
+                        return formatNumber(val);
+                    },
                     style: { colors: ["#000000"] }, 
                     background: {
                         enabled: true,
