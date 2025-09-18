@@ -100,9 +100,7 @@ document.addEventListener('DOMContentLoaded', function () {
         document.getElementById('extended-analysis-toggle').addEventListener('change', applyFilters);
         document.getElementById('daily-prod-agg-options')?.addEventListener('change', applyFilters);
         document.getElementById('clear-operator-filter')?.addEventListener('click', clearOperatorFilter);
-        document.getElementById('apply-yaxis-scale')?.addEventListener('click', () => {
-            renderChart('chart-daily-production', 'line', dailyProdData);
-        });
+        document.getElementById('apply-yaxis-scale')?.addEventListener('click', rerenderDailyProdChart);
 
         downtimeFilter = document.getElementById('downtime-filter');
         if (downtimeFilter) {
@@ -141,10 +139,12 @@ document.addEventListener('DOMContentLoaded', function () {
             
             const aggTotal = document.getElementById('aggTotal');
             if(aggTotal) aggTotal.checked = true;
-            
-            document.getElementById('yaxis-min').value = '';
-            document.getElementById('yaxis-max').value = '';
 
+            const yAxisMinEl = document.getElementById('yaxis-min');
+            const yAxisMaxEl = document.getElementById('yaxis-max');
+            if(yAxisMinEl) yAxisMinEl.value = '';
+            if(yAxisMaxEl) yAxisMaxEl.value = '';
+            
             selectedOperator = null;
             if(operatorFilterDisplay) operatorFilterDisplay.style.display = 'none';
 
@@ -181,6 +181,10 @@ document.addEventListener('DOMContentLoaded', function () {
             selectedOperator: selectedOperator
         };
         worker.postMessage({ type: 'apply_filters', payload: filterValues });
+    }
+
+    function rerenderDailyProdChart() {
+        renderChart('chart-daily-production', 'line', dailyProdData);
     }
 
     function toggleOverlay(show) {
@@ -239,7 +243,8 @@ document.addEventListener('DOMContentLoaded', function () {
     }
     
     function updateCharts(chartsData) {
-        renderChart('chart-daily-production', 'line', chartsData.dailyProdData);
+        dailyProdData = chartsData.dailyProdData || {};
+        renderChart('chart-daily-production', 'line', dailyProdData);
         renderChart('chart-prod-by-machine', 'bar', { seriesName: 'Producción', data: chartsData.prodByMachineData, horizontal: true });
         renderChart('chart-prod-by-operator', 'bar', { seriesName: 'Producción Promedio/Turno', data: chartsData.avgProdByOperatorData, horizontal: false });
         filterAndRenderDowntimeChart();
@@ -333,8 +338,8 @@ document.addEventListener('DOMContentLoaded', function () {
             }
             const showLabels = dailyAgg === 'total' || diffDays <= 7;
 
-            const yAxisMin = parseFloat(document.getElementById('yaxis-min').value);
-            const yAxisMax = parseFloat(document.getElementById('yaxis-max').value);
+            const yAxisMin = parseFloat(document.getElementById('yaxis-min')?.value);
+            const yAxisMax = parseFloat(document.getElementById('yaxis-max')?.value);
 
             let yAxisConfig = {
                 labels: { 
@@ -379,9 +384,53 @@ document.addEventListener('DOMContentLoaded', function () {
                 }
             };
         } else if (type === 'bar') {
-             // ... (existing bar logic)
+             options = {
+                ...commonOptions,
+                chart: {...commonOptions.chart, id: elementId, type: 'bar'},
+                series: [{ name: chartData.seriesName, data: chartData.data.map(d => d.value) }],
+                plotOptions: { bar: { horizontal: chartData.horizontal || false, borderRadius: 4, dataLabels: { position: 'top' } } },
+                dataLabels: { enabled: true, formatter: (val) => formatNumber(val), style: { fontSize: '12px' }, offsetY: -20, dropShadow: { enabled: true, top: 1, left: 1, blur: 1, color: '#000', opacity: 0.45 }},
+                xaxis: { categories: chartData.data.map(d => d.category), labels: { style: { colors: textColor, fontSize: '12px' }, trim: true, maxHeight: 100 } },
+                yaxis: { labels: { style: { colors: textColor }, formatter: (val) => formatNumber(val) } },
+                tooltip: { theme: currentTheme, y: { formatter: (val) => formatNumber(val) } }
+            };
+            if (chartData.horizontal) { options.dataLabels.style.colors = ["#fff"]; options.dataLabels.offsetX = -10; } 
+            else { options.dataLabels.style.colors = [textColor]; }
         } else if (type === 'combo') {
-            // ... (existing combo logic)
+            options = {
+                ...commonOptions, chart: {...commonOptions.chart, id: elementId, type: 'line', stacked: false},
+                series: [
+                    { name: 'Tiempo (Horas)', type: 'column', data: chartData.map(d => parseFloat((d.totalMinutes / 60).toFixed(1))) },
+                    { name: 'Frecuencia', type: 'line', data: chartData.map(d => d.totalFrequency) }
+                ],
+                stroke: { width: [0, 4], curve: 'smooth' },
+                xaxis: { categories: chartData.map(d => d.reason), labels: { style: { colors: textColor, fontSize: '11px' }, trim: true, rotate: -45, hideOverlappingLabels: true, maxHeight: 120 } },
+                yaxis: [
+                    { seriesName: 'Tiempo (Horas)', axisTicks: { show: true }, axisBorder: { show: true, color: chartColors[0] }, labels: { style: { colors: chartColors[0] }, formatter: (val) => val.toFixed(1) }, title: { text: "Tiempo Total (Horas)", style: { color: chartColors[0] } }},
+                    { seriesName: 'Frecuencia', opposite: true, axisTicks: { show: true }, axisBorder: { show: true, color: chartColors[1] }, labels: { style: { colors: chartColors[1] }, formatter: (val) => formatNumber(val) }, title: { text: "Frecuencia (Nro. de Veces)", style: { color: chartColors[1] } }}
+                ],
+                tooltip: {
+                    theme: currentTheme,
+                    y: {
+                        formatter: function(val, { seriesIndex }) {
+                            if(val === undefined) return val;
+                            return seriesIndex === 0 ? `${val.toLocaleString('es-ES', { minimumFractionDigits: 1, maximumFractionDigits: 1 })} Hs` : `${val.toLocaleString('es-ES')} veces`;
+                        }
+                    }
+                },
+                legend: { horizontalAlign: 'left', offsetX: 40 }
+            };
+        } else if (type === 'stackedBar') {
+            options = {
+                ...commonOptions,
+                chart: { ...commonOptions.chart, id: elementId, type: 'bar', stacked: true },
+                plotOptions: { bar: { horizontal: false, dataLabels: { enabled: true, formatter: (val) => val < 0.1 ? '' : val.toFixed(1), style: { colors: ['#fff'], fontSize: '11px', fontWeight: 400 }, offsetY: 4 }}},
+                series: chartData.series,
+                xaxis: { categories: chartData.categories, labels: { style: { colors: textColor }}},
+                yaxis: { title: { text: 'Horas', style: { color: textColor }}, labels: { style: { colors: textColor }}},
+                tooltip: { y: { formatter: (val) => `${val.toFixed(1)} horas` }},
+                legend: { position: 'top', horizontalAlign: 'left' }
+            };
         }
 
         if (charts[elementId]) {
