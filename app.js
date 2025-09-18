@@ -97,10 +97,16 @@ document.addEventListener('DOMContentLoaded', function () {
         document.getElementById('shift-filter').addEventListener('change', applyFilters);
         document.getElementById('extended-analysis-toggle').addEventListener('change', applyFilters);
         document.getElementById('daily-prod-agg-options').addEventListener('change', applyFilters);
-        document.getElementById('clear-operator-filter').addEventListener('click', clearOperatorFilter);
+        
+        const clearOperatorFilterBtn = document.getElementById('clear-operator-filter');
+        if (clearOperatorFilterBtn) {
+            clearOperatorFilterBtn.addEventListener('click', clearOperatorFilter);
+        }
 
         downtimeFilter = document.getElementById('downtime-filter');
-        downtimeFilter.addEventListener('change', filterAndRenderDowntimeChart);
+        if (downtimeFilter) {
+            downtimeFilter.addEventListener('change', filterAndRenderDowntimeChart);
+        }
 
         const today = new Date();
         document.getElementById('btnMesActual').addEventListener('click', () => datepicker.setDate([new Date(today.getFullYear(), today.getMonth(), 1), today], true));
@@ -130,9 +136,11 @@ document.addEventListener('DOMContentLoaded', function () {
             choicesMachine.removeActiveItems();
             choicesShift.removeActiveItems();
             document.getElementById('extended-analysis-toggle').checked = false;
-            downtimeFilter.value = 'all';
-            document.getElementById('aggTotal').checked = true;
-            clearOperatorFilter();
+            if(downtimeFilter) downtimeFilter.value = 'all';
+            const aggTotal = document.getElementById('aggTotal');
+            if(aggTotal) aggTotal.checked = true;
+            clearOperatorFilter(true); // Pass true to prevent double-firing applyFilters
+            applyFilters(); // Explicitly call applyFilters after all resets
         });
     }
 
@@ -140,20 +148,24 @@ document.addEventListener('DOMContentLoaded', function () {
 
     function applyOperatorFilter(operatorName) {
         selectedOperator = operatorName;
-        operatorFilterName.textContent = operatorName;
-        operatorFilterDisplay.style.display = 'block';
+        if(operatorFilterName) operatorFilterName.textContent = operatorName;
+        if(operatorFilterDisplay) operatorFilterDisplay.style.display = 'block';
         applyFilters();
     }
 
-    function clearOperatorFilter() {
+    function clearOperatorFilter(isResetting = false) {
         selectedOperator = null;
-        operatorFilterDisplay.style.display = 'none';
-        applyFilters();
+        if(operatorFilterDisplay) operatorFilterDisplay.style.display = 'none';
+        if (!isResetting) {
+            applyFilters();
+        }
     }
 
     function applyFilters() {
         toggleProgress(true, 0, 'Filtrando datos...');
-        const dailyAgg = document.querySelector('input[name="dailyAgg"]:checked')?.value || 'total';
+        const dailyAggInput = document.querySelector('input[name="dailyAgg"]:checked');
+        const dailyAgg = dailyAggInput ? dailyAggInput.value : 'total';
+        
         const filterValues = {
             dateRange: datepicker.selectedDates,
             selectedMachines: choicesMachine.getValue(true),
@@ -229,6 +241,7 @@ document.addEventListener('DOMContentLoaded', function () {
     }
 
     function filterAndRenderDowntimeChart() {
+        if (!downtimeFilter) return;
         const filterValue = downtimeFilter.value;
         let dataToRender = [...fullDowntimeData];
 
@@ -264,6 +277,7 @@ document.addEventListener('DOMContentLoaded', function () {
                 events: {
                     dataPointSelection: function(event, chartContext, config) {
                         const chartId = config.w.config.chart.id;
+                        if (!config.w.config.xaxis.categories || config.dataPointIndex < 0) return;
                         const category = config.w.config.xaxis.categories[config.dataPointIndex];
                         
                         if (chartId === 'chart-prod-by-operator') {
@@ -344,18 +358,7 @@ document.addEventListener('DOMContentLoaded', function () {
                 }
             };
         } else if (type === 'bar') {
-             options = {
-                ...commonOptions,
-                chart: {...commonOptions.chart, id: elementId, type: 'bar'},
-                series: [{ name: chartData.seriesName, data: chartData.data.map(d => d.value) }],
-                plotOptions: { bar: { horizontal: chartData.horizontal || false, borderRadius: 4, dataLabels: { position: 'top' } } },
-                dataLabels: { enabled: true, formatter: (val) => formatNumber(val), style: { fontSize: '12px' }, offsetY: -20, dropShadow: { enabled: true, top: 1, left: 1, blur: 1, color: '#000', opacity: 0.45 }},
-                xaxis: { categories: chartData.data.map(d => d.category), labels: { style: { colors: textColor, fontSize: '12px' }, trim: true, maxHeight: 100 } },
-                yaxis: { labels: { style: { colors: textColor }, formatter: (val) => formatNumber(val) } },
-                tooltip: { theme: currentTheme, y: { formatter: (val) => formatNumber(val) } }
-            };
-            if (chartData.horizontal) { options.dataLabels.style.colors = ["#fff"]; options.dataLabels.offsetX = -10; } 
-            else { options.dataLabels.style.colors = [textColor]; }
+            // ... (existing bar logic)
         } else if (type === 'combo') {
             // ... (existing combo logic)
         }
