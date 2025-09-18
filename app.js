@@ -137,8 +137,10 @@ document.addEventListener('DOMContentLoaded', function () {
             const aggTotal = document.getElementById('aggTotal');
             if(aggTotal) aggTotal.checked = true;
             
-            clearOperatorFilter(true); // Clear operator filter without re-triggering applyFilters
-            datepicker.setDate([startOfPreviousMonth, today], true); // This will trigger applyFilters via its onChange
+            selectedOperator = null;
+            if(operatorFilterDisplay) operatorFilterDisplay.style.display = 'none';
+
+            datepicker.setDate([startOfPreviousMonth, today], true);
         });
     }
 
@@ -151,12 +153,10 @@ document.addEventListener('DOMContentLoaded', function () {
         applyFilters();
     }
 
-    function clearOperatorFilter(isResetting = false) {
+    function clearOperatorFilter() {
         selectedOperator = null;
         if(operatorFilterDisplay) operatorFilterDisplay.style.display = 'none';
-        if (!isResetting) {
-            applyFilters();
-        }
+        applyFilters();
     }
 
     function applyFilters() {
