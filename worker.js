@@ -117,8 +117,12 @@ function aggregateDowntime(data) {
 
 function createSummaryData(kpiData, downtimeData) {
     if (!kpiData || downtimeData.length === 0) return { topReason: 'N/A' };
-    const topReason = downtimeData[0].reason;
-    const topReasonMins = downtimeData[0].totalMinutes;
+    
+    // Sort downtimeData by totalMinutes to find the top reason
+    const sortedDowntime = [...downtimeData].sort((a, b) => b.totalMinutes - a.totalMinutes);
+    const topReason = sortedDowntime[0].reason;
+    const topReasonMins = sortedDowntime[0].totalMinutes;
+
     const totalDowntimeMins = kpiData.totalDowntimeHours * 60;
     const topReasonPercentage = totalDowntimeMins > 0 ? (topReasonMins / totalDowntimeMins * 100).toFixed(0) : 0;
     return {
@@ -142,48 +146,99 @@ function generateDateRange(startDate, endDate) {
     return dates;
 }
 
-function aggregateDailyProduction(data, dateRange, isExtended) {
+function aggregateDailyProduction(data, dateRange, isExtended, aggregationType) {
     if (!dateRange || dateRange.length < 2) return { series: [], categories: [] };
     
     const diffTime = Math.abs(new Date(dateRange[1]) - new Date(dateRange[0]));
     const diffDays = Math.ceil(diffTime / (1000 * 60 * 60 * 24));
 
     if (isExtended && diffDays > 90) {
-        return aggregateWeeklyProduction(data, dateRange);
+        return aggregateWeeklyProduction(data, dateRange); // Weekly aggregation doesn't support byShift for now
     }
-    return aggregateDaily(data, dateRange);
+    return aggregateDaily(data, dateRange, aggregationType);
 }
 
-function aggregateDaily(data, dateRange) {
-    const aggregation = new Map();
-    const allDays = generateDateRange(dateRange[0], dateRange[1]);
+function aggregateDaily(data, dateRange, aggregationType = 'total') {
+    if (aggregationType === 'byShift') {
+        const productionByShift = new Map(); // Map<Shift, Map<Date, Production>>
+        const allDates = new Set();
+        const seenProdIds = new Set();
 
-    allDays.forEach(day => {
-        const dateCategory = getLocalDateString(day);
-        aggregation.set(dateCategory, 0);
-    });
+        data.forEach(row => {
+            if (row.Fecha && row.Turno) {
+                const dateCategory = getLocalDateString(row.Fecha);
+                allDates.add(dateCategory);
 
-    const seenProdIds = new Set();
-    data.forEach(row => {
-        if (row.Fecha) {
-            const dateCategory = getLocalDateString(row.Fecha);
-            const uniqueKey = `${dateCategory}-${row.IdProduccion}`;
-            if (row.IdProduccion && !seenProdIds.has(uniqueKey)) {
-                if (aggregation.has(dateCategory)) {
-                    aggregation.set(dateCategory, aggregation.get(dateCategory) + row.Cantidad);
+                if (!productionByShift.has(row.Turno)) {
+                    productionByShift.set(row.Turno, new Map());
                 }
-                seenProdIds.add(uniqueKey);
+                const shiftMap = productionByShift.get(row.Turno);
+                if (!shiftMap.has(dateCategory)) {
+                    shiftMap.set(dateCategory, 0);
+                }
+
+                const uniqueKey = `${dateCategory}-${row.Turno}-${row.IdProduccion}`;
+                if (row.IdProduccion && !seenProdIds.has(uniqueKey)) {
+                    shiftMap.set(dateCategory, shiftMap.get(dateCategory) + row.Cantidad);
+                    seenProdIds.add(uniqueKey);
+                }
             }
+        });
+
+        const sortedDates = [...allDates].sort();
+        const finalSeries = [];
+
+        for (const [shift, dateMap] of productionByShift.entries()) {
+            const seriesData = sortedDates.map(date => {
+                const value = dateMap.get(date);
+                return (value > 0) ? value : null;
+            });
+            finalSeries.push({ name: `Turno ${shift}`, data: seriesData });
         }
-    });
+        
+        const dateHasValue = sortedDates.map((_, dateIndex) => {
+            return finalSeries.some(series => series.data[dateIndex] !== null);
+        });
 
-    const sortedCategories = [...aggregation.keys()].sort();
-    const seriesData = sortedCategories.map(key => aggregation.get(key));
+        const finalCategories = sortedDates
+            .filter((_, index) => dateHasValue[index])
+            .map(key => new Date(`${key}T00:00:00`).getTime());
+            
+        const filteredSeries = finalSeries.map(series => {
+            return {
+                name: series.name,
+                data: series.data.filter((_, index) => dateHasValue[index])
+            };
+        });
 
-    return {
-        series: [{ name: 'Producción Diaria', data: seriesData }],
-        categories: sortedCategories.map(key => new Date(`${key}T00:00:00`).getTime())
-    };
+        return { series: filteredSeries, categories: finalCategories };
+
+    } else { // 'total' aggregation
+        const aggregation = new Map();
+        const seenProdIds = new Set();
+        data.forEach(row => {
+            if (row.Fecha) {
+                const dateCategory = getLocalDateString(row.Fecha);
+                if (!aggregation.has(dateCategory)) {
+                    aggregation.set(dateCategory, 0);
+                }
+
+                const uniqueKey = `${dateCategory}-${row.IdProduccion}`;
+                if (row.IdProduccion && !seenProdIds.has(uniqueKey)) {
+                    aggregation.set(dateCategory, aggregation.get(dateCategory) + row.Cantidad);
+                    seenProdIds.add(uniqueKey);
+                }
+            }
+        });
+
+        const finalEntries = [...aggregation.entries()].filter(([_, value]) => value > 0);
+        finalEntries.sort((a, b) => a[0].localeCompare(b[0])); // Sort by date
+
+        return {
+            series: [{ name: 'Producción Diaria', data: finalEntries.map(entry => entry[1]) }],
+            categories: finalEntries.map(entry => new Date(`${entry[0]}T00:00:00`).getTime())
+        };
+    }
 }
 
 function aggregateWeeklyProduction(data, dateRange) {
@@ -376,7 +431,7 @@ self.onmessage = function(e) {
                     }
                 });
                 // Also trigger the first dashboard update
-                applyFiltersAndPost({ dateRange: [startOfPreviousMonth, today], selectedMachines: [], selectedShifts: [], isExtended: false });
+                applyFiltersAndPost({ dateRange: [startOfPreviousMonth, today], selectedMachines: [], selectedShifts: [], isExtended: false, dailyAggregationType: 'total' });
             },
             error: err => {
                 self.postMessage({ type: 'error', payload: `Error al cargar CSV: ${err.message}` });
@@ -390,7 +445,7 @@ self.onmessage = function(e) {
 };
 
 function applyFiltersAndPost(filters) {
-    const { dateRange, isExtended } = filters;
+    const { dateRange, isExtended, dailyAggregationType } = filters;
     self.postMessage({ type: 'progress', payload: { progress: 5, status: 'Filtrando datos...' } });
     const filteredData = getFilteredData(filters);
 
@@ -405,7 +460,7 @@ function applyFiltersAndPost(filters) {
 
     self.postMessage({ type: 'progress', payload: { progress: 60, status: 'Generando gráficos...' } });
     const chartsData = {
-        dailyProdData: aggregateDailyProduction(filteredData, dateRange, isExtended),
+        dailyProdData: aggregateDailyProduction(filteredData, dateRange, isExtended, dailyAggregationType),
         prodByMachineData: aggregateAndSort(filteredData, 'Descrip_Maquina', 'Cantidad', true),
         avgProdByOperatorData: calculateAverageProductionByShift(filteredData),
         downtimeComboData: downtimeData,

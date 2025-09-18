@@ -90,19 +90,6 @@ document.addEventListener('DOMContentLoaded', function () {
             dateFormat: "d/m/Y",
             locale: "es",
             onChange: function(selectedDates, dateStr, instance) {
-                const isExtended = document.getElementById('extended-analysis-toggle').checked;
-                if (!isExtended && selectedDates.length === 2) {
-                    const diffTime = Math.abs(selectedDates[1] - selectedDates[0]);
-                    const diffDays = Math.ceil(diffTime / (1000 * 60 * 60 * 24)); 
-                    if (diffDays > 122) { // Approx 4 months
-                        alert("El rango no puede ser mayor a 4 meses en el modo de análisis normal. Active 'Análisis Extendido' para rangos más largos.");
-                        // Revert to a valid range (e.g., 4 months from start)
-                        const newEndDate = new Date(selectedDates[0]);
-                        newEndDate.setMonth(newEndDate.getMonth() + 4);
-                        instance.setDate([selectedDates[0], newEndDate]);
-                        return; // Stop further processing
-                    }
-                }
                 applyFilters();
             }
         });
@@ -113,6 +100,8 @@ document.addEventListener('DOMContentLoaded', function () {
         
         downtimeFilter = document.getElementById('downtime-filter');
         downtimeFilter.addEventListener('change', filterAndRenderDowntimeChart);
+
+        document.getElementById('daily-prod-agg-options').addEventListener('change', applyFilters);
 
         const today = new Date();
         
@@ -145,6 +134,8 @@ document.addEventListener('DOMContentLoaded', function () {
             choicesShift.removeActiveItems();
             document.getElementById('extended-analysis-toggle').checked = false;
             downtimeFilter.value = 'all';
+            document.getElementById('aggTotal').checked = true;
+            applyFilters();
         });
     }
 
@@ -152,11 +143,13 @@ document.addEventListener('DOMContentLoaded', function () {
 
     function applyFilters() {
         toggleProgress(true, 0, 'Filtrando datos...');
+        const dailyAgg = document.querySelector('input[name="dailyAgg"]:checked').value;
         const filterValues = {
             dateRange: datepicker.selectedDates,
             selectedMachines: choicesMachine.getValue(true),
             selectedShifts: choicesShift.getValue(true),
-            isExtended: document.getElementById('extended-analysis-toggle').checked
+            isExtended: document.getElementById('extended-analysis-toggle').checked,
+            dailyAggregationType: dailyAgg
         };
         worker.postMessage({ type: 'apply_filters', payload: filterValues });
     }
