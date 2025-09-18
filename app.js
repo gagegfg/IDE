@@ -270,7 +270,7 @@ document.addEventListener('DOMContentLoaded', function () {
     }
 
     function showDrillDownModal(category, type = 'machine') {
-        // ... (existing modal logic)
+        // ... (existing modal logic, assuming it's correct)
     }
     
     function renderChart(elementId, type, chartData) {
