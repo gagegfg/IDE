@@ -278,15 +278,34 @@ document.addEventListener('DOMContentLoaded', function () {
             data = currentFilteredData.filter(row => row.Descrip_Maquina === category);
             title = `Detalle de Producción para: ${category}`;
             headers = ["Fecha", "Turno", "Operario", "Producción", "Incidencia", "Minutos Parada"];
-            body = data.sort((a, b) => a.Fecha - b.Fecha || a.Turno - b.Turno)
-                       .map(row => `<tr>
-                           <td>${row.Fecha.toLocaleDateString('es-ES')}</td>
-                           <td>${row.Turno}</td>
-                           <td>${row.Apellido || 'N/A'}</td>
-                           <td>${formatNumber(row.Cantidad)}</td>
-                           <td>${row.descrip_incidencia || ''}</td>
-                           <td>${row.Minutos || ''}</td>
-                       </tr>`);
+            
+            let lastId = null;
+            body = data.sort((a, b) => a.IdProduccion - b.IdProduccion || a.Fecha - b.Fecha || a.Turno - b.Turno)
+                       .map(row => {
+                           let rowHtml;
+                           if (row.IdProduccion && row.IdProduccion === lastId) {
+                               rowHtml = `<tr>
+                                   <td></td>
+                                   <td></td>
+                                   <td></td>
+                                   <td></td>
+                                   <td>${row.descrip_incidencia || ''}</td>
+                                   <td>${row.Minutos || ''}</td>
+                               </tr>`;
+                           } else {
+                               rowHtml = `<tr>
+                                   <td>${row.Fecha.toLocaleDateString('es-ES')}</td>
+                                   <td>${row.Turno}</td>
+                                   <td>${row.Apellido || 'N/A'}</td>
+                                   <td>${formatNumber(row.Cantidad)}</td>
+                                   <td>${row.descrip_incidencia || ''}</td>
+                                   <td>${row.Minutos || ''}</td>
+                               </tr>`;
+                               lastId = row.IdProduccion;
+                           }
+                           return rowHtml;
+                       });
+
         } else if (type === 'downtime') {
             data = currentFilteredData.filter(row => row.descrip_incidencia === category);
             title = `Detalle de Paradas por: ${category}`;
@@ -308,7 +327,7 @@ document.addEventListener('DOMContentLoaded', function () {
                     <button id="export-pdf" class="btn btn-sm btn-danger me-2"><i class="fas fa-file-pdf me-1"></i>Exportar a PDF</button>
                     <button id="export-excel" class="btn btn-sm btn-success"><i class="fas fa-file-excel me-1"></i>Exportar a Excel</button>
                 </div>
-                <div class="table-responsive">
+                <div class="table-responsive modal-table-container">
                     <table class="table table-striped table-hover table-sm">
                         <thead class="table-dark"><tr>${headers.map(h => `<th>${h}</th>`).join('')}</tr></thead>
                         <tbody>${body.join('')}</tbody>
