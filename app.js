@@ -270,7 +270,100 @@ document.addEventListener('DOMContentLoaded', function () {
     }
 
     function showDrillDownModal(category, type = 'machine') {
-        // ... (existing modal logic, assuming it's correct)
+        const modalTitle = document.getElementById('detailModalLabel');
+        const modalBody = document.getElementById('detailModalBody');
+        let data, title, headers, body;
+
+        if (type === 'machine') {
+            data = currentFilteredData.filter(row => row.Descrip_Maquina === category);
+            title = `Detalle de Producción para: ${category}`;
+            headers = ["Fecha", "Turno", "Operario", "Producción", "Incidencia", "Minutos Parada"];
+            body = data.sort((a, b) => a.Fecha - b.Fecha || a.Turno - b.Turno)
+                       .map(row => `<tr>
+                           <td>${row.Fecha.toLocaleDateString('es-ES')}</td>
+                           <td>${row.Turno}</td>
+                           <td>${row.Apellido || 'N/A'}</td>
+                           <td>${formatNumber(row.Cantidad)}</td>
+                           <td>${row.descrip_incidencia || ''}</td>
+                           <td>${row.Minutos || ''}</td>
+                       </tr>`);
+        } else if (type === 'downtime') {
+            data = currentFilteredData.filter(row => row.descrip_incidencia === category);
+            title = `Detalle de Paradas por: ${category}`;
+            headers = ["Fecha", "Máquina", "Turno", "Operario", "Minutos Parada"];
+            body = data.sort((a, b) => a.Fecha - b.Fecha || a.Turno - b.Turno)
+                       .map(row => `<tr>
+                           <td>${row.Fecha.toLocaleDateString('es-ES')}</td>
+                           <td>${row.Descrip_Maquina}</td>
+                           <td>${row.Turno}</td>
+                           <td>${row.Apellido || 'N/A'}</td>
+                           <td>${row.Minutos}</td>
+                       </tr>`);
+        }
+
+        modalTitle.textContent = title;
+        if (data.length > 0) {
+            modalBody.innerHTML = '
+                <div class="d-flex justify-content-end mb-3">
+                    <button id="export-pdf" class="btn btn-sm btn-danger me-2"><i class="fas fa-file-pdf me-1"></i>Exportar a PDF</button>
+                    <button id="export-excel" class="btn btn-sm btn-success"><i class="fas fa-file-excel me-1"></i>Exportar a Excel</button>
+                </div>
+                <div class="table-responsive">
+                    <table class="table table-striped table-hover table-sm">
+                        <thead class="table-dark"><tr>' + headers.map(h => `<th>${h}</th>`).join('') + '</tr></thead>
+                        <tbody>' + body.join('') + '</tbody>
+                    </table>
+                </div>';
+
+            document.getElementById('export-pdf').addEventListener('click', () => exportToPDF(data, headers, title));
+            document.getElementById('export-excel').addEventListener('click', () => exportToExcel(data, headers, title));
+        } else {
+            modalBody.innerHTML = '<p>No hay datos detallados para la selección actual.</p>';
+        }
+
+        detailModal.show();
+    }
+
+    function exportToPDF(data, headers, title) {
+        const { jsPDF } = window.jspdf;
+        const doc = new jsPDF();
+
+        const tableData = data.map(row => {
+            if (headers.length === 6) { // Machine detail
+                return [row.Fecha.toLocaleDateString('es-ES'), row.Turno, row.Apellido || 'N/A', formatNumber(row.Cantidad), row.descrip_incidencia || '', row.Minutos || ''];
+            } else { // Downtime detail
+                return [row.Fecha.toLocaleDateString('es-ES'), row.Descrip_Maquina, row.Turno, row.Apellido || 'N/A', row.Minutos];
+            }
+        });
+
+        doc.autoTable({
+            head: [headers],
+            body: tableData,
+            didDrawPage: function (data) {
+                doc.text(title, data.settings.margin.left, 15);
+            }
+        });
+
+        doc.save(`${title.replace(/ /g, "_")}.pdf`);
+    }
+
+    function exportToExcel(data, headers, title) {
+        const csvContent = [headers.join(';'), ...data.map(row => {
+            if (headers.length === 6) { // Machine detail
+                return [row.Fecha.toLocaleDateString('es-ES'), row.Turno, row.Apellido || 'N/A', row.Cantidad, `"${row.descrip_incidencia || ''}"`, row.Minutos || ''].join(';');
+            } else { // Downtime detail
+                return [row.Fecha.toLocaleDateString('es-ES'), row.Descrip_Maquina, row.Turno, row.Apellido || 'N/A', row.Minutos].join(';');
+            }
+        })].join('\n');
+
+        const blob = new Blob(["\uFEFF" + csvContent], { type: 'text/csv;charset=utf-8;' });
+        const link = document.createElement("a");
+        const url = URL.createObjectURL(blob);
+        link.setAttribute("href", url);
+        link.setAttribute("download", `${title.replace(/ /g, "_")}.csv`);
+        document.body.appendChild(link);
+        link.click();
+        document.body.removeChild(link);
     }
     
     function renderChart(elementId, type, chartData) {
