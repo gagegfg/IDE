@@ -38,6 +38,13 @@
                 <label for="shift-filter" class="form-label fw-bold">Turnos</label>
                 <select id="shift-filter" multiple></select>
             </div>
+            <div id="operator-filter-display" class="mt-3" style="display: none;">
+                <label class="form-label fw-bold">Filtro por Operario</label>
+                <div class="d-flex align-items-center">
+                    <span id="operator-filter-name" class="badge bg-primary me-2"></span>
+                    <button id="clear-operator-filter" type="button" class="btn-close" aria-label="Close"></button>
+                </div>
+            </div>
         </div>
         <div>
             <button id="reset-filters" class="btn btn-danger w-100 mt-3">Limpiar Filtros</button>

@@ -44,7 +44,7 @@ function parseDate(dateString) {
 }
 
 function getFilteredData(filters) {
-    const { dateRange, selectedMachines, selectedShifts } = filters;
+    const { dateRange, selectedMachines, selectedShifts, selectedOperator } = filters;
     
     return originalData.filter(row => {
         const rowDate = new Date(row.Fecha);
@@ -56,7 +56,9 @@ function getFilteredData(filters) {
         const isDateInRange = dateRange.length === 2 ? rowDate >= startDate && rowDate <= endDate : true;
         const isMachineSelected = selectedMachines.length > 0 ? selectedMachines.includes(row.Descrip_Maquina) : true;
         const isShiftSelected = selectedShifts.length > 0 ? selectedShifts.includes(row.Turno) : true;
-        return isDateInRange && isMachineSelected && isShiftSelected;
+        const isOperatorSelected = selectedOperator ? row.Apellido === selectedOperator : true;
+
+        return isDateInRange && isMachineSelected && isShiftSelected && isOperatorSelected;
     });
 }
 
