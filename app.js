@@ -303,17 +303,17 @@ document.addEventListener('DOMContentLoaded', function () {
 
         modalTitle.textContent = title;
         if (data.length > 0) {
-            modalBody.innerHTML = '
+            modalBody.innerHTML = `
                 <div class="d-flex justify-content-end mb-3">
                     <button id="export-pdf" class="btn btn-sm btn-danger me-2"><i class="fas fa-file-pdf me-1"></i>Exportar a PDF</button>
                     <button id="export-excel" class="btn btn-sm btn-success"><i class="fas fa-file-excel me-1"></i>Exportar a Excel</button>
                 </div>
                 <div class="table-responsive">
                     <table class="table table-striped table-hover table-sm">
-                        <thead class="table-dark"><tr>' + headers.map(h => `<th>${h}</th>`).join('') + '</tr></thead>
-                        <tbody>' + body.join('') + '</tbody>
+                        <thead class="table-dark"><tr>${headers.map(h => `<th>${h}</th>`).join('')}</tr></thead>
+                        <tbody>${body.join('')}</tbody>
                     </table>
-                </div>';
+                </div>`;
 
             document.getElementById('export-pdf').addEventListener('click', () => exportToPDF(data, headers, title));
             document.getElementById('export-excel').addEventListener('click', () => exportToExcel(data, headers, title));
