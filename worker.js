@@ -407,7 +407,7 @@ function aggregateDailyTimeDistribution(data, dateRange) {
 
     return {
         series: series,
-        categories: sortedDays.map(d => new Date(d).toLocaleDateString('es-ES', {day: 'numeric', month: 'short'}))
+        categories: sortedDays.map(d => new Date(`${d}T00:00:00`).getTime())
     };
 }
 

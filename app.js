@@ -538,7 +538,7 @@ document.addEventListener('DOMContentLoaded', function () {
                 chart: { ...commonOptions.chart, id: elementId, type: 'bar', stacked: true },
                 plotOptions: { bar: { horizontal: false, dataLabels: { enabled: true, formatter: (val) => val < 0.1 ? '' : val.toFixed(1), style: { colors: ['#fff'], fontSize: '11px', fontWeight: 400 }, offsetY: 4 }}},
                 series: chartData.series,
-                xaxis: { categories: chartData.categories, labels: { style: { colors: textColor }}},
+                xaxis: { type: 'datetime', categories: chartData.categories, labels: { style: { colors: textColor }, datetimeUTC: false, format: 'dd MMM' }},
                 yaxis: { title: { text: 'Horas', style: { color: textColor }}, labels: { style: { colors: textColor }}},
                 tooltip: { y: { formatter: (val) => `${val.toFixed(1)} horas` }},
                 legend: { position: 'top', horizontalAlign: 'left' }
