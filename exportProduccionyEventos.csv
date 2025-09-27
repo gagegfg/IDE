@@ -963,15 +963,15 @@
 190080;01/09/2025;14-22;0;;13;Pan Dulcera 13;331;Torrez Pantoja;40800;395;;;299683;99;Otros;1;10;False;;;
 190080;01/09/2025;14-22;0;;13;Pan Dulcera 13;331;Torrez Pantoja;40800;395;;;299684;3;Limpieza fin de turno;1;30;False;;;
 190080;01/09/2025;14-22;0;;13;Pan Dulcera 13;331;Torrez Pantoja;40800;395;;;299685;11;Cambio de Medida;1;10;False;;;
-190081;01/09/2025;14-22;4000;;9;Pan Dulcera 9;189;Avendaño;28100;310;;;299686;1;Arranque / Puesta a Punto;1;15;False;1011;Pan Dulce;130 x 120 - 700g
-190081;01/09/2025;14-22;4000;;9;Pan Dulcera 9;189;Avendaño;28100;310;;;299687;4;Ajuste de mantenimiento;4;80;False;1011;Pan Dulce;130 x 120 - 700g
-190081;01/09/2025;14-22;4000;;9;Pan Dulcera 9;189;Avendaño;28100;310;;;299688;14;Incidencia Papel;3;40;False;1011;Pan Dulce;130 x 120 - 700g
-190081;01/09/2025;14-22;4000;;9;Pan Dulcera 9;189;Avendaño;28100;310;;;299689;2;Limpieza en Proceso;2;25;False;1011;Pan Dulce;130 x 120 - 700g
-190081;01/09/2025;14-22;4000;;9;Pan Dulcera 9;189;Avendaño;28100;310;;;299690;10;Cambio de Bobina;1;10;False;1011;Pan Dulce;130 x 120 - 700g
-190082;01/09/2025;14-22;0;;13;Pan Dulcera 13;335;Arnaldi;42000;420;;;299691;4;Ajuste de mantenimiento;1;20;False;;;
-190082;01/09/2025;14-22;0;;13;Pan Dulcera 13;335;Arnaldi;42000;420;;;299692;4;Ajuste de mantenimiento;1;5;False;;;
-190082;01/09/2025;14-22;0;;13;Pan Dulcera 13;335;Arnaldi;42000;420;;;299693;2;Limpieza en Proceso;1;30;False;;;
-190082;01/09/2025;14-22;0;;13;Pan Dulcera 13;335;Arnaldi;42000;420;;;299694;10;Cambio de Bobina;1;5;False;;;
+190081;01/09/2025;22-06;4000;;9;Pan Dulcera 9;189;Avendaño;28100;310;;;299686;1;Arranque / Puesta a Punto;1;15;False;1011;Pan Dulce;130 x 120 - 700g
+190081;01/09/2025;22-06;4000;;9;Pan Dulcera 9;189;Avendaño;28100;310;;;299687;4;Ajuste de mantenimiento;4;80;False;1011;Pan Dulce;130 x 120 - 700g
+190081;01/09/2025;22-06;4000;;9;Pan Dulcera 9;189;Avendaño;28100;310;;;299688;14;Incidencia Papel;3;40;False;1011;Pan Dulce;130 x 120 - 700g
+190081;01/09/2025;22-06;4000;;9;Pan Dulcera 9;189;Avendaño;28100;310;;;299689;2;Limpieza en Proceso;2;25;False;1011;Pan Dulce;130 x 120 - 700g
+190081;01/09/2025;22-06;4000;;9;Pan Dulcera 9;189;Avendaño;28100;310;;;299690;10;Cambio de Bobina;1;10;False;1011;Pan Dulce;130 x 120 - 700g
+190082;01/09/2025;22-06;0;;13;Pan Dulcera 13;335;Arnaldi;42000;420;;;299691;4;Ajuste de mantenimiento;1;20;False;;;
+190082;01/09/2025;22-06;0;;13;Pan Dulcera 13;335;Arnaldi;42000;420;;;299692;4;Ajuste de mantenimiento;1;5;False;;;
+190082;01/09/2025;22-06;0;;13;Pan Dulcera 13;335;Arnaldi;42000;420;;;299693;2;Limpieza en Proceso;1;30;False;;;
+190082;01/09/2025;22-06;0;;13;Pan Dulcera 13;335;Arnaldi;42000;420;;;299694;10;Cambio de Bobina;1;5;False;;;
 190083;02/09/2025;14-22;4000;;9;Pan Dulcera 9;225;Reviglio;0;0;;;299695;11;Cambio de Medida;1;480;False;1011;Pan Dulce;130 x 120 - 700g
 190084;02/09/2025;14-22;0;;10;Pan Dulcera 10;273;Gutierrez;38400;390;;;299696;4;Ajuste de mantenimiento;1;10;False;1069;Pan Dulce;110x110 Banda 100g Fondo100g
 190084;02/09/2025;14-22;0;;10;Pan Dulcera 10;273;Gutierrez;38400;390;;;299697;4;Ajuste de mantenimiento;1;5;False;1069;Pan Dulce;110x110 Banda 100g Fondo100g
@@ -1059,8 +1059,8 @@
 190108;04/09/2025;22-06;0;;10;Pan Dulcera 10;211;Alvarez;32400;350;;;299779;10;Cambio de Bobina;1;10;False;1069;Pan Dulce;110x110 Banda 100g Fondo100g
 190108;04/09/2025;22-06;0;;10;Pan Dulcera 10;211;Alvarez;32400;350;;;299780;4;Ajuste de mantenimiento;1;60;False;1069;Pan Dulce;110x110 Banda 100g Fondo100g
 190108;04/09/2025;22-06;0;;10;Pan Dulcera 10;211;Alvarez;32400;350;;;299781;2;Limpieza en Proceso;1;40;False;1069;Pan Dulce;110x110 Banda 100g Fondo100g
-190109;04/09/2025;06-14;0;;13;Pan Dulcera 13;335;Arnaldi;40800;410;;;299782;2;Limpieza en Proceso;4;60;False;;;
-190109;04/09/2025;06-14;0;;13;Pan Dulcera 13;335;Arnaldi;40800;410;;;299783;10;Cambio de Bobina;1;10;False;;;
+190109;04/09/2025;22-06;0;;13;Pan Dulcera 13;335;Arnaldi;40800;410;;;299782;2;Limpieza en Proceso;4;60;False;;;
+190109;04/09/2025;22-06;0;;13;Pan Dulcera 13;335;Arnaldi;40800;410;;;299783;10;Cambio de Bobina;1;10;False;;;
 190110;05/09/2025;06-14;4000;;9;Pan Dulcera 9;189;Avendaño;34200;380;;;299784;14;Incidencia Papel;1;10;False;1011;Pan Dulce;130 x 120 - 700g
 190110;05/09/2025;06-14;4000;;9;Pan Dulcera 9;189;Avendaño;34200;380;;;299785;14;Incidencia Papel;1;10;False;1011;Pan Dulce;130 x 120 - 700g
 190110;05/09/2025;06-14;4000;;9;Pan Dulcera 9;189;Avendaño;34200;380;;;299786;4;Ajuste de mantenimiento;2;30;False;1011;Pan Dulce;130 x 120 - 700g
