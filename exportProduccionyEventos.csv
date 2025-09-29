@@ -1618,4 +1618,51 @@
 190260;25/09/2025;14-22;0;146;13;Pan Dulcera 13;331;Torrez Pantoja;42300;410;;;300342;4;Ajuste de mantenimiento;3;30;False;;;
 190260;25/09/2025;14-22;0;146;13;Pan Dulcera 13;331;Torrez Pantoja;42300;410;;;300343;10;Cambio de Bobina;1;10;False;;;
 190260;25/09/2025;14-22;0;146;13;Pan Dulcera 13;331;Torrez Pantoja;42300;410;;;300344;3;Limpieza fin de turno;1;30;False;;;
-190261;25/09/2025;14-22;0;146;13;Pan Dulcera 13;;;0;0;;;;;;;;;;;
+190261;26/09/2025;06-14;4000;18;9;Pan Dulcera 9;225;Reviglio;37500;410;;;300345;4;Ajuste de mantenimiento;2;30;False;1076;Pan Dulce;120 x 100 Banda 80g Fondo 200g
+190261;26/09/2025;06-14;4000;18;9;Pan Dulcera 9;225;Reviglio;37500;410;;;300346;2;Limpieza en Proceso;1;30;False;1076;Pan Dulce;120 x 100 Banda 80g Fondo 200g
+190261;26/09/2025;06-14;4000;18;9;Pan Dulcera 9;225;Reviglio;37500;410;;;300347;10;Cambio de Bobina;1;10;False;1076;Pan Dulce;120 x 100 Banda 80g Fondo 200g
+190262;26/09/2025;06-14;0;18;10;Pan Dulcera 10;109;Pacheco;39900;405;0;;300348;4;Ajuste de mantenimiento;1;10;False;1069;Pan Dulce;110x110 Banda 100g Fondo100g
+190262;26/09/2025;06-14;0;18;10;Pan Dulcera 10;109;Pacheco;39900;405;0;;300349;14;Incidencia Papel;2;30;False;1069;Pan Dulce;110x110 Banda 100g Fondo100g
+190262;26/09/2025;06-14;0;18;10;Pan Dulcera 10;109;Pacheco;39900;405;0;;300350;10;Cambio de Bobina;1;5;False;1069;Pan Dulce;110x110 Banda 100g Fondo100g
+190262;26/09/2025;06-14;0;18;10;Pan Dulcera 10;109;Pacheco;39900;405;0;;300351;2;Limpieza en Proceso;1;30;False;1069;Pan Dulce;110x110 Banda 100g Fondo100g
+190263;26/09/2025;06-14;0;18;13;Pan Dulcera 13;419;Nieto;42100;430;0;;300352;10;Cambio de Bobina;1;10;False;;;
+190263;26/09/2025;06-14;0;18;13;Pan Dulcera 13;419;Nieto;42100;430;0;;300353;4;Ajuste de mantenimiento;1;10;False;;;
+190263;26/09/2025;06-14;0;18;13;Pan Dulcera 13;419;Nieto;42100;430;0;;300354;2;Limpieza en Proceso;1;20;False;;;
+190263;26/09/2025;06-14;0;18;13;Pan Dulcera 13;419;Nieto;42100;430;0;;300355;14;Incidencia Papel;1;10;False;;;
+190264;26/09/2025;14-22;4000;146;9;Pan Dulcera 9;189;Avendaño;40500;395;0;;300356;2;Limpieza en Proceso;3;50;False;1076;Pan Dulce;120 x 100 Banda 80g Fondo 200g
+190264;26/09/2025;14-22;4000;146;9;Pan Dulcera 9;189;Avendaño;40500;395;0;;300357;10;Cambio de Bobina;1;10;False;1076;Pan Dulce;120 x 100 Banda 80g Fondo 200g
+190264;26/09/2025;14-22;4000;146;9;Pan Dulcera 9;189;Avendaño;40500;395;0;;300358;4;Ajuste de mantenimiento;2;25;False;1076;Pan Dulce;120 x 100 Banda 80g Fondo 200g
+190265;26/09/2025;14-22;0;146;10;Pan Dulcera 10;273;Gutierrez;40200;395;0;;300359;4;Ajuste de mantenimiento;4;55;False;1069;Pan Dulce;110x110 Banda 100g Fondo100g
+190265;26/09/2025;14-22;0;146;10;Pan Dulcera 10;273;Gutierrez;40200;395;0;;300360;2;Limpieza en Proceso;1;30;False;1069;Pan Dulce;110x110 Banda 100g Fondo100g
+190266;26/09/2025;14-22;0;146;13;Pan Dulcera 13;331;Torrez Pantoja;44400;430;0;;300361;10;Cambio de Bobina;1;10;False;;;
+190266;26/09/2025;14-22;0;146;13;Pan Dulcera 13;331;Torrez Pantoja;44400;430;0;;300362;10;Cambio de Bobina;1;10;False;;;
+190266;26/09/2025;14-22;0;146;13;Pan Dulcera 13;331;Torrez Pantoja;44400;430;0;;300363;3;Limpieza fin de turno;1;30;False;;;
+190267;26/09/2025;22-06;4000;;9;Pan Dulcera 9;430;Banegas;32400;280;0;;300364;14;Incidencia Papel;2;20;False;1076;Pan Dulce;120 x 100 Banda 80g Fondo 200g
+190267;26/09/2025;22-06;4000;;9;Pan Dulcera 9;430;Banegas;32400;280;0;;300365;4;Ajuste de mantenimiento;5;120;False;1076;Pan Dulce;120 x 100 Banda 80g Fondo 200g
+190267;26/09/2025;22-06;4000;;9;Pan Dulcera 9;430;Banegas;32400;280;0;;300366;20;Corte de energia general;1;15;False;1076;Pan Dulce;120 x 100 Banda 80g Fondo 200g
+190267;26/09/2025;22-06;4000;;9;Pan Dulcera 9;430;Banegas;32400;280;0;;300367;20;Corte de energia general;1;15;False;1076;Pan Dulce;120 x 100 Banda 80g Fondo 200g
+190267;26/09/2025;22-06;4000;;9;Pan Dulcera 9;430;Banegas;32400;280;0;;300368;2;Limpieza en Proceso;1;30;False;1076;Pan Dulce;120 x 100 Banda 80g Fondo 200g
+190268;26/09/2025;22-06;0;;10;Pan Dulcera 10;211;Alvarez;39600;380;0;;300369;10;Cambio de Bobina;1;10;False;1069;Pan Dulce;110x110 Banda 100g Fondo100g
+190268;26/09/2025;22-06;0;;10;Pan Dulcera 10;211;Alvarez;39600;380;0;;300370;14;Incidencia Papel;1;25;False;1069;Pan Dulce;110x110 Banda 100g Fondo100g
+190268;26/09/2025;22-06;0;;10;Pan Dulcera 10;211;Alvarez;39600;380;0;;300371;20;Corte de energia general;1;25;False;1069;Pan Dulce;110x110 Banda 100g Fondo100g
+190268;26/09/2025;22-06;0;;10;Pan Dulcera 10;211;Alvarez;39600;380;0;;300372;2;Limpieza en Proceso;2;40;False;1069;Pan Dulce;110x110 Banda 100g Fondo100g
+190269;26/09/2025;22-06;0;;13;Pan Dulcera 13;335;Arnaldi;33000;375;0;;300373;10;Cambio de Bobina;1;10;False;;;
+190269;26/09/2025;22-06;0;;13;Pan Dulcera 13;335;Arnaldi;33000;375;0;;300374;20;Corte de energia general;3;35;False;;;
+190269;26/09/2025;22-06;0;;13;Pan Dulcera 13;335;Arnaldi;33000;375;0;;300375;11;Cambio de Medida;1;60;False;;;
+190270;27/09/2025;06-14;4000;;9;Pan Dulcera 9;189;Avendaño;40800;395;0;;300376;4;Ajuste de mantenimiento;1;15;False;1076;Pan Dulce;120 x 100 Banda 80g Fondo 200g
+190270;27/09/2025;06-14;4000;;9;Pan Dulcera 9;189;Avendaño;40800;395;0;;300377;2;Limpieza en Proceso;3;60;False;1076;Pan Dulce;120 x 100 Banda 80g Fondo 200g
+190270;27/09/2025;06-14;4000;;9;Pan Dulcera 9;189;Avendaño;40800;395;0;;300378;10;Cambio de Bobina;1;10;False;1076;Pan Dulce;120 x 100 Banda 80g Fondo 200g
+190271;27/09/2025;06-14;0;;10;Pan Dulcera 10;109;Pacheco;39600;425;0;;300379;10;Cambio de Bobina;2;15;False;1069;Pan Dulce;110x110 Banda 100g Fondo100g
+190271;27/09/2025;06-14;0;;10;Pan Dulcera 10;109;Pacheco;39600;425;0;;300380;4;Ajuste de mantenimiento;1;10;False;1069;Pan Dulce;110x110 Banda 100g Fondo100g
+190271;27/09/2025;06-14;0;;10;Pan Dulcera 10;109;Pacheco;39600;425;0;;300381;2;Limpieza en Proceso;1;30;False;1069;Pan Dulce;110x110 Banda 100g Fondo100g
+190272;27/09/2025;06-14;0;;13;Pan Dulcera 13;419;Nieto;38600;380;0;;300382;4;Ajuste de mantenimiento;3;50;False;;;
+190272;27/09/2025;06-14;0;;13;Pan Dulcera 13;419;Nieto;38600;380;0;;300383;14;Incidencia Papel;1;10;False;;;
+190272;27/09/2025;06-14;0;;13;Pan Dulcera 13;419;Nieto;38600;380;0;;300384;10;Cambio de Bobina;1;10;False;;;
+190272;27/09/2025;06-14;0;;13;Pan Dulcera 13;419;Nieto;38600;380;0;;300385;2;Limpieza en Proceso;1;30;False;;;
+190273;27/09/2025;14-22;0;;10;Pan Dulcera 10;273;Gutierrez;40200;400;0;;300386;4;Ajuste de mantenimiento;4;45;False;1069;Pan Dulce;110x110 Banda 100g Fondo100g
+190273;27/09/2025;14-22;0;;10;Pan Dulcera 10;273;Gutierrez;40200;400;0;;300387;2;Limpieza en Proceso;1;35;False;1069;Pan Dulce;110x110 Banda 100g Fondo100g
+190274;27/09/2025;14-22;0;;13;Pan Dulcera 13;331;Torrez Pantoja;40800;405;0;;300388;4;Ajuste de mantenimiento;2;25;False;;;
+190274;27/09/2025;14-22;0;;13;Pan Dulcera 13;331;Torrez Pantoja;40800;405;0;;300389;99;Otros;1;10;False;;;
+190274;27/09/2025;14-22;0;;13;Pan Dulcera 13;331;Torrez Pantoja;40800;405;0;;300390;2;Limpieza en Proceso;1;30;False;;;
+190274;27/09/2025;14-22;0;;13;Pan Dulcera 13;331;Torrez Pantoja;40800;405;0;;300391;10;Cambio de Bobina;1;10;False;;;
+190275;27/09/2025;14-22;0;;13;Pan Dulcera 13;;;0;0;0;;;;;;;;;;
