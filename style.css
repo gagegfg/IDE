@@ -149,3 +149,41 @@ body[data-theme="dark"] {
     top: 0;
     z-index: 1;
 }
+
+/* Custom Date Filter Buttons */
+.btn-date-filter {
+    color: white;
+    border-radius: 5px;
+    box-shadow: 0 3px #999;
+    transition: all 0.1s ease-in-out;
+    position: relative;
+    top: 0;
+}
+
+.btn-date-filter:hover {
+    color: white;
+}
+
+.btn-date-filter:active {
+    box-shadow: 0 1px #666;
+    top: 2px;
+}
+
+/* Specific colors for context */
+#btnSemanaAnterior, #btnMesAnterior {
+    background-color: #007bff;
+    border-color: #0069d9;
+}
+
+#btnSemanaAnterior:hover, #btnMesAnterior:hover {
+    background-color: #0069d9;
+}
+
+#btnSemanaActual, #btnMesActual {
+    background-color: #28a745;
+    border-color: #218838;
+}
+
+#btnSemanaActual:hover, #btnMesActual:hover {
+    background-color: #218838;
+}
