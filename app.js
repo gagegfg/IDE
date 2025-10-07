@@ -107,24 +107,41 @@ document.addEventListener('DOMContentLoaded', function () {
             downtimeFilter.addEventListener('change', filterAndRenderDowntimeChart);
         }
 
-        const today = new Date();
-        document.getElementById('btnMesActual').addEventListener('click', () => datepicker.setDate([new Date(today.getFullYear(), today.getMonth(), 1), today], true));
+        document.getElementById('btnMesActual').addEventListener('click', () => {
+            const today = new Date();
+            datepicker.setDate([new Date(today.getFullYear(), today.getMonth(), 1), today], true);
+        });
         document.getElementById('btnMesAnterior').addEventListener('click', () => {
+             const today = new Date();
              const start = new Date(today.getFullYear(), today.getMonth() - 1, 1);
              const end = new Date(today.getFullYear(), today.getMonth(), 0);
              datepicker.setDate([start, end], true);
         });
         document.getElementById('btnSemanaActual').addEventListener('click', () => {
-            const first = today.getDate() - today.getDay() + (today.getDay() === 0 ? -6 : 1);
-            datepicker.setDate([new Date(new Date().setDate(first)), new Date()], true);
+            const today = new Date();
+            const dayOfWeek = today.getDay(); // 0=Sun, 1=Mon, ..., 6=Sat
+            const diff = dayOfWeek === 0 ? 6 : dayOfWeek - 1;
+            const startOfWeek = new Date(today);
+            startOfWeek.setDate(today.getDate() - diff);
+            startOfWeek.setHours(0, 0, 0, 0);
+            datepicker.setDate([startOfWeek, today], true);
         });
          document.getElementById('btnSemanaAnterior').addEventListener('click', () => {
-            const before = new Date();
-            before.setDate(before.getDate() - 7);
-            const first = before.getDate() - before.getDay() + (before.getDay() === 0 ? -6 : 1);
-            const startOfLastWeek = new Date(new Date().setDate(first));
-            const endOfLastWeek = new Date(startOfLastWeek);
-            endOfLastWeek.setDate(endOfLastWeek.getDate() + 6);
+            const today = new Date();
+            // Adjust day of week so Monday is 1 and Sunday is 7
+            const dayOfWeek = today.getDay();
+            const adjustedDay = (dayOfWeek === 0) ? 7 : dayOfWeek;
+
+            // The end of the previous week is the Sunday before the current week
+            const endOfLastWeek = new Date(today);
+            endOfLastWeek.setDate(today.getDate() - adjustedDay);
+            endOfLastWeek.setHours(23, 59, 59, 999);
+
+            // The start of the previous week is 6 days before its end
+            const startOfLastWeek = new Date(endOfLastWeek);
+            startOfLastWeek.setDate(endOfLastWeek.getDate() - 6);
+            startOfLastWeek.setHours(0, 0, 0, 0);
+
             datepicker.setDate([startOfLastWeek, endOfLastWeek], true);
         });
 
