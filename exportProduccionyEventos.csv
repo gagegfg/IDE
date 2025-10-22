@@ -2142,4 +2142,81 @@
 190390;20/10/2025;22-06;0;;13;Pan Dulcera 13;331;Torrez Pantoja;34800;360;0;;300867;10;Cambio de Bobina;1;5;False;;;
 190390;20/10/2025;22-06;0;;13;Pan Dulcera 13;331;Torrez Pantoja;34800;360;0;;300868;4;Ajuste de mantenimiento;1;10;False;;;
 190390;20/10/2025;22-06;0;;13;Pan Dulcera 13;331;Torrez Pantoja;34800;360;0;;300869;3;Limpieza fin de turno;1;30;False;;;
-190391;20/10/2025;22-06;0;;13;Pan Dulcera 13;;;0;0;0;;;;;;;;;;
+190391;21/10/2025;06-14;0;;10;Pan Dulcera 10;211;Alvarez;40800;410;0;;300872;2;Limpieza en Proceso;1;10;False;1069;Pan Dulce;110x110 Banda 100g Fondo100g
+190391;21/10/2025;06-14;0;;10;Pan Dulcera 10;211;Alvarez;40800;410;0;;300873;14;Incidencia Papel;1;15;False;1069;Pan Dulce;110x110 Banda 100g Fondo100g
+190391;21/10/2025;06-14;0;;10;Pan Dulcera 10;211;Alvarez;40800;410;0;;300874;10;Cambio de Bobina;1;15;False;1069;Pan Dulce;110x110 Banda 100g Fondo100g
+190391;21/10/2025;06-14;0;;10;Pan Dulcera 10;211;Alvarez;40800;410;0;;300875;2;Limpieza en Proceso;1;30;False;1069;Pan Dulce;110x110 Banda 100g Fondo100g
+190392;21/10/2025;06-14;0;;13;Pan Dulcera 13;430;Banegas;40800;400;0;;300876;4;Ajuste de mantenimiento;1;10;False;;;
+190392;21/10/2025;06-14;0;;13;Pan Dulcera 13;430;Banegas;40800;400;0;;300877;10;Cambio de Bobina;1;10;False;;;
+190392;21/10/2025;06-14;0;;13;Pan Dulcera 13;430;Banegas;40800;400;0;;300878;4;Ajuste de mantenimiento;1;10;False;;;
+190392;21/10/2025;06-14;0;;13;Pan Dulcera 13;430;Banegas;40800;400;0;;300879;2;Limpieza en Proceso;3;50;False;;;
+190393;21/10/2025;06-14;1150;;43;Budinera SFA 3;399;Villalba;5700;290;0;;300880;4;Ajuste de mantenimiento;1;80;False;2003;Budín SFA;186x48,5x40 (19x5x4-240g)
+190393;21/10/2025;06-14;1150;;43;Budinera SFA 3;399;Villalba;5700;290;0;;300881;4;Ajuste de mantenimiento;1;20;False;2003;Budín SFA;186x48,5x40 (19x5x4-240g)
+190393;21/10/2025;06-14;1150;;43;Budinera SFA 3;399;Villalba;5700;290;0;;300882;4;Ajuste de mantenimiento;1;90;False;2003;Budín SFA;186x48,5x40 (19x5x4-240g)
+190394;21/10/2025;06-14;1150;;44;Budinera SFA 4;399;Villalba;7300;320;0;;300884;4;Ajuste de mantenimiento;1;50;False;2001;Budín SFA;155x48,5x40 (15,5x5x4-200g)
+190394;21/10/2025;06-14;1150;;44;Budinera SFA 4;399;Villalba;7300;320;0;;300885;4;Ajuste de mantenimiento;1;90;False;2001;Budín SFA;155x48,5x40 (15,5x5x4-200g)
+190394;21/10/2025;06-14;1150;;44;Budinera SFA 4;399;Villalba;7300;320;0;;300886;4;Ajuste de mantenimiento;1;20;False;2001;Budín SFA;155x48,5x40 (15,5x5x4-200g)
+190395;21/10/2025;06-14;1600;;45;Budinera SFA 5;75;Aguinaldo;7800;460;0;;300887;4;Ajuste de mantenimiento;1;20;False;2003;Budín SFA;186x48,5x40 (19x5x4-240g)
+190396;21/10/2025;06-14;1600;;46;Budinera SFA 6;400;Denis;9200;390;0;;300888;10;Cambio de Bobina;1;10;False;2003;Budín SFA;186x48,5x40 (19x5x4-240g)
+190396;21/10/2025;06-14;1600;;46;Budinera SFA 6;400;Denis;9200;390;0;;300889;14;Incidencia Papel;1;10;False;2003;Budín SFA;186x48,5x40 (19x5x4-240g)
+190396;21/10/2025;06-14;1600;;46;Budinera SFA 6;400;Denis;9200;390;0;;300890;14;Incidencia Papel;1;10;False;2003;Budín SFA;186x48,5x40 (19x5x4-240g)
+190396;21/10/2025;06-14;1600;;46;Budinera SFA 6;400;Denis;9200;390;0;;300891;14;Incidencia Papel;1;10;False;2003;Budín SFA;186x48,5x40 (19x5x4-240g)
+190396;21/10/2025;06-14;1600;;46;Budinera SFA 6;400;Denis;9200;390;0;;300892;14;Incidencia Papel;1;10;False;2003;Budín SFA;186x48,5x40 (19x5x4-240g)
+190396;21/10/2025;06-14;1600;;46;Budinera SFA 6;400;Denis;9200;390;0;;300893;4;Ajuste de mantenimiento;1;40;False;2003;Budín SFA;186x48,5x40 (19x5x4-240g)
+190397;21/10/2025;06-14;1600;;47;Budinera SFA 7;75;Aguinaldo;9000;440;0;;300894;4;Ajuste de mantenimiento;1;40;False;2003;Budín SFA;186x48,5x40 (19x5x4-240g)
+190398;21/10/2025;06-14;1600;;48;Budinera SFA 8;400;Denis;9200;430;0;;300895;10;Cambio de Bobina;1;10;False;2003;Budín SFA;186x48,5x40 (19x5x4-240g)
+190398;21/10/2025;06-14;1600;;48;Budinera SFA 8;400;Denis;9200;430;0;;300896;14;Incidencia Papel;1;10;False;2003;Budín SFA;186x48,5x40 (19x5x4-240g)
+190398;21/10/2025;06-14;1600;;48;Budinera SFA 8;400;Denis;9200;430;0;;300897;10;Cambio de Bobina;1;10;False;2003;Budín SFA;186x48,5x40 (19x5x4-240g)
+190398;21/10/2025;06-14;1600;;48;Budinera SFA 8;400;Denis;9200;430;0;;300898;4;Ajuste de mantenimiento;1;20;False;2003;Budín SFA;186x48,5x40 (19x5x4-240g)
+190399;21/10/2025;06-14;0;;49;Budinera SFA 9;75;Aguinaldo;14100;440;0;;300899;2;Limpieza en Proceso;1;10;False;;;
+190399;21/10/2025;06-14;0;;49;Budinera SFA 9;75;Aguinaldo;14100;440;0;;300900;10;Cambio de Bobina;1;10;False;;;
+190399;21/10/2025;06-14;0;;49;Budinera SFA 9;75;Aguinaldo;14100;440;0;;300901;10;Cambio de Bobina;1;10;False;;;
+190399;21/10/2025;06-14;0;;49;Budinera SFA 9;75;Aguinaldo;14100;440;0;;300902;14;Incidencia Papel;1;10;False;;;
+190400;21/10/2025;14-22;0;146;10;Pan Dulcera 10;189;Avendaño;30300;295;0;;300903;14;Incidencia Papel;3;35;False;1069;Pan Dulce;110x110 Banda 100g Fondo100g
+190400;21/10/2025;14-22;0;146;10;Pan Dulcera 10;189;Avendaño;30300;295;0;;300904;6;Falla Eléctrica;1;35;False;1069;Pan Dulce;110x110 Banda 100g Fondo100g
+190400;21/10/2025;14-22;0;146;10;Pan Dulcera 10;189;Avendaño;30300;295;0;;300905;4;Ajuste de mantenimiento;2;105;False;1069;Pan Dulce;110x110 Banda 100g Fondo100g
+190400;21/10/2025;14-22;0;146;10;Pan Dulcera 10;189;Avendaño;30300;295;0;;300906;10;Cambio de Bobina;1;10;False;1069;Pan Dulce;110x110 Banda 100g Fondo100g
+190401;21/10/2025;14-22;0;146;13;Pan Dulcera 13;419;Nieto;37500;370;0;;300907;10;Cambio de Bobina;2;20;False;;;
+190401;21/10/2025;14-22;0;146;13;Pan Dulcera 13;419;Nieto;37500;370;0;;300908;14;Incidencia Papel;2;20;False;;;
+190401;21/10/2025;14-22;0;146;13;Pan Dulcera 13;419;Nieto;37500;370;0;;300909;4;Ajuste de mantenimiento;2;40;False;;;
+190401;21/10/2025;14-22;0;146;13;Pan Dulcera 13;419;Nieto;37500;370;0;;300910;2;Limpieza en Proceso;1;30;False;;;
+190402;21/10/2025;14-22;1150;146;43;Budinera SFA 3;424;Rinaudo;5200;315;0;;300911;4;Ajuste de mantenimiento;1;45;False;2003;Budín SFA;186x48,5x40 (19x5x4-240g)
+190402;21/10/2025;14-22;1150;146;43;Budinera SFA 3;424;Rinaudo;5200;315;0;;300912;10;Cambio de Bobina;1;10;False;2003;Budín SFA;186x48,5x40 (19x5x4-240g)
+190402;21/10/2025;14-22;1150;146;43;Budinera SFA 3;424;Rinaudo;5200;315;0;;300913;14;Incidencia Papel;1;60;False;2003;Budín SFA;186x48,5x40 (19x5x4-240g)
+190402;21/10/2025;14-22;1150;146;43;Budinera SFA 3;424;Rinaudo;5200;315;0;;300914;4;Ajuste de mantenimiento;1;40;False;2003;Budín SFA;186x48,5x40 (19x5x4-240g)
+190402;21/10/2025;14-22;1150;146;43;Budinera SFA 3;424;Rinaudo;5200;315;0;;300915;14;Incidencia Papel;1;10;False;2003;Budín SFA;186x48,5x40 (19x5x4-240g)
+190403;21/10/2025;14-22;1150;146;44;Budinera SFA 4;424;Rinaudo;9300;470;0;;300916;10;Cambio de Bobina;1;10;False;2001;Budín SFA;155x48,5x40 (15,5x5x4-200g)
+190404;21/10/2025;14-22;1600;146;45;Budinera SFA 5;293;Pino;6900;350;0;;300917;14;Incidencia Papel;1;20;False;2003;Budín SFA;186x48,5x40 (19x5x4-240g)
+190404;21/10/2025;14-22;1600;146;45;Budinera SFA 5;293;Pino;6900;350;0;;300918;4;Ajuste de mantenimiento;1;70;False;2003;Budín SFA;186x48,5x40 (19x5x4-240g)
+190404;21/10/2025;14-22;1600;146;45;Budinera SFA 5;293;Pino;6900;350;0;;300919;14;Incidencia Papel;2;40;False;2003;Budín SFA;186x48,5x40 (19x5x4-240g)
+190405;21/10/2025;14-22;1600;146;46;Budinera SFA 6;143;Diaz;9900;435;;;300920;14;Incidencia Papel;1;20;False;2003;Budín SFA;186x48,5x40 (19x5x4-240g)
+190405;21/10/2025;14-22;1600;146;46;Budinera SFA 6;143;Diaz;9900;435;;;300921;4;Ajuste de mantenimiento;1;15;False;2003;Budín SFA;186x48,5x40 (19x5x4-240g)
+190405;21/10/2025;14-22;1600;146;46;Budinera SFA 6;143;Diaz;9900;435;;;300922;4;Ajuste de mantenimiento;1;10;False;2003;Budín SFA;186x48,5x40 (19x5x4-240g)
+190406;21/10/2025;14-22;1600;146;47;Budinera SFA 7;293;Pino;9400;400;;;300923;14;Incidencia Papel;4;80;False;2003;Budín SFA;186x48,5x40 (19x5x4-240g)
+190407;21/10/2025;14-22;1600;146;48;Budinera SFA 8;143;Diaz;9700;455;;;300924;4;Ajuste de mantenimiento;1;10;False;2003;Budín SFA;186x48,5x40 (19x5x4-240g)
+190407;21/10/2025;14-22;1600;146;48;Budinera SFA 8;143;Diaz;9700;455;;;300925;2;Limpieza en Proceso;1;15;False;2003;Budín SFA;186x48,5x40 (19x5x4-240g)
+190408;21/10/2025;14-22;0;146;49;Budinera SFA 9;258;Torre;14300;425;;;300926;10;Cambio de Bobina;1;20;False;;;
+190408;21/10/2025;14-22;0;146;49;Budinera SFA 9;258;Torre;14300;425;;;300927;14;Incidencia Papel;1;10;False;;;
+190408;21/10/2025;14-22;0;146;49;Budinera SFA 9;258;Torre;14300;425;;;300928;10;Cambio de Bobina;1;15;False;;;
+190408;21/10/2025;14-22;0;146;49;Budinera SFA 9;258;Torre;14300;425;;;300929;15;Incidencia Adhesivo;1;10;False;;;
+190409;21/10/2025;22-06;0;;10;Pan Dulcera 10;440;Vicente;36000;390;;;300931;14;Incidencia Papel;2;20;False;1069;Pan Dulce;110x110 Banda 100g Fondo100g
+190409;21/10/2025;22-06;0;;10;Pan Dulcera 10;440;Vicente;36000;390;;;300932;4;Ajuste de mantenimiento;1;30;False;1069;Pan Dulce;110x110 Banda 100g Fondo100g
+190409;21/10/2025;22-06;0;;10;Pan Dulcera 10;440;Vicente;36000;390;;;300933;5;Falla Mecánica;1;10;False;1069;Pan Dulce;110x110 Banda 100g Fondo100g
+190409;21/10/2025;22-06;0;;10;Pan Dulcera 10;440;Vicente;36000;390;;;300934;2;Limpieza en Proceso;1;30;False;1069;Pan Dulce;110x110 Banda 100g Fondo100g
+190410;21/10/2025;22-06;0;;13;Pan Dulcera 13;331;Torrez Pantoja;43200;430;;;300935;4;Ajuste de mantenimiento;1;10;False;;;
+190410;21/10/2025;22-06;0;;13;Pan Dulcera 13;331;Torrez Pantoja;43200;430;;;300936;10;Cambio de Bobina;1;10;False;;;
+190410;21/10/2025;22-06;0;;13;Pan Dulcera 13;331;Torrez Pantoja;43200;430;;;300937;3;Limpieza fin de turno;1;30;False;;;
+190411;21/10/2025;22-06;1150;;43;Budinera SFA 3;7;Banegas;7000;380;;;300938;4;Ajuste de mantenimiento;1;50;False;2003;Budín SFA;186x48,5x40 (19x5x4-240g)
+190411;21/10/2025;22-06;1150;;43;Budinera SFA 3;7;Banegas;7000;380;;;300939;4;Ajuste de mantenimiento;1;35;False;2003;Budín SFA;186x48,5x40 (19x5x4-240g)
+190411;21/10/2025;22-06;1150;;43;Budinera SFA 3;7;Banegas;7000;380;;;300940;4;Ajuste de mantenimiento;1;15;False;2003;Budín SFA;186x48,5x40 (19x5x4-240g)
+190412;21/10/2025;22-06;1150;;44;Budinera SFA 4;7;Banegas;9700;480;;;;;;;;;2001;Budín SFA;155x48,5x40 (15,5x5x4-200g)
+190413;21/10/2025;22-06;1600;;45;Budinera SFA 5;384;Medrano;8900;480;;;;;;;;;2003;Budín SFA;186x48,5x40 (19x5x4-240g)
+190414;21/10/2025;22-06;1600;;46;Budinera SFA 6;418;Robledo;7300;320;;;300941;4;Ajuste de mantenimiento;1;70;False;2003;Budín SFA;186x48,5x40 (19x5x4-240g)
+190414;21/10/2025;22-06;1600;;46;Budinera SFA 6;418;Robledo;7300;320;;;300942;14;Incidencia Papel;1;20;False;2003;Budín SFA;186x48,5x40 (19x5x4-240g)
+190414;21/10/2025;22-06;1600;;46;Budinera SFA 6;418;Robledo;7300;320;;;300943;4;Ajuste de mantenimiento;1;30;False;2003;Budín SFA;186x48,5x40 (19x5x4-240g)
+190414;21/10/2025;22-06;1600;;46;Budinera SFA 6;418;Robledo;7300;320;;;300944;4;Ajuste de mantenimiento;1;40;False;2003;Budín SFA;186x48,5x40 (19x5x4-240g)
+190415;21/10/2025;22-06;1600;;47;Budinera SFA 7;384;Medrano;9900;470;;;300945;14;Incidencia Papel;1;10;False;2003;Budín SFA;186x48,5x40 (19x5x4-240g)
+190416;21/10/2025;22-06;1600;;48;Budinera SFA 8;418;Robledo;10200;480;;;;;;;;;2003;Budín SFA;186x48,5x40 (19x5x4-240g)
+190417;21/10/2025;22-06;0;;49;Budinera SFA 9;225;Reviglio;13500;440;;;300946;4;Ajuste de mantenimiento;1;20;False;;;
+190417;21/10/2025;22-06;0;;49;Budinera SFA 9;225;Reviglio;13500;440;;;300947;5;Falla Mecánica;1;20;False;;;
+190418;21/10/2025;22-06;0;;49;Budinera SFA 9;;;0;0;;;;;;;;;;;
