@@ -44,7 +44,7 @@ function parseDate(dateString) {
 }
 
 function getFilteredData(filters) {
-    const { dateRange, selectedMachines, selectedShifts, selectedOperator } = filters;
+    const { dateRange, selectedMachines, selectedShifts, selectedOperator, selectedMachineGroup } = filters;
     
     return originalData.filter(row => {
         const rowDate = new Date(row.Fecha);
@@ -57,8 +57,9 @@ function getFilteredData(filters) {
         const isMachineSelected = selectedMachines.length > 0 ? selectedMachines.includes(row.Descrip_Maquina) : true;
         const isShiftSelected = selectedShifts.length > 0 ? selectedShifts.includes(row.Turno) : true;
         const isOperatorSelected = selectedOperator ? row.Apellido === selectedOperator : true;
+        const isMachineGroupSelected = selectedMachineGroup ? row.Grupo_Maquina === selectedMachineGroup : true;
 
-        return isDateInRange && isMachineSelected && isShiftSelected && isOperatorSelected;
+        return isDateInRange && isMachineSelected && isShiftSelected && isOperatorSelected && isMachineGroupSelected;
     });
 }
 
@@ -429,11 +430,12 @@ self.onmessage = function(e) {
                     type: 'data_loaded',
                     payload: {
                         uniqueMachines: [...new Set(originalData.map(row => row.Descrip_Maquina))].filter(Boolean).sort(),
-                        uniqueShifts: [...new Set(originalData.map(row => row.Turno))].filter(Boolean).sort()
+                        uniqueShifts: [...new Set(originalData.map(row => row.Turno))].filter(Boolean).sort(),
+                        uniqueMachineGroups: [...new Set(originalData.map(row => row.Grupo_Maquina))].filter(Boolean).sort()
                     }
                 });
                 // Also trigger the first dashboard update
-                applyFiltersAndPost({ dateRange: [startOfPreviousMonth, today], selectedMachines: [], selectedShifts: [], isExtended: false, dailyAggregationType: 'total' });
+                applyFiltersAndPost({ dateRange: [startOfPreviousMonth, today], selectedMachines: [], selectedShifts: [], selectedMachineGroup: null, isExtended: false, dailyAggregationType: 'total' });
             },
             error: err => {
                 self.postMessage({ type: 'error', payload: `Error al cargar CSV: ${err.message}` });

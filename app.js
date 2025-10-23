@@ -3,7 +3,7 @@ document.addEventListener('DOMContentLoaded', function () {
 
     // --- STATE MANAGEMENT ---
     let charts = {};
-    let choicesMachine, choicesShift, datepicker;
+    let choicesMachine, choicesShift, choicesMachineGroup, datepicker;
     let detailModal;
     let currentFilteredData = [];
     let fullDowntimeData = [];
@@ -32,7 +32,7 @@ document.addEventListener('DOMContentLoaded', function () {
 
         switch (type) {
             case 'data_loaded':
-                populateFilters(payload.uniqueMachines, payload.uniqueShifts);
+                populateFilters(payload.uniqueMachines, payload.uniqueShifts, payload.uniqueMachineGroups);
                 addEventListeners();
                 const today = new Date();
                 const startOfPreviousMonth = new Date(today.getFullYear(), today.getMonth() - 1, 1);
@@ -77,14 +77,17 @@ document.addEventListener('DOMContentLoaded', function () {
         });
     }
 
-    function populateFilters(uniqueMachines, uniqueShifts) {
+    function populateFilters(uniqueMachines, uniqueShifts, uniqueMachineGroups) {
         const machineFilterEl = document.getElementById('machine-filter');
         uniqueMachines.forEach(machine => machineFilterEl.add(new Option(machine, machine)));
         const shiftFilterEl = document.getElementById('shift-filter');
         uniqueShifts.forEach(shift => shiftFilterEl.add(new Option(shift, shift)));
+        const machineGroupFilterEl = document.getElementById('machine-group-filter');
+        uniqueMachineGroups.forEach(group => machineGroupFilterEl.add(new Option(group, group)));
         
         choicesMachine = new Choices(machineFilterEl, { removeItemButton: true, placeholder: true, placeholderValue: 'Todas las máquinas...' });
         choicesShift = new Choices(shiftFilterEl, { removeItemButton: true, placeholder: true, placeholderValue: 'Todos los turnos...' });
+        choicesMachineGroup = new Choices(machineGroupFilterEl, { placeholder: true, placeholderValue: 'Todos los grupos...', searchEnabled: false, removeItemButton: false });
     }
 
     function addEventListeners() {
@@ -97,6 +100,7 @@ document.addEventListener('DOMContentLoaded', function () {
 
         document.getElementById('machine-filter').addEventListener('change', applyFilters);
         document.getElementById('shift-filter').addEventListener('change', applyFilters);
+        document.getElementById('machine-group-filter').addEventListener('change', applyFilters);
         document.getElementById('extended-analysis-toggle').addEventListener('change', applyFilters);
         document.getElementById('daily-prod-agg-options')?.addEventListener('change', applyFilters);
         document.getElementById('clear-operator-filter')?.addEventListener('click', clearOperatorFilter);
@@ -151,6 +155,7 @@ document.addEventListener('DOMContentLoaded', function () {
             
             choicesMachine.removeActiveItems();
             choicesShift.removeActiveItems();
+            choicesMachineGroup.setChoiceByValue(''); // Resetea el filtro de grupo
             document.getElementById('extended-analysis-toggle').checked = false;
             if(downtimeFilter) downtimeFilter.value = 'all';
             
@@ -193,6 +198,7 @@ document.addEventListener('DOMContentLoaded', function () {
             dateRange: datepicker.selectedDates,
             selectedMachines: choicesMachine.getValue(true),
             selectedShifts: choicesShift.getValue(true),
+            selectedMachineGroup: choicesMachineGroup.getValue(true),
             isExtended: document.getElementById('extended-analysis-toggle').checked,
             dailyAggregationType: dailyAgg,
             selectedOperator: selectedOperator
