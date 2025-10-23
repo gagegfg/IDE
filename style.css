@@ -1,99 +1,96 @@
-:root {
-    --primary-color: #5E35B1;
-    --secondary-color: #039BE5;
-    --background-light: #f4f6f9;
-    --card-bg-light: #ffffff;
-    --text-color-light: #333;
-    --border-color-light: #e0e0e0;
-
-    --background-dark: #121212;
-    --card-bg-dark: #1e1e1e;
-    --text-color-dark: #e0e0e0;
-    --border-color-dark: #333;
+/* General Layout */
+body {
+    display: flex;
+    font-family: 'Inter', sans-serif;
 }
 
-body {
-    font-family: 'Inter', sans-serif;
-    display: flex;
-    background-color: var(--background-light);
-    color: var(--text-color-light);
-    transition: background-color 0.3s, color 0.3s;
+:root {
+    --primary-color: #5E35B1;
+    --secondary-color: #f8f9fa;
+    --text-color: #333;
+    --bg-color: #fff;
+    --card-bg: #fff;
+    --border-color: #dee2e6;
 }
 
 body[data-theme="dark"] {
-    --background-light: var(--background-dark);
-    --card-bg-light: var(--card-bg-dark);
-    --text-color-light: var(--text-color-dark);
-    --border-color-light: var(--border-color-dark);
+    --primary-color: #7E57C2;
+    --secondary-color: #212529;
+    --text-color: #e0e0e0;
+    --bg-color: #121212;
+    --card-bg: #1e1e1e;
+    --border-color: #444;
 }
 
+/* Sidebar */
 .sidebar {
-    width: 280px;
     position: fixed;
     top: 0;
     left: 0;
     height: 100vh;
-    background-color: var(--card-bg-light);
+    width: 280px;
     padding: 20px;
-    border-right: 1px solid var(--border-color-light);
+    background-color: var(--secondary-color);
+    border-right: 1px solid var(--border-color);
+    overflow-y: auto;
     display: flex;
     flex-direction: column;
-    transition: background-color 0.3s, border-color 0.3s;
+    justify-content: space-between;
 }
 
+/* Main Content */
 .main-content {
     margin-left: 280px;
-    padding: 20px;
+    padding: 30px;
     width: calc(100% - 280px);
+    background-color: var(--bg-color);
+    color: var(--text-color);
 }
 
+/* Cards */
 .card {
-    background-color: var(--card-bg-light);
-    border: 1px solid var(--border-color-light);
-    color: var(--text-color-light);
-    transition: background-color 0.3s, border-color 0.3s, color 0.3s;
+    background-color: var(--card-bg);
+    border: 1px solid var(--border-color);
+    border-radius: 8px;
+    box-shadow: 0 2px 4px rgba(0,0,0,0.05);
 }
 
 .card-header {
     background-color: transparent;
-    border-bottom: 1px solid var(--border-color-light);
+    border-bottom: 1px solid var(--border-color);
+    font-weight: 600;
 }
 
+/* KPIs */
 .kpi-value {
     font-size: 2.5rem;
     font-weight: 700;
     color: var(--primary-color);
 }
 
-.text-muted {
-    color: #6c757d !important;
-}
 
-body[data-theme="dark"] .text-muted {
-    color: #adb5bd !important;
-}
 
 /* Loading Overlay */
-#loading-overlay, #progress-container {
+#loading-overlay {
     position: fixed;
     top: 0;
     left: 0;
     width: 100%;
     height: 100%;
-    background-color: rgba(0, 0, 0, 0.8);
+    background-color: rgba(0, 0, 0, 0.5);
+    z-index: 1100;
     display: flex;
     justify-content: center;
     align-items: center;
-    z-index: 1056; /* Encima del modal */
-    flex-direction: column;
 }
 
+/* Custom Spinner */
 .custom-spinner {
-    width: 50px;
-    height: 50px;
-    border: 5px solid #fff;
-    border-top: 5px solid var(--primary-color);
+    border: 8px solid rgba(255, 255, 255, 0.3);
+    border-top: 8px solid var(--primary-color); /* Use primary color for consistency */
     border-radius: 50%;
+    width: 60px;
+    height: 60px;
     animation: spin 1s linear infinite;
 }
 
@@ -102,12 +99,91 @@ body[data-theme="dark"] .text-muted {
     100% { transform: rotate(360deg); }
 }
 
-/* Asegurar que el texto dentro de las tarjetas sea blanco en modo oscuro */
-body[data-theme="dark"] .card,
-body[data-theme="dark"] .card .card-title,
-body[data-theme="dark"] h1,
-body[data-theme="dark"] h2,
-body[data-theme="dark"] h4,
-body[data-theme="dark"] h5 {
-    color: var(--text-color-dark);
+/* Progress Indicator */
+#progress-container {
+    position: fixed;
+    top: 0;
+    left: 0;
+    width: 100%;
+    height: 100%;
+    background-color: rgba(0, 0, 0, 0.7);
+    z-index: 1200; /* Higher than loading overlay */
+    display: flex;
+    flex-direction: column;
+    justify-content: center;
+    align-items: center;
+    color: white;
+}
+
+.progress-ring {
+    position: relative;
+    width: 150px;
+    height: 150px;
+    display: flex;
+    justify-content: center;
+    align-items: center;
+}
+
+.progress-circle {
+    width: 100%;
+    height: 100%;
+    border-radius: 50%;
+    background: conic-gradient(var(--primary-color) 0%, #444 0%);
+    transition: background 0.2s;
+}
+
+.progress-text {
+    position: absolute;
+    font-size: 2rem;
+    font-weight: 600;
+}
+
+/* Modal Table */
+.modal-table-container {
+    max-height: 65vh;
+    overflow-y: auto;
+}
+
+.modal-table-container thead th {
+    position: sticky;
+    top: 0;
+    z-index: 1;
+}
+
+/* Custom Date Filter Buttons */
+.btn-date-filter {
+    color: white;
+    border-radius: 5px;
+    box-shadow: 0 3px #999;
+    transition: all 0.1s ease-in-out;
+    position: relative;
+    top: 0;
+}
+
+.btn-date-filter:hover {
+    color: white;
+}
+
+.btn-date-filter:active {
+    box-shadow: 0 1px #666;
+    top: 2px;
+}
+
+/* Specific colors for context */
+#btnSemanaAnterior, #btnMesAnterior {
+    background-color: #007bff;
+    border-color: #0069d9;
+}
+
+#btnSemanaAnterior:hover, #btnMesAnterior:hover {
+    background-color: #0069d9;
+}
+
+#btnSemanaActual, #btnMesActual {
+    background-color: #28a745;
+    border-color: #218838;
+}
+
+#btnSemanaActual:hover, #btnMesActual:hover {
+    background-color: #218838;
 }

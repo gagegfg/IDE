@@ -532,9 +532,9 @@ document.addEventListener('DOMContentLoaded', function () {
                 xaxis: { categories: chartData.data.map(d => d.category), labels: { style: { colors: textColor, fontSize: '12px' }, trim: true, maxHeight: 100 } },
                 yaxis: { labels: { style: { colors: textColor }, formatter: (val) => formatNumber(val) } },
                 tooltip: { theme: currentTheme, y: { formatter: (val) => formatNumber(val) } }
-            };            
-            options.dataLabels.style.colors = [textColor];
-            if (chartData.horizontal) { options.dataLabels.offsetX = 20; options.plotOptions.bar.dataLabels.position = 'right'; }
+            };
+            if (chartData.horizontal) { options.dataLabels.style.colors = ["#fff"]; options.dataLabels.offsetX = -10; } 
+            else { options.dataLabels.style.colors = [textColor]; }
         } else if (type === 'combo') {
             options = {
                 ...commonOptions, chart: {...commonOptions.chart, id: elementId, type: 'line', stacked: false},
