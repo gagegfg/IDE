@@ -156,6 +156,7 @@ document.addEventListener('DOMContentLoaded', function () {
             choicesMachine.removeActiveItems();
             choicesShift.removeActiveItems();
             choicesMachineGroup.setChoiceByValue(''); // Resetea el filtro de grupo
+            localStorage.removeItem('lastSelectedMachineGroup'); // Limpia la caché del filtro de grupo
             document.getElementById('extended-analysis-toggle').checked = false;
             if(downtimeFilter) downtimeFilter.value = 'all';
             
@@ -194,11 +195,14 @@ document.addEventListener('DOMContentLoaded', function () {
         const dailyAggInput = document.querySelector('input[name="dailyAgg"]:checked');
         const dailyAgg = dailyAggInput ? dailyAggInput.value : 'total';
         
+        const selectedMachineGroup = choicesMachineGroup.getValue(true);
+        localStorage.setItem('lastSelectedMachineGroup', selectedMachineGroup); // Guarda la selección en caché
+
         const filterValues = {
             dateRange: datepicker.selectedDates,
             selectedMachines: choicesMachine.getValue(true),
             selectedShifts: choicesShift.getValue(true),
-            selectedMachineGroup: choicesMachineGroup.getValue(true),
+            selectedMachineGroup: selectedMachineGroup === '' ? null : selectedMachineGroup, // Envía null si es el placeholder "Todos los grupos..."
             isExtended: document.getElementById('extended-analysis-toggle').checked,
             dailyAggregationType: dailyAgg,
             selectedOperator: selectedOperator
