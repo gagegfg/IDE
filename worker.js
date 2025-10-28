@@ -64,41 +64,32 @@ function getFilteredData(filters) {
 }
 
 function calculateKPIs(data) {
-    const productionsByShift = new Map();
+    const productions = new Map();
     let totalDowntimeMinutes = 0;
 
     data.forEach(row => {
         totalDowntimeMinutes += row.Minutos || 0;
-        if (!row.Fecha || !row.Turno) return;
-
-        const shiftKey = `${getLocalDateString(row.Fecha)}-${row.Turno}`;
-        if (!productionsByShift.has(shiftKey)) {
-            productionsByShift.set(shiftKey, { production: 0, plannedMinutes: 0, seenProdIds: new Set() });
-        }
-        const shiftStats = productionsByShift.get(shiftKey);
         
         const prodId = row.IdProduccion;
-        const uniqueProdKey = `${row.IdProduccion}-${row.Descrip_Maquina}`;
+        const uniqueProdKey = `${prodId}-${row.Descrip_Maquina}`;
 
-        if (prodId && !shiftStats.seenProdIds.has(uniqueProdKey)) {
-            shiftStats.production += row.Cantidad;
-            shiftStats.plannedMinutes += row.Hs_Trab;
-            shiftStats.seenProdIds.add(uniqueProdKey);
+        if (prodId && !productions.has(uniqueProdKey)) {
+            productions.set(uniqueProdKey, {
+                cantidad: row.Cantidad || 0,
+                hsTrab: row.Hs_Trab || 0
+            });
         }
     });
 
-    let totalProduction = 0;
-    let totalPlannedMinutes = 0;
-    productionsByShift.forEach(shiftStats => {
-        totalProduction += shiftStats.production;
-        totalPlannedMinutes += shiftStats.plannedMinutes;
-    });
+    const productionValues = Array.from(productions.values());
+    const totalProduction = productionValues.reduce((sum, p) => sum + p.cantidad, 0);
+    const totalPlannedMinutes = productionValues.reduce((sum, p) => sum + p.hsTrab, 0);
 
     const runTimeMinutes = totalPlannedMinutes - totalDowntimeMinutes;
     const availability = totalPlannedMinutes > 0 ? Math.max(0, runTimeMinutes / totalPlannedMinutes) : 0;
 
-    const numberOfShifts = productionsByShift.size;
-    const efficiency = numberOfShifts > 0 ? totalProduction / numberOfShifts : 0;
+    const numberOfProductionRuns = productions.size;
+    const efficiency = numberOfProductionRuns > 0 ? totalProduction / numberOfProductionRuns : 0;
 
     return {
         totalProduction,
@@ -309,44 +300,29 @@ function aggregateAndSort(data, categoryField, valueField, uniqueByIdProd = fals
 }
 
 function calculateAverageProductionByShift(data) {
-    const operatorShiftStats = {}; // key: operator, value: Map<shiftKey, {production, seenProdIds}>
+    const operatorStats = {}; // key: operator, value: { totalProduction: 0, productionRuns: new Set() }
 
     data.forEach(row => {
         const operator = row.Apellido;
-        if (!operator || !row.Fecha || !row.Turno) return;
+        if (!operator) return;
 
-        if (!operatorShiftStats[operator]) {
-            operatorShiftStats[operator] = new Map();
+        if (!operatorStats[operator]) {
+            operatorStats[operator] = { totalProduction: 0, productionRuns: new Set() };
         }
-        const shiftMap = operatorShiftStats[operator];
-
-        const shiftKey = `${getLocalDateString(row.Fecha)};${row.Turno}`;
-        if (!shiftMap.has(shiftKey)) {
-            shiftMap.set(shiftKey, { production: 0, seenProdIds: new Set() });
-        }
-        const shiftStats = shiftMap.get(shiftKey);
-
+        
         const prodId = row.IdProduccion;
-        const uniqueProdKey = `${row.IdProduccion}-${row.Descrip_Maquina}`;
+        const uniqueProdKey = `${prodId}-${row.Descrip_Maquina}`;
 
-        if (prodId && !shiftStats.seenProdIds.has(uniqueProdKey)) {
-            shiftStats.production += row.Cantidad;
-            shiftStats.seenProdIds.add(uniqueProdKey);
+        if (prodId && !operatorStats[operator].productionRuns.has(uniqueProdKey)) {
+            operatorStats[operator].totalProduction += row.Cantidad;
+            operatorStats[operator].productionRuns.add(uniqueProdKey);
         }
     });
 
-    const result = Object.keys(operatorShiftStats).map(operator => {
-        const shiftMap = operatorShiftStats[operator];
-        if (shiftMap.size === 0) {
-            return { category: operator, value: 0 };
-        }
-
-        let totalProductionAllShifts = 0;
-        shiftMap.forEach(shiftStats => {
-            totalProductionAllShifts += shiftStats.production;
-        });
-
-        const average = totalProductionAllShifts / shiftMap.size;
+    const result = Object.keys(operatorStats).map(operator => {
+        const stats = operatorStats[operator];
+        const numberOfRuns = stats.productionRuns.size;
+        const average = numberOfRuns > 0 ? stats.totalProduction / numberOfRuns : 0;
         return { category: operator, value: average };
     });
     
