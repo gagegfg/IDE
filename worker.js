@@ -4,7 +4,6 @@ let originalData = [];
 let workers = [];
 const numWorkers = navigator.hardwareConcurrency || 4;
 
-// Map to hold the state of active jobs
 let jobs = new Map();
 let nextJobId = 0;
 
@@ -61,7 +60,7 @@ function setupWorkers() {
             const { jobId, ...payload } = event.data.payload;
             const job = jobs.get(jobId);
 
-            if (!job) return; // Job was cancelled or already finished
+            if (!job) return;
 
             job.results.push(payload);
             job.workersFinished++;
@@ -72,7 +71,7 @@ function setupWorkers() {
             if (job.workersFinished === job.totalChunks) {
                 self.postMessage({ type: 'progress', payload: { progress: 85, status: 'Agregando resultados...' } });
                 aggregateResults(job.results, job.filteredData, job.filters);
-                jobs.delete(jobId); // Clean up finished job
+                jobs.delete(jobId);
             }
         };
         workers.push(worker);
@@ -83,14 +82,12 @@ function setupWorkers() {
 
 function aggregateResults(results, filteredData, filters) {
     if (results.length === 0) {
-        // Handle case with no data to process
         const emptyKpi = { totalProduction: 0, totalDowntimeHours: 0, availability: 0, efficiency: 0 };
         const emptyCharts = { dailyProdData: { series: [], categories: [] }, prodByMachineData: [], avgProdByOperatorData: [], downtimeComboData: [], dailyTimeData: { series: [], categories: [] } };
         self.postMessage({ type: 'update_dashboard', payload: { filteredData, kpiData: emptyKpi, chartsData: emptyCharts, summaryData: { topReason: 'N/A' } } });
         return;
     }
 
-    // 1. Aggregate KPIs
     const totalProduction = results.reduce((sum, res) => sum + res.kpiData.totalProduction, 0);
     const totalDowntimeHours = results.reduce((sum, res) => sum + res.kpiData.totalDowntimeHours, 0);
     const totalPlannedMinutes = results.reduce((sum, res) => sum + res.kpiData.totalPlannedMinutes, 0);
@@ -102,27 +99,19 @@ function aggregateResults(results, filteredData, filters) {
 
     const finalKpiData = { totalProduction, totalDowntimeHours, availability, efficiency };
 
-    // 2. Aggregate Downtime Data
     const downtimeMap = new Map();
-    results.forEach(res => {
-        res.downtimeData.forEach(d => {
-            if (!downtimeMap.has(d.reason)) {
-                downtimeMap.set(d.reason, { totalMinutes: 0, totalFrequency: 0 });
-            }
-            const existing = downtimeMap.get(d.reason);
-            existing.totalMinutes += d.totalMinutes;
-            existing.totalFrequency += d.totalFrequency;
-        });
+    results.flatMap(r => r.downtimeData).forEach(d => {
+        if (!downtimeMap.has(d.reason)) {
+            downtimeMap.set(d.reason, { totalMinutes: 0, totalFrequency: 0 });
+        }
+        const existing = downtimeMap.get(d.reason);
+        existing.totalMinutes += d.totalMinutes;
+        existing.totalFrequency += d.totalFrequency;
     });
     const finalDowntimeData = Array.from(downtimeMap.entries()).map(([reason, data]) => ({ reason, ...data }));
 
-    // 3. Create Summary
     const summaryData = createSummaryData(finalKpiData, finalDowntimeData);
 
-    // 4. Aggregate Chart Data
-    const finalProdByMachine = aggregateAndSort(results.flatMap(r => r.prodByMachineData), 'category', 'value');
-    
-    // Correctly aggregate operator data before calculating final average
     const operatorDataMap = new Map();
     results.flatMap(r => r.avgProdByOperatorData).forEach(opData => {
         if (!operatorDataMap.has(opData.category)) {
@@ -132,12 +121,17 @@ function aggregateResults(results, filteredData, filters) {
         existing.totalProduction += opData.totalProduction;
         existing.numberOfRuns += opData.numberOfRuns;
     });
-
     const finalAvgProdByOperator = Array.from(operatorDataMap.entries()).map(([operator, data]) => {
         const average = data.numberOfRuns > 0 ? data.totalProduction / data.numberOfRuns : 0;
         return { category: operator, value: average };
     }).sort((a, b) => b.value - a.value);
-    
+
+    const machineDataMap = new Map();
+    results.flatMap(r => r.prodByMachineData).forEach(mData => {
+        machineDataMap.set(mData.category, (machineDataMap.get(mData.category) || 0) + mData.value);
+    });
+    const finalProdByMachine = Array.from(machineDataMap.entries()).map(([category, value]) => ({ category, value })).sort((a, b) => b.value - a.value);
+
     const { dateRange, isExtended, dailyAggregationType } = filters;
     const dailyProdData = aggregateDailyProduction(filteredData, dateRange, isExtended, dailyAggregationType);
     const dailyTimeData = aggregateDailyTimeDistribution(filteredData, dateRange);
@@ -146,15 +140,6 @@ function aggregateResults(results, filteredData, filters) {
 
     self.postMessage({ type: 'progress', payload: { progress: 95, status: 'Finalizando...' } });
     self.postMessage({ type: 'update_dashboard', payload: { filteredData, kpiData: finalKpiData, chartsData: finalChartsData, summaryData } });
-}
-
-function aggregateAndSort(data, categoryField, valueField) {
-    const aggregation = new Map();
-    data.forEach(item => {
-        aggregation.set(item[categoryField], (aggregation.get(item[categoryField]) || 0) + item[valueField]);
-    });
-    let aggregatedArray = Array.from(aggregation.entries()).map(([key, val]) => ({ [categoryField]: key, [valueField]: val }));
-    return aggregatedArray.sort((a, b) => b[valueField] - a[valueField]);
 }
 
 function createSummaryData(kpiData, downtimeData) {
@@ -370,14 +355,27 @@ self.onmessage = function(e) {
 };
 
 function applyFiltersAndPost(filters) {
-    self.postMessage({ type: 'progress', payload: { progress: 5, status: 'Filtrando datos...' } });
+    self.postMessage({ type: 'progress', payload: { progress: 5, status: 'Filtrando y agrupando datos...' } });
     const filteredData = getFilteredData(filters);
-    
+
+    // Group all rows by production run to ensure data integrity
+    const runsById = new Map();
+    filteredData.forEach(row => {
+        const prodId = row.IdProduccion;
+        if (!prodId) return;
+        const uniqueProdKey = `${prodId}-${row.Descrip_Maquina}`;
+        if (!runsById.has(uniqueProdKey)) {
+            runsById.set(uniqueProdKey, []);
+        }
+        runsById.get(uniqueProdKey).push(row);
+    });
+    const allRuns = Array.from(runsById.values());
+
     const chunks = [];
-    const chunkSize = Math.ceil(filteredData.length / numWorkers);
-    if (filteredData.length > 0 && chunkSize > 0) {
-        for (let i = 0; i < filteredData.length; i += chunkSize) {
-            chunks.push(filteredData.slice(i, i + chunkSize));
+    const chunkSize = Math.ceil(allRuns.length / numWorkers);
+    if (allRuns.length > 0 && chunkSize > 0) {
+        for (let i = 0; i < allRuns.length; i += chunkSize) {
+            chunks.push(allRuns.slice(i, i + chunkSize));
         }
     }
 
@@ -399,15 +397,14 @@ function applyFiltersAndPost(filters) {
     self.postMessage({ type: 'progress', payload: { progress: 15, status: `Distribuyendo carga en ${chunks.length} núcleos...` } });
 
     chunks.forEach((chunk, index) => {
-        workers[index].postMessage({ 
-            type: 'process_chunk', 
-            payload: { 
-                jobId: jobId,
-                dataChunk: chunk,
-                dateRange: filters.dateRange, 
-                isExtended: filters.isExtended, 
-                dailyAggregationType: filters.dailyAggregationType 
-            }
-        });
+        if (workers[index]) { // Check if worker exists
+            workers[index].postMessage({ 
+                type: 'process_chunk', 
+                payload: { 
+                    jobId: jobId,
+                    runGroups: chunk
+                }
+            });
+        }
     });
 }
