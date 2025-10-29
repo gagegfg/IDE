@@ -475,7 +475,7 @@ document.addEventListener('DOMContentLoaded', function () {
                 const diffTime = Math.abs(datepicker.selectedDates[1] - datepicker.selectedDates[0]);
                 diffDays = Math.ceil(diffTime / (1000 * 60 * 60 * 24));
             }
-            const showLabels = (chartData.series.length === 1 && diffDays <= 7);
+            const showLabels = dailyAgg === 'byMachine' || (chartData.series.length === 1 && diffDays <= 7);
 
             const yAxisMin = parseFloat(document.getElementById('yaxis-min')?.value);
             const yAxisMax = parseFloat(document.getElementById('yaxis-max')?.value);
