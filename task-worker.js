@@ -350,7 +350,7 @@ self.onmessage = function(e) {
     const { type, payload } = e.data;
 
     if (type === 'process_chunk') {
-        const { dataChunk, dateRange, isExtended, dailyAggregationType } = payload;
+        const { jobId, dataChunk, dateRange, isExtended, dailyAggregationType } = payload;
         
         const kpiData = calculateKPIs(dataChunk);
         const downtimeData = aggregateDowntime(dataChunk);
@@ -362,6 +362,7 @@ self.onmessage = function(e) {
         self.postMessage({
             type: 'chunk_processed',
             payload: { 
+                jobId, // Echo the Job ID back
                 kpiData, 
                 downtimeData, 
                 dailyProdData, 

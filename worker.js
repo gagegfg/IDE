@@ -4,14 +4,9 @@ let originalData = [];
 let workers = [];
 const numWorkers = navigator.hardwareConcurrency || 4;
 
-// State for the current job being processed
-let currentJob = {
-    results: [],
-    workersFinished: 0,
-    totalChunks: 0,
-    filters: null,
-    filteredData: null
-};
+// Map to hold the state of active jobs
+let jobs = new Map();
+let nextJobId = 0;
 
 // --- UTILITY & SETUP ---
 
@@ -63,18 +58,21 @@ function setupWorkers() {
     for (let i = 0; i < numWorkers; i++) {
         const worker = new Worker('task-worker.js');
         worker.onmessage = (event) => {
-            if (!currentJob.filters) return; // Ignore messages if no job is active
+            const { jobId, ...payload } = event.data.payload;
+            const job = jobs.get(jobId);
 
-            currentJob.results.push(event.data.payload);
-            currentJob.workersFinished++;
+            if (!job) return; // Job was cancelled or already finished
 
-            const progress = 15 + Math.round((currentJob.workersFinished / currentJob.totalChunks) * 70);
-            self.postMessage({ type: 'progress', payload: { progress: progress, status: `Calculando... ${currentJob.workersFinished}/${currentJob.totalChunks} completados.` } });
+            job.results.push(payload);
+            job.workersFinished++;
 
-            if (currentJob.workersFinished === currentJob.totalChunks) {
+            const progress = 15 + Math.round((job.workersFinished / job.totalChunks) * 70);
+            self.postMessage({ type: 'progress', payload: { progress: progress, status: `Calculando... ${job.workersFinished}/${job.totalChunks} completados.` } });
+
+            if (job.workersFinished === job.totalChunks) {
                 self.postMessage({ type: 'progress', payload: { progress: 85, status: 'Agregando resultados...' } });
-                aggregateResults(currentJob.results, currentJob.filteredData, currentJob.filters);
-                currentJob.filters = null; // Mark job as complete
+                aggregateResults(job.results, job.filteredData, job.filters);
+                jobs.delete(jobId); // Clean up finished job
             }
         };
         workers.push(worker);
@@ -85,14 +83,12 @@ function setupWorkers() {
 
 function aggregateResults(results, filteredData, filters) {
     if (results.length === 0) {
-        // Handle case with no data to process
         const emptyKpi = { totalProduction: 0, totalDowntimeHours: 0, availability: 0, efficiency: 0 };
         const emptyCharts = { dailyProdData: { series: [], categories: [] }, prodByMachineData: [], avgProdByOperatorData: [], downtimeComboData: [], dailyTimeData: { series: [], categories: [] } };
         self.postMessage({ type: 'update_dashboard', payload: { filteredData, kpiData: emptyKpi, chartsData: emptyCharts, summaryData: { topReason: 'N/A' } } });
         return;
     }
 
-    // 1. Aggregate KPIs
     const totalProduction = results.reduce((sum, res) => sum + res.kpiData.totalProduction, 0);
     const totalDowntimeHours = results.reduce((sum, res) => sum + res.kpiData.totalDowntimeHours, 0);
     const totalPlannedMinutes = results.reduce((sum, res) => sum + res.kpiData.totalPlannedMinutes, 0);
@@ -102,14 +98,8 @@ function aggregateResults(results, filteredData, filters) {
     const availability = totalPlannedMinutes > 0 ? Math.max(0, runTimeMinutes / totalPlannedMinutes) : 0;
     const efficiency = totalRuns > 0 ? totalProduction / totalRuns : 0;
 
-    const finalKpiData = {
-        totalProduction,
-        totalDowntimeHours,
-        availability,
-        efficiency
-    };
+    const finalKpiData = { totalProduction, totalDowntimeHours, availability, efficiency };
 
-    // 2. Aggregate Downtime Data
     const downtimeMap = new Map();
     results.forEach(res => {
         res.downtimeData.forEach(d => {
@@ -123,36 +113,19 @@ function aggregateResults(results, filteredData, filters) {
     });
     const finalDowntimeData = Array.from(downtimeMap.entries()).map(([reason, data]) => ({ reason, ...data }));
 
-    // 3. Create Summary
     const summaryData = createSummaryData(finalKpiData, finalDowntimeData);
 
-    // 4. Aggregate Chart Data
     const finalProdByMachine = aggregateAndSort(results.flatMap(r => r.prodByMachineData), 'category', 'value');
     const finalAvgProdByOperator = aggregateAndSort(results.flatMap(r => r.avgProdByOperatorData), 'category', 'value');
     
-    // For time-based charts that depend on the full date range, we must re-calculate them here.
     const { dateRange, isExtended, dailyAggregationType } = filters;
     const dailyProdData = aggregateDailyProduction(filteredData, dateRange, isExtended, dailyAggregationType);
     const dailyTimeData = aggregateDailyTimeDistribution(filteredData, dateRange);
 
-    const finalChartsData = {
-        dailyProdData,
-        prodByMachineData: finalProdByMachine,
-        avgProdByOperatorData: finalAvgProdByOperator,
-        downtimeComboData: finalDowntimeData,
-        dailyTimeData
-    };
+    const finalChartsData = { dailyProdData, prodByMachineData: finalProdByMachine, avgProdByOperatorData: finalAvgProdByOperator, downtimeComboData: finalDowntimeData, dailyTimeData };
 
     self.postMessage({ type: 'progress', payload: { progress: 95, status: 'Finalizando...' } });
-    self.postMessage({
-        type: 'update_dashboard',
-        payload: { 
-            filteredData, 
-            kpiData: finalKpiData, 
-            chartsData: finalChartsData, 
-            summaryData 
-        }
-    });
+    self.postMessage({ type: 'update_dashboard', payload: { filteredData, kpiData: finalKpiData, chartsData: finalChartsData, summaryData } });
 }
 
 function aggregateAndSort(data, categoryField, valueField) {
@@ -171,16 +144,10 @@ function createSummaryData(kpiData, downtimeData) {
     const topReasonMins = sortedDowntime[0]?.totalMinutes || 0;
     const totalDowntimeMins = kpiData.totalDowntimeHours * 60;
     const topReasonPercentage = totalDowntimeMins > 0 ? (topReasonMins / totalDowntimeMins * 100).toFixed(0) : 0;
-    return {
-        availabilityPercentage: (kpiData.availability * 100).toFixed(1),
-        topReason,
-        topReasonPercentage
-    };
+    return { availabilityPercentage: (kpiData.availability * 100).toFixed(1), topReason, topReasonPercentage };
 }
 
-// Re-add chart aggregation logic needed post-merge
 const { aggregateDailyProduction, aggregateDailyTimeDistribution } = (() => {
-    // Encapsulate helpers to avoid polluting global scope
     function getLocalDateString(d) {
         const date = new Date(d);
         const year = date.getFullYear();
@@ -394,35 +361,33 @@ function applyFiltersAndPost(filters) {
         }
     }
 
-    // Reset and configure the state for the new job
-    currentJob = {
+    const jobId = nextJobId++;
+    jobs.set(jobId, {
         results: [],
         workersFinished: 0,
         totalChunks: chunks.length,
         filters: filters,
         filteredData: filteredData
-    };
+    });
 
     if (chunks.length === 0) {
         aggregateResults([], filteredData, filters);
+        jobs.delete(jobId);
         return;
     }
 
-    self.postMessage({ type: 'progress', payload: { progress: 15, status: `Distribuyendo carga en ${currentJob.totalChunks} núcleos...` } });
+    self.postMessage({ type: 'progress', payload: { progress: 15, status: `Distribuyendo carga en ${chunks.length} núcleos...` } });
 
-    workers.forEach((worker, index) => {
-        const chunk = chunks[index];
-        if (chunk) {
-            worker.postMessage({ 
-                type: 'process_chunk', 
-                payload: { 
-                    dataChunk: chunk,
-                    // Pass required context for calculations that span the whole dataset
-                    dateRange: filters.dateRange, 
-                    isExtended: filters.isExtended, 
-                    dailyAggregationType: filters.dailyAggregationType 
-                }
-            });
-        }
+    chunks.forEach((chunk, index) => {
+        workers[index].postMessage({ 
+            type: 'process_chunk', 
+            payload: { 
+                jobId: jobId,
+                dataChunk: chunk,
+                dateRange: filters.dateRange, 
+                isExtended: filters.isExtended, 
+                dailyAggregationType: filters.dailyAggregationType 
+            }
+        });
     });
 }
