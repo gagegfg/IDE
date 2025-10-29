@@ -359,17 +359,17 @@ function applyFiltersAndPost(filters) {
     const filteredData = getFilteredData(filters);
 
     // Group all rows by production run to ensure data integrity
-    const runsById = new Map();
+    const runsById = {}; // Use a plain object for simplicity and safety
     filteredData.forEach(row => {
         const prodId = row.IdProduccion;
         if (!prodId) return;
         const uniqueProdKey = `${prodId}-${row.Descrip_Maquina}`;
-        if (!runsById.has(uniqueProdKey)) {
-            runsById.set(uniqueProdKey, []);
+        if (!runsById[uniqueProdKey]) {
+            runsById[uniqueProdKey] = [];
         }
-        runsById.get(uniqueProdKey).push(row);
+        runsById[uniqueProdKey].push(row);
     });
-    const allRuns = Array.from(runsById.values());
+    const allRuns = Object.values(runsById);
 
     const chunks = [];
     const chunkSize = Math.ceil(allRuns.length / numWorkers);
@@ -397,7 +397,7 @@ function applyFiltersAndPost(filters) {
     self.postMessage({ type: 'progress', payload: { progress: 15, status: `Distribuyendo carga en ${chunks.length} núcleos...` } });
 
     chunks.forEach((chunk, index) => {
-        if (workers[index]) { // Check if worker exists
+        if (workers[index]) {
             workers[index].postMessage({ 
                 type: 'process_chunk', 
                 payload: { 
