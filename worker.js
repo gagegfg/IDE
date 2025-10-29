@@ -88,7 +88,7 @@ function aggregateResults(results, filteredData, filters) {
         return;
     }
 
-    // --- Aggregate KPIs and other non-daily data ---
+    // --- Aggregate KPIs from partial results ---
     const totalProduction = results.reduce((sum, res) => sum + res.kpiData.totalProduction, 0);
     const totalDowntimeHours = results.reduce((sum, res) => sum + res.kpiData.totalDowntimeHours, 0);
     const totalPlannedMinutes = results.reduce((sum, res) => sum + res.kpiData.totalPlannedMinutes, 0);
@@ -99,6 +99,7 @@ function aggregateResults(results, filteredData, filters) {
     const efficiency = totalRuns > 0 ? totalProduction / totalRuns : 0;
     const finalKpiData = { totalProduction, totalDowntimeHours, availability, efficiency };
 
+    // --- Aggregate Chart Data from partial results ---
     const downtimeMap = new Map();
     results.flatMap(r => r.downtimeData).forEach(d => {
         if (!downtimeMap.has(d.reason)) { downtimeMap.set(d.reason, { totalMinutes: 0, totalFrequency: 0 }); }
@@ -129,7 +130,7 @@ function aggregateResults(results, filteredData, filters) {
     const finalProdByMachine = Array.from(machineDataMap.entries()).map(([category, value]) => ({ category, value })).sort((a, b) => b.value - a.value);
 
     // --- Reduce and format daily chart data ---
-    const dailyProdData = formatDailyProduction(results.map(r => r.dailyProdAggregation));
+    const dailyProdData = formatDailyProduction(results.map(r => r.dailyProdAggregation), filters.dailyAggregationType);
     const dailyTimeData = formatDailyTimeDistribution(results.map(r => r.dailyTimeAggregation));
 
     const finalChartsData = { dailyProdData, prodByMachineData: finalProdByMachine, avgProdByOperatorData: finalAvgProdByOperator, downtimeComboData: finalDowntimeData, dailyTimeData };
@@ -148,22 +149,46 @@ function createSummaryData(kpiData, downtimeData) {
     return { availabilityPercentage: (kpiData.availability * 100).toFixed(1), topReason, topReasonPercentage };
 }
 
-function formatDailyProduction(partialResults) {
-    const finalDailyProd = {};
-    partialResults.forEach(dailyResult => {
-        for (const dateStr in dailyResult) {
-            finalDailyProd[dateStr] = (finalDailyProd[dateStr] || 0) + dailyResult[dateStr];
-        }
+function formatDailyProduction(partialResults, aggType) {
+    const finalDailyProd = new Map();
+
+    partialResults.forEach(chunkMap => {
+        chunkMap.forEach((value, dateStr) => {
+            if (aggType === 'total') {
+                finalDailyProd.set(dateStr, (finalDailyProd.get(dateStr) || 0) + value);
+            } else { // byShift or byMachine
+                if (!finalDailyProd.has(dateStr)) {
+                    finalDailyProd.set(dateStr, new Map());
+                }
+                const finalDayMap = finalDailyProd.get(dateStr);
+                value.forEach((groupValue, groupKey) => {
+                    finalDayMap.set(groupKey, (finalDayMap.get(groupKey) || 0) + groupValue);
+                });
+            }
+        });
     });
 
-    const sortedDates = Object.keys(finalDailyProd).sort();
-    const seriesData = sortedDates.map(date => finalDailyProd[date]);
+    const sortedDates = Array.from(finalDailyProd.keys()).sort();
     const categories = sortedDates.map(date => new Date(`${date}T00:00:00`).getTime());
+    let series = [];
 
-    return {
-        series: [{ name: 'Producción Diaria', data: seriesData }],
-        categories: categories
-    };
+    if (aggType === 'total') {
+        const seriesData = sortedDates.map(date => finalDailyProd.get(date));
+        series.push({ name: 'Producción Total', data: seriesData });
+    } else {
+        const allGroupKeys = new Set();
+        finalDailyProd.forEach(groupMap => {
+            groupMap.forEach((_, key) => allGroupKeys.add(key));
+        });
+        const sortedGroupKeys = Array.from(allGroupKeys).sort();
+
+        series = sortedGroupKeys.map(key => ({
+            name: key,
+            data: sortedDates.map(date => finalDailyProd.get(date).get(key) || 0)
+        }));
+    }
+
+    return { series, categories };
 }
 
 function formatDailyTimeDistribution(partialResults) {
@@ -252,23 +277,11 @@ function applyFiltersAndPost(filters) {
     self.postMessage({ type: 'progress', payload: { progress: 5, status: 'Filtrando y agrupando datos...' } });
     const filteredData = getFilteredData(filters);
 
-    const runsById = {};
-    filteredData.forEach(row => {
-        const prodId = row.IdProduccion;
-        if (!prodId) return;
-        const uniqueProdKey = `${prodId}-${row.Descrip_Maquina}`;
-        if (!runsById[uniqueProdKey]) {
-            runsById[uniqueProdKey] = [];
-        }
-        runsById[uniqueProdKey].push(row);
-    });
-    const allRuns = Object.values(runsById);
-
     const chunks = [];
-    const chunkSize = Math.ceil(allRuns.length / numWorkers);
-    if (allRuns.length > 0 && chunkSize > 0) {
-        for (let i = 0; i < allRuns.length; i += chunkSize) {
-            chunks.push(allRuns.slice(i, i + chunkSize));
+    const chunkSize = Math.ceil(filteredData.length / numWorkers);
+    if (filteredData.length > 0 && chunkSize > 0) {
+        for (let i = 0; i < filteredData.length; i += chunkSize) {
+            chunks.push(filteredData.slice(i, i + chunkSize));
         }
     }
 
@@ -295,7 +308,8 @@ function applyFiltersAndPost(filters) {
                 type: 'process_chunk', 
                 payload: { 
                     jobId: jobId,
-                    runGroups: chunk
+                    chunk: chunk,
+                    dailyAggregationType: filters.dailyAggregationType
                 }
             });
         }
