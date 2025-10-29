@@ -76,8 +76,8 @@ function calculateKPIs(data) {
         totalDowntimeHours: totalDowntimeMinutes / 60,
         availability,
         efficiency,
-        // Return components for aggregation
-        totalPlannedMinutes
+        totalPlannedMinutes,
+        numberOfProductionRuns // Ensure this is returned for aggregation
     };
 }
 
@@ -252,6 +252,7 @@ function calculateAverageProductionByShift(data) {
         if (!operator) return;
 
         if (!operatorStats[operator]) {
+            // Use a map for productionRuns to correctly sum up production for each operator.
             operatorStats[operator] = { totalProduction: 0, productionRuns: new Set() };
         }
         
@@ -264,11 +265,14 @@ function calculateAverageProductionByShift(data) {
         }
     });
 
+    // Return the components for each operator, not the final average.
     return Object.keys(operatorStats).map(operator => {
         const stats = operatorStats[operator];
-        const numberOfRuns = stats.productionRuns.size;
-        const average = numberOfRuns > 0 ? stats.totalProduction / numberOfRuns : 0;
-        return { category: operator, value: average };
+        return { 
+            category: operator, 
+            totalProduction: stats.totalProduction,
+            numberOfRuns: stats.productionRuns.size
+        };
     });
 }
 

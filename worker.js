@@ -83,12 +83,14 @@ function setupWorkers() {
 
 function aggregateResults(results, filteredData, filters) {
     if (results.length === 0) {
+        // Handle case with no data to process
         const emptyKpi = { totalProduction: 0, totalDowntimeHours: 0, availability: 0, efficiency: 0 };
         const emptyCharts = { dailyProdData: { series: [], categories: [] }, prodByMachineData: [], avgProdByOperatorData: [], downtimeComboData: [], dailyTimeData: { series: [], categories: [] } };
         self.postMessage({ type: 'update_dashboard', payload: { filteredData, kpiData: emptyKpi, chartsData: emptyCharts, summaryData: { topReason: 'N/A' } } });
         return;
     }
 
+    // 1. Aggregate KPIs
     const totalProduction = results.reduce((sum, res) => sum + res.kpiData.totalProduction, 0);
     const totalDowntimeHours = results.reduce((sum, res) => sum + res.kpiData.totalDowntimeHours, 0);
     const totalPlannedMinutes = results.reduce((sum, res) => sum + res.kpiData.totalPlannedMinutes, 0);
@@ -100,6 +102,7 @@ function aggregateResults(results, filteredData, filters) {
 
     const finalKpiData = { totalProduction, totalDowntimeHours, availability, efficiency };
 
+    // 2. Aggregate Downtime Data
     const downtimeMap = new Map();
     results.forEach(res => {
         res.downtimeData.forEach(d => {
@@ -113,10 +116,27 @@ function aggregateResults(results, filteredData, filters) {
     });
     const finalDowntimeData = Array.from(downtimeMap.entries()).map(([reason, data]) => ({ reason, ...data }));
 
+    // 3. Create Summary
     const summaryData = createSummaryData(finalKpiData, finalDowntimeData);
 
+    // 4. Aggregate Chart Data
     const finalProdByMachine = aggregateAndSort(results.flatMap(r => r.prodByMachineData), 'category', 'value');
-    const finalAvgProdByOperator = aggregateAndSort(results.flatMap(r => r.avgProdByOperatorData), 'category', 'value');
+    
+    // Correctly aggregate operator data before calculating final average
+    const operatorDataMap = new Map();
+    results.flatMap(r => r.avgProdByOperatorData).forEach(opData => {
+        if (!operatorDataMap.has(opData.category)) {
+            operatorDataMap.set(opData.category, { totalProduction: 0, numberOfRuns: 0 });
+        }
+        const existing = operatorDataMap.get(opData.category);
+        existing.totalProduction += opData.totalProduction;
+        existing.numberOfRuns += opData.numberOfRuns;
+    });
+
+    const finalAvgProdByOperator = Array.from(operatorDataMap.entries()).map(([operator, data]) => {
+        const average = data.numberOfRuns > 0 ? data.totalProduction / data.numberOfRuns : 0;
+        return { category: operator, value: average };
+    }).sort((a, b) => b.value - a.value);
     
     const { dateRange, isExtended, dailyAggregationType } = filters;
     const dailyProdData = aggregateDailyProduction(filteredData, dateRange, isExtended, dailyAggregationType);
