@@ -21,21 +21,27 @@ function processRunGroups(runGroups) {
     const downtimeAggregation = {};
     const operatorStats = {};
     const machineProdAggregation = {};
+    const dailyProdAggregation = {};
+    const dailyTimeAggregation = {};
 
     runGroups.forEach(runGroup => {
         const firstRow = runGroup[0];
+        if (!firstRow) return;
+
         const runQuantity = firstRow.Cantidad || 0;
         const runPlannedMinutes = firstRow.Hs_Trab || 0;
         const operator = firstRow.Apellido;
         const machine = firstRow.Descrip_Maquina;
+        const dateStr = getLocalDateString(firstRow.Fecha);
 
+        // --- Aggregate totals for KPIs ---
         totalProduction += runQuantity;
         totalPlannedMinutes += runPlannedMinutes;
 
+        // --- Aggregate for charts ---
         if (machine) {
             machineProdAggregation[machine] = (machineProdAggregation[machine] || 0) + runQuantity;
         }
-
         if (operator) {
             if (!operatorStats[operator]) {
                 operatorStats[operator] = { totalProduction: 0, numberOfRuns: 0 };
@@ -43,24 +49,37 @@ function processRunGroups(runGroups) {
             operatorStats[operator].totalProduction += runQuantity;
             operatorStats[operator].numberOfRuns += 1;
         }
+        if (dateStr) {
+            dailyProdAggregation[dateStr] = (dailyProdAggregation[dateStr] || 0) + runQuantity;
+        }
 
+        // --- Aggregate row-level data (downtime) ---
         runGroup.forEach(row => {
             const downtimeMinutes = row.Minutos || 0;
             const reason = row.descrip_incidencia;
             totalDowntimeMinutes += downtimeMinutes;
 
-            if (reason && downtimeMinutes > 0) {
-                if (!downtimeAggregation[reason]) {
-                    downtimeAggregation[reason] = { totalMinutes: 0, totalFrequency: 0 };
+            if (dateStr) {
+                if (!dailyTimeAggregation[dateStr]) {
+                    dailyTimeAggregation[dateStr] = { productionMinutes: 0, downtime: {} };
                 }
-                downtimeAggregation[reason].totalMinutes += downtimeMinutes;
-                // Frequency is counted once per unique incident row that has minutes
-                downtimeAggregation[reason].totalFrequency += 1; 
+                if (reason && downtimeMinutes > 0) {
+                    dailyTimeAggregation[dateStr].downtime[reason] = (dailyTimeAggregation[dateStr].downtime[reason] || 0) + downtimeMinutes;
+                }
             }
         });
+        
+        // Add production minutes for the run to the daily time aggregation
+        if (dateStr) {
+             if (!dailyTimeAggregation[dateStr]) {
+                dailyTimeAggregation[dateStr] = { productionMinutes: 0, downtime: {} };
+            }
+            const runDowntime = runGroup.reduce((sum, r) => sum + (r.Minutos || 0), 0);
+            dailyTimeAggregation[dateStr].productionMinutes += Math.max(0, runPlannedMinutes - runDowntime);
+        }
     });
 
-    // Final KPI data for this chunk
+    // --- Finalize partial results for this chunk ---
     const kpiData = {
         totalProduction,
         totalDowntimeHours: totalDowntimeMinutes / 60,
@@ -68,27 +87,24 @@ function processRunGroups(runGroups) {
         numberOfProductionRuns
     };
 
-    // Final downtime data for this chunk
     const downtimeData = Object.keys(downtimeAggregation).map(reason => ({
         reason,
         totalMinutes: downtimeAggregation[reason].totalMinutes,
         totalFrequency: downtimeAggregation[reason].totalFrequency
     }));
 
-    // Final operator data for this chunk
     const avgProdByOperatorData = Object.keys(operatorStats).map(op => ({
         category: op,
         totalProduction: operatorStats[op].totalProduction,
         numberOfRuns: operatorStats[op].numberOfRuns
     }));
 
-    // Final machine data for this chunk
     const prodByMachineData = Object.keys(machineProdAggregation).map(m => ({
         category: m,
         value: machineProdAggregation[m]
     }));
 
-    return { kpiData, downtimeData, avgProdByOperatorData, prodByMachineData };
+    return { kpiData, downtimeData, avgProdByOperatorData, prodByMachineData, dailyProdAggregation, dailyTimeAggregation };
 }
 
 
