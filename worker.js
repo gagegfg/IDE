@@ -173,7 +173,11 @@ function formatDailyProduction(partialResults, aggType) {
     let series = [];
 
     if (aggType === 'total') {
-        const seriesData = sortedDates.map(date => finalDailyProd.get(date));
+        const seriesData = sortedDates.map(date => {
+            const value = finalDailyProd.get(date);
+            // Devolver null si es 0 o undefined para generar un corte en la serie.
+            return value > 0 ? value : null;
+        });
         series.push({ name: 'Producción Total', data: seriesData });
     } else {
         const allGroupKeys = new Set();
@@ -184,7 +188,12 @@ function formatDailyProduction(partialResults, aggType) {
 
         series = sortedGroupKeys.map(key => ({
             name: key,
-            data: sortedDates.map(date => finalDailyProd.get(date).get(key) || 0)
+            data: sortedDates.map(date => {
+                const dayMap = finalDailyProd.get(date);
+                const value = dayMap ? dayMap.get(key) : undefined;
+                // Devolver null si es 0, undefined o no hay mapa para generar un corte.
+                return value > 0 ? value : null;
+            })
         }));
     }
 
@@ -260,7 +269,7 @@ self.onmessage = function(e) {
                         uniqueMachineGroups: [...new Set(originalData.map(row => row.Grupo_Maquina))].filter(Boolean).sort()
                     }
                 });
-                applyFiltersAndPost({ dateRange: [startOfPreviousMonth, today], selectedMachines: [], selectedShifts: [], selectedMachineGroup: null, isExtended: false, dailyAggregationType: 'total' });
+                applyFiltersAndPost({ dateRange: [startOfPreviousMonth, today], selectedMachines: [], selectedShifts: [], selectedShifts: [], selectedMachineGroup: null, isExtended: false, dailyAggregationType: 'total' });
             },
             error: err => {
                 self.postMessage({ type: 'error', payload: `Error al cargar CSV: ${err.message}` });
