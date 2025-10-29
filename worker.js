@@ -130,7 +130,7 @@ function aggregateResults(results, filteredData, filters) {
     const finalProdByMachine = Array.from(machineDataMap.entries()).map(([category, value]) => ({ category, value })).sort((a, b) => b.value - a.value);
 
     // --- Reduce and format daily chart data ---
-    const dailyProdData = formatDailyProduction(results.map(r => r.dailyProdAggregation), filters.dailyAggregationType);
+    const dailyProdData = formatDailyProduction(results.map(r => r.dailyProdAggregation), filters.dailyAggregationType, filters.dateRange);
     const dailyTimeData = formatDailyTimeDistribution(results.map(r => r.dailyTimeAggregation));
 
     const finalChartsData = { dailyProdData, prodByMachineData: finalProdByMachine, avgProdByOperatorData: finalAvgProdByOperator, downtimeComboData: finalDowntimeData, dailyTimeData };

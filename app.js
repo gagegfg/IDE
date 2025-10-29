@@ -470,12 +470,7 @@ document.addEventListener('DOMContentLoaded', function () {
         let options = {};
         if (type === 'line') {
             const dailyAgg = document.querySelector('input[name="dailyAgg"]:checked')?.value || 'total';
-            let diffDays = 0;
-            if (datepicker.selectedDates.length === 2) {
-                const diffTime = Math.abs(datepicker.selectedDates[1] - datepicker.selectedDates[0]);
-                diffDays = Math.ceil(diffTime / (1000 * 60 * 60 * 24));
-            }
-            const showLabels = dailyAgg === 'byMachine' || (chartData.series.length === 1 && diffDays <= 7);
+            const showLabels = (dailyAgg === 'total');
 
             const yAxisMin = parseFloat(document.getElementById('yaxis-min')?.value);
             const yAxisMax = parseFloat(document.getElementById('yaxis-max')?.value);
