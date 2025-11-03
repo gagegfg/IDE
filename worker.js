@@ -286,36 +286,46 @@ function applyFiltersAndPost(filters) {
     self.postMessage({ type: 'progress', payload: { progress: 5, status: 'Filtrando y agrupando datos...' } });
     const filteredData = getFilteredData(filters);
 
-    const chunks = [];
-    const chunkSize = Math.ceil(filteredData.length / numWorkers);
-    if (filteredData.length > 0 && chunkSize > 0) {
-        for (let i = 0; i < filteredData.length; i += chunkSize) {
-            chunks.push(filteredData.slice(i, i + chunkSize));
+    // --- START: New Grouping Logic ---
+    const groupedByProductionId = new Map();
+    filteredData.forEach(row => {
+        if (!row.IdProduccion) return; // Skip rows without a production ID
+        if (!groupedByProductionId.has(row.IdProduccion)) {
+            groupedByProductionId.set(row.IdProduccion, []);
         }
-    }
+        groupedByProductionId.get(row.IdProduccion).push(row);
+    });
+
+    const productionGroups = Array.from(groupedByProductionId.values());
+    
+    const chunks = Array.from({ length: numWorkers }, () => []);
+    productionGroups.forEach((group, index) => {
+        chunks[index % numWorkers].push(...group);
+    });
+    // --- END: New Grouping Logic ---
 
     const jobId = nextJobId++;
     jobs.set(jobId, {
         results: [],
         workersFinished: 0,
-        totalChunks: chunks.length,
+        totalChunks: chunks.filter(c => c.length > 0).length, // Only count non-empty chunks
         filters: filters,
         filteredData: filteredData
     });
 
-    if (chunks.length === 0) {
+    if (jobs.get(jobId).totalChunks === 0) {
         aggregateResults([], filteredData, filters);
         jobs.delete(jobId);
         return;
     }
 
-    self.postMessage({ type: 'progress', payload: { progress: 15, status: `Distribuyendo carga en ${chunks.length} núcleos...` } });
+    self.postMessage({ type: 'progress', payload: { progress: 15, status: `Distribuyendo carga en ${jobs.get(jobId).totalChunks} núcleos...` } });
 
     chunks.forEach((chunk, index) => {
-        if (workers[index]) {
-            workers[index].postMessage({ 
-                type: 'process_chunk', 
-                payload: { 
+        if (chunk.length > 0 && workers[index]) {
+            workers[index].postMessage({
+                type: 'process_chunk',
+                payload: {
                     jobId: jobId,
                     chunk: chunk,
                     dailyAggregationType: filters.dailyAggregationType
