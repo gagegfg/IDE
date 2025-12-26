@@ -1,4 +1,9 @@
 ﻿IdProduccion;Fecha;Turno;Objetivo;Encargado;Máquina_Prod;Descrip_Maquina;Operario;Apellido;Cantidad;Hs Trab;Hs Descanso;Observaciones;IdIncidencia;NroIncidencia;descrip_incidencia;Frecuencia;Minutos;SinOperario;Grupo_Maquina
+191356;09/12/2025;06-14;0;146;11;Pan Dulcera 11;126;Ponce;4000;390;0;;303427;1;Arranque / Puesta a Punto;1;20;False;PANDULCERA MANUAL
+191356;09/12/2025;06-14;0;146;11;Pan Dulcera 11;126;Ponce;4000;390;0;;303428;4;Ajuste de mantenimiento;1;20;False;PANDULCERA MANUAL
+191356;09/12/2025;06-14;0;146;11;Pan Dulcera 11;126;Ponce;4000;390;0;;303429;4;Ajuste de mantenimiento;1;20;False;PANDULCERA MANUAL
+191356;09/12/2025;06-14;0;146;11;Pan Dulcera 11;126;Ponce;4000;390;0;;303430;2;Limpieza en Proceso;1;30;False;PANDULCERA MANUAL
+191357;09/12/2025;06-14;0;146;11;Pan Dulcera 11;;;0;0;0;;;;;;;;PANDULCERA MANUAL
 189796;01/08/2025;06-14;4000;18;9;Pan Dulcera 9;189;Avendaño;41000;400;;;298720;10;Cambio de Bobina;2;20;False;PANDULCERA
 189796;01/08/2025;06-14;4000;18;9;Pan Dulcera 9;189;Avendaño;41000;400;;;298721;14;Incidencia Papel;2;20;False;PANDULCERA
 189796;01/08/2025;06-14;4000;18;9;Pan Dulcera 9;189;Avendaño;41000;400;;;298722;2;Limpieza en Proceso;2;40;False;PANDULCERA
@@ -4713,4 +4718,28 @@
 191347;06/12/2025;06-14;0;;13;Pan Dulcera 13;430;Banegas;39300;375;0;;303399;10;Cambio de Bobina;1;10;False;PANDULCERA
 191347;06/12/2025;06-14;0;;13;Pan Dulcera 13;430;Banegas;39300;375;0;;303400;2;Limpieza en Proceso;1;10;False;PANDULCERA
 191347;06/12/2025;06-14;0;;13;Pan Dulcera 13;430;Banegas;39300;375;0;;303401;2;Limpieza en Proceso;1;30;False;PANDULCERA
-191348;06/12/2025;06-14;0;;13;Pan Dulcera 13;;;0;0;0;;;;;;;;PANDULCERA
+191348;06/12/2025;06-14;1150;;43;Budinera SFA 3;399;Villalba;7800;340;0;;303402;4;Ajuste de mantenimiento;2;90;False;BUDINERA
+191348;06/12/2025;06-14;1150;;43;Budinera SFA 3;399;Villalba;7800;340;0;;303403;4;Ajuste de mantenimiento;1;20;False;BUDINERA
+191348;06/12/2025;06-14;1150;;43;Budinera SFA 3;399;Villalba;7800;340;0;;303404;2;Limpieza en Proceso;1;30;False;BUDINERA
+191349;06/12/2025;06-14;1150;;44;Budinera SFA 4;399;Villalba;4000;200;0;;303405;4;Ajuste de mantenimiento;1;80;False;BUDINERA
+191349;06/12/2025;06-14;1150;;44;Budinera SFA 4;399;Villalba;4000;200;0;;303406;4;Ajuste de mantenimiento;1;200;False;BUDINERA
+191350;06/12/2025;06-14;1600;;45;Budinera SFA 5;438;Emanuel;6800;300;0;;303407;4;Ajuste de mantenimiento;5;150;False;BUDINERA
+191350;06/12/2025;06-14;1600;;45;Budinera SFA 5;438;Emanuel;6800;300;0;;303408;2;Limpieza en Proceso;1;30;False;BUDINERA
+191351;06/12/2025;06-14;1600;;46;Budinera SFA 6;400;Denis;6600;300;0;;303409;4;Ajuste de mantenimiento;1;40;False;BUDINERA
+191351;06/12/2025;06-14;1600;;46;Budinera SFA 6;400;Denis;6600;300;0;;303410;4;Ajuste de mantenimiento;2;30;False;BUDINERA
+191351;06/12/2025;06-14;1600;;46;Budinera SFA 6;400;Denis;6600;300;0;;303411;4;Ajuste de mantenimiento;1;20;False;BUDINERA
+191351;06/12/2025;06-14;1600;;46;Budinera SFA 6;400;Denis;6600;300;0;;303412;14;Incidencia Papel;1;10;False;BUDINERA
+191351;06/12/2025;06-14;1600;;46;Budinera SFA 6;400;Denis;6600;300;0;;303413;4;Ajuste de mantenimiento;1;70;False;BUDINERA
+191351;06/12/2025;06-14;1600;;46;Budinera SFA 6;400;Denis;6600;300;0;;303414;14;Incidencia Papel;1;10;False;BUDINERA
+191352;06/12/2025;06-14;1600;146;47;Budinera SFA 7;438;Emanuel;9300;450;0;;303415;6;Falla Eléctrica;1;30;False;BUDINERA
+191353;06/12/2025;06-14;1600;146;48;Budinera SFA 8;400;Denis;9400;450;0;;303416;2;Limpieza en Proceso;1;30;False;BUDINERA
+191354;06/12/2025;06-14;0;146;49;Budinera SFA 9;436;Kevin;10000;400;0;;303417;10;Cambio de Bobina;1;10;False;BUDINERA
+191354;06/12/2025;06-14;0;146;49;Budinera SFA 9;436;Kevin;10000;400;0;;303418;4;Ajuste de mantenimiento;1;40;False;BUDINERA
+191354;06/12/2025;06-14;0;146;49;Budinera SFA 9;436;Kevin;10000;400;0;;303419;10;Cambio de Bobina;1;10;False;BUDINERA
+191354;06/12/2025;06-14;0;146;49;Budinera SFA 9;436;Kevin;10000;400;0;;303420;2;Limpieza en Proceso;1;20;False;BUDINERA
+191355;09/12/2025;06-14;0;146;10;Pan Dulcera 10;440;Vicente;31200;300;0;;303421;1;Arranque / Puesta a Punto;1;10;False;PANDULCERA
+191355;09/12/2025;06-14;0;146;10;Pan Dulcera 10;440;Vicente;31200;300;0;;303422;4;Ajuste de mantenimiento;2;30;False;PANDULCERA
+191355;09/12/2025;06-14;0;146;10;Pan Dulcera 10;440;Vicente;31200;300;0;;303423;14;Incidencia Papel;1;10;False;PANDULCERA
+191355;09/12/2025;06-14;0;146;10;Pan Dulcera 10;440;Vicente;31200;300;0;;303424;14;Incidencia Papel;1;90;False;PANDULCERA
+191355;09/12/2025;06-14;0;146;10;Pan Dulcera 10;440;Vicente;31200;300;0;;303425;4;Ajuste de mantenimiento;1;20;False;PANDULCERA
+191355;09/12/2025;06-14;0;146;10;Pan Dulcera 10;440;Vicente;31200;300;0;;303426;2;Limpieza en Proceso;1;20;False;PANDULCERA
