@@ -7843,4 +7843,14 @@
 192295;23/04/2026;22-06;0;18;49;Budinera SFA 9;422;Sanchez;14000;415;0;;306510;4;Ajuste de mantenimiento;2;40;False;BUDINERA
 192295;23/04/2026;22-06;0;18;49;Budinera SFA 9;422;Sanchez;14000;415;0;;306511;10;Cambio de Bobina;1;10;False;BUDINERA
 192295;23/04/2026;22-06;0;18;49;Budinera SFA 9;422;Sanchez;14000;415;0;;306512;2;Limpieza en Proceso;1;5;False;BUDINERA
-192296;24/04/2026;22-06;0;18;49;Budinera SFA 9;;;0;0;0;;;;;;;;BUDINERA
+192296;24/04/2026;06-14;4000;18;9;Pan Dulcera 9;442;Oronaz;17500;190;0;;306513;4;Ajuste de mantenimiento;1;120;False;PANDULCERA
+192296;24/04/2026;06-14;4000;18;9;Pan Dulcera 9;442;Oronaz;17500;190;0;;306514;4;Ajuste de mantenimiento;1;85;False;PANDULCERA
+192296;24/04/2026;06-14;4000;18;9;Pan Dulcera 9;442;Oronaz;17500;190;0;;306515;16;Relevo;1;30;False;PANDULCERA
+192296;24/04/2026;06-14;4000;18;9;Pan Dulcera 9;442;Oronaz;17500;190;0;;306516;2;Limpieza en Proceso;1;30;False;PANDULCERA
+192296;24/04/2026;06-14;4000;18;9;Pan Dulcera 9;442;Oronaz;17500;190;0;;306517;4;Ajuste de mantenimiento;1;15;False;PANDULCERA
+192296;24/04/2026;06-14;4000;18;9;Pan Dulcera 9;442;Oronaz;17500;190;0;;306518;4;Ajuste de mantenimiento;1;5;False;PANDULCERA
+192296;24/04/2026;06-14;4000;18;9;Pan Dulcera 9;442;Oronaz;17500;190;0;;306519;4;Ajuste de mantenimiento;1;5;False;PANDULCERA
+192297;24/04/2026;06-14;0;18;10;Pan Dulcera 10;331;Torrez Pantoja;22800;0;;;306520;4;Ajuste de mantenimiento;2;95;False;PANDULCERA
+192297;24/04/2026;06-14;0;18;10;Pan Dulcera 10;331;Torrez Pantoja;22800;0;;;306521;10;Cambio de Bobina;1;10;False;PANDULCERA
+192297;24/04/2026;06-14;0;18;10;Pan Dulcera 10;331;Torrez Pantoja;22800;0;;;306522;3;Limpieza fin de turno;1;30;False;PANDULCERA
+192297;24/04/2026;06-14;0;18;10;Pan Dulcera 10;331;Torrez Pantoja;22800;0;;;306523;4;Ajuste de mantenimiento;1;15;False;PANDULCERA
