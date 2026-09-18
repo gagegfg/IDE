@@ -19761,4 +19761,30 @@
 197146;17/09/2026;14-22;1600;18;48;Budinera SFA 8;331;Torrez Pantoja;9100;375;0;;318261;21;Tareas varias;1;10;False;BUDINERA
 197146;17/09/2026;14-22;1600;18;48;Budinera SFA 8;331;Torrez Pantoja;9100;375;0;;318262;4;Ajuste de mantenimiento;3;85;False;BUDINERA
 197147;17/09/2026;14-22;0;18;49;Budinera SFA 9;453;A;14000;455;0;;318263;10;Cambio de Bobina;2;25;False;BUDINERA
-197148;17/09/2026;14-22;0;18;49;Budinera SFA 9;;;0;0;0;;;;;;;;BUDINERA
+197148;17/09/2026;22-06;4000;;9;Pan Dulcera 9;211;Alvarez;32100;370;0;;318264;4;Ajuste de mantenimiento;2;55;False;PANDULCERA
+197148;17/09/2026;22-06;4000;;9;Pan Dulcera 9;211;Alvarez;32100;370;0;;318265;10;Cambio de Bobina;1;10;False;PANDULCERA
+197148;17/09/2026;22-06;4000;;9;Pan Dulcera 9;211;Alvarez;32100;370;0;;318266;2;Limpieza en Proceso;2;35;False;PANDULCERA
+197148;17/09/2026;22-06;4000;;9;Pan Dulcera 9;211;Alvarez;32100;370;0;;318267;21;Tareas varias;1;10;False;PANDULCERA
+197149;17/09/2026;22-06;0;;10;Pan Dulcera 10;452;Cabral Salguero;21600;190;0;;318268;4;Ajuste de mantenimiento;4;250;False;PANDULCERA
+197149;17/09/2026;22-06;0;;10;Pan Dulcera 10;452;Cabral Salguero;21600;190;0;;318269;2;Limpieza en Proceso;1;30;False;PANDULCERA
+197149;17/09/2026;22-06;0;;10;Pan Dulcera 10;452;Cabral Salguero;21600;190;0;;318270;10;Cambio de Bobina;1;10;False;PANDULCERA
+197150;17/09/2026;22-06;0;;13;Pan Dulcera 13;462;Noriega;36000;370;0;;318271;4;Ajuste de mantenimiento;2;30;False;PANDULCERA
+197150;17/09/2026;22-06;0;;13;Pan Dulcera 13;462;Noriega;36000;370;0;;318272;14;Incidencia Papel;4;40;False;PANDULCERA
+197150;17/09/2026;22-06;0;;13;Pan Dulcera 13;462;Noriega;36000;370;0;;318273;10;Cambio de Bobina;1;10;False;PANDULCERA
+197150;17/09/2026;22-06;0;;13;Pan Dulcera 13;462;Noriega;36000;370;0;;318274;2;Limpieza en Proceso;1;30;False;PANDULCERA
+197151;17/09/2026;22-06;0;;14;Pan Dulcera 14;419;Nieto;43200;400;0;;318275;4;Ajuste de mantenimiento;1;30;False;
+197151;17/09/2026;22-06;0;;14;Pan Dulcera 14;419;Nieto;43200;400;0;;318276;10;Cambio de Bobina;1;10;False;
+197151;17/09/2026;22-06;0;;14;Pan Dulcera 14;419;Nieto;43200;400;0;;318277;14;Incidencia Papel;1;10;False;
+197151;17/09/2026;22-06;0;;14;Pan Dulcera 14;419;Nieto;43200;400;0;;318278;2;Limpieza en Proceso;1;30;False;
+197152;17/09/2026;22-06;1150;;43;Budinera SFA 3;399;Villalba;8700;430;0;;318279;2;Limpieza en Proceso;1;20;False;BUDINERA
+197152;17/09/2026;22-06;1150;;43;Budinera SFA 3;399;Villalba;8700;430;0;;318280;4;Ajuste de mantenimiento;1;30;False;BUDINERA
+197153;17/09/2026;22-06;1150;;44;Budinera SFA 4;399;Villalba;5700;310;0;;318281;4;Ajuste de mantenimiento;6;170;False;BUDINERA
+197154;17/09/2026;22-06;1600;;45;Budinera SFA 5;384;Medrano;9000;455;0;;318282;4;Ajuste de mantenimiento;1;25;False;BUDINERA
+197155;17/09/2026;22-06;1600;;46;Budinera SFA 6;463;Delgado;11600;480;0;;;;;;;;BUDINERA
+197156;17/09/2026;22-06;1600;;47;Budinera SFA 7;384;Medrano;7500;450;0;;318283;4;Ajuste de mantenimiento;1;30;False;BUDINERA
+197157;17/09/2026;22-06;1600;;48;Budinera SFA 8;463;Delgado;7800;335;0;;318284;4;Ajuste de mantenimiento;2;135;False;BUDINERA
+197157;17/09/2026;22-06;1600;;48;Budinera SFA 8;463;Delgado;7800;335;0;;318285;14;Incidencia Papel;1;10;False;BUDINERA
+197158;17/09/2026;22-06;0;;49;Budinera SFA 9;422;Sanchez;12000;340;0;;318286;10;Cambio de Bobina;3;30;False;BUDINERA
+197158;17/09/2026;22-06;0;;49;Budinera SFA 9;422;Sanchez;12000;340;0;;318287;4;Ajuste de mantenimiento;4;95;False;BUDINERA
+197158;17/09/2026;22-06;0;;49;Budinera SFA 9;422;Sanchez;12000;340;0;;318288;14;Incidencia Papel;1;15;False;BUDINERA
+197159;17/09/2026;22-06;0;;49;Budinera SFA 9;;;0;0;0;;;;;;;;BUDINERA
