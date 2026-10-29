@@ -7325,9 +7325,10 @@
 198100;26/10/2026;14-22;0;146;49;Budinera SFA 9;331;Torrez Pantoja;13200;410;0;;320537;2;Limpieza en Proceso;2;30;False;BUDINERA
 198100;26/10/2026;14-22;0;146;49;Budinera SFA 9;331;Torrez Pantoja;13200;410;0;;320538;4;Ajuste de mantenimiento;1;20;False;BUDINERA
 198100;26/10/2026;14-22;0;146;49;Budinera SFA 9;331;Torrez Pantoja;13200;410;0;;320539;10;Cambio de Bobina;2;20;False;BUDINERA
-198101;26/10/2026;14-22;0;146;50;Budinera SFA 10;331;Torrez Pantoja;10300;295;0;;320540;2;Limpieza en Proceso;1;15;False;
-198101;26/10/2026;14-22;0;146;50;Budinera SFA 10;331;Torrez Pantoja;10300;295;0;;320541;10;Cambio de Bobina;2;20;False;
-198101;26/10/2026;14-22;0;146;50;Budinera SFA 10;331;Torrez Pantoja;10300;295;0;;320542;4;Ajuste de mantenimiento;4;130;False;
+198101;26/10/2026;14-22;0;146;50;Budinera SFA 10;331;Torrez Pantoja;10300;315;0;;320540;2;Limpieza en Proceso;1;15;False;
+198101;26/10/2026;14-22;0;146;50;Budinera SFA 10;331;Torrez Pantoja;10300;315;0;;320541;10;Cambio de Bobina;2;20;False;
+198101;26/10/2026;14-22;0;146;50;Budinera SFA 10;331;Torrez Pantoja;10300;315;0;;320542;4;Ajuste de mantenimiento;4;130;False;
+198102;26/10/2026;14-22;0;146;50;Budinera SFA 10;;;0;0;0;;;;;;;;
 189796;01/08/2025;06-14;4000;18;9;Pan Dulcera 9;189;Avendaño;41000;400;;;298720;10;Cambio de Bobina;2;20;False;PANDULCERA
 189796;01/08/2025;06-14;4000;18;9;Pan Dulcera 9;189;Avendaño;41000;400;;;298721;14;Incidencia Papel;2;20;False;PANDULCERA
 189796;01/08/2025;06-14;4000;18;9;Pan Dulcera 9;189;Avendaño;41000;400;;;298722;2;Limpieza en Proceso;2;40;False;PANDULCERA
