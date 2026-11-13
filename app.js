@@ -1119,6 +1119,10 @@ document.addEventListener('DOMContentLoaded', function () {
             const yAxisMin = parseFloat(document.getElementById('yaxis-min')?.value);
             const yAxisMax = parseFloat(document.getElementById('yaxis-max')?.value);
 
+            // Calculate max value in series to add 15% top headroom so the highest dataLabel and toolbar never clip/overlap
+            const allVals = (chartData.series || []).flatMap(s => s.data || []).filter(v => v !== null && v !== undefined && !isNaN(v));
+            const maxDataVal = allVals.length > 0 ? Math.max(...allVals) : undefined;
+
             let yAxisConfig = {
                 labels: {
                     style: { colors: textColor },
@@ -1127,68 +1131,121 @@ document.addEventListener('DOMContentLoaded', function () {
             };
 
             if (!isNaN(yAxisMin)) yAxisConfig.min = yAxisMin;
-            if (!isNaN(yAxisMax)) yAxisConfig.max = yAxisMax;
+            if (!isNaN(yAxisMax)) {
+                yAxisConfig.max = yAxisMax;
+            } else if (maxDataVal !== undefined && maxDataVal > 0) {
+                yAxisConfig.max = Math.ceil((maxDataVal * 1.15) / 1000) * 1000;
+            }
 
-            // If multiple non-consecutive days are selected or bar chart is selected, use formatted date categories so gaps don't distort bars
-            const useCategoryAxis = dateMode === 'multiple' || dailyChartType === 'bar';
-            const xCategories = useCategoryAxis
-                ? (chartData.dateStrings || []).map(ds => {
-                    const [y, m, d] = ds.split('-');
-                    return `${d}/${m}`;
-                })
-                : chartData.categories;
+            // Use exact date labels aligned 1-to-1 with each data point so dates never repeat or shift on the X axis
+            const shortMonths = ['Ene', 'Feb', 'Mar', 'Abr', 'May', 'Jun', 'Jul', 'Ago', 'Sep', 'Oct', 'Nov', 'Dic'];
+            const fullDayNames = ['Domingo', 'Lunes', 'Martes', 'Miércoles', 'Jueves', 'Viernes', 'Sábado'];
+            const dateStrings = chartData.dateStrings || [];
+            const xCategories = dateStrings.map(ds => {
+                const [y, m, d] = ds.split('-').map(Number);
+                return `${String(d).padStart(2, '0')} ${shortMonths[m - 1]}`;
+            });
 
             options = {
                 ...commonOptions,
-                chart: { ...commonOptions.chart, id: elementId, type: dailyChartType },
+                chart: {
+                    ...commonOptions.chart,
+                    id: elementId,
+                    type: dailyChartType,
+                    toolbar: { show: true, offsetY: -6 }
+                },
+                grid: {
+                    borderColor: gridBorderColor,
+                    padding: { top: 24, right: 28, left: 12, bottom: 0 }
+                },
                 series: chartData.series || [],
                 stroke: { curve: 'smooth', width: dailyChartType === 'bar' ? 0 : 3 },
-                markers: { size: dailyChartType === 'bar' ? 0 : 5 },
+                markers: { size: dailyChartType === 'bar' ? 0 : 5, hover: { size: 7 } },
                 plotOptions: {
-                    bar: { borderRadius: 4, columnWidth: '60%' }
+                    bar: { borderRadius: 4, columnWidth: '55%', dataLabels: { position: 'top' } }
                 },
                 dataLabels: {
                     enabled: showLabels,
-                    offsetY: dailyChartType === 'bar' ? -18 : -12,
+                    offsetY: dailyChartType === 'bar' ? -18 : -10,
                     formatter: (val) => (val === null || val === undefined) ? '' : formatNumber(val),
-                    style: { colors: ["#0f172a"], fontSize: '11px', fontWeight: 600 },
+                    style: { colors: ["#0f172a"], fontSize: '11px', fontWeight: 700 },
                     background: {
                         enabled: true,
                         foreColor: '#0f172a',
                         borderRadius: 4,
                         padding: 4,
-                        opacity: 0.92,
-                        borderColor: '#BDE5F8',
-                        backgroundColor: '#BDE5F8'
+                        opacity: 0.95,
+                        borderColor: '#38bdf8',
+                        backgroundColor: '#e0f2fe'
                     }
                 },
-                xaxis: useCategoryAxis
-                    ? { type: 'category', categories: xCategories, labels: { style: { colors: textColor } } }
-                    : { type: 'datetime', categories: xCategories, labels: { style: { colors: textColor }, datetimeUTC: false, format: 'dd MMM' } },
+                xaxis: {
+                    type: 'category',
+                    categories: xCategories,
+                    tickPlacement: 'on',
+                    labels: {
+                        style: { colors: textColor, fontSize: '11px' },
+                        rotate: xCategories.length > 18 ? -45 : 0,
+                        rotateAlways: xCategories.length > 18
+                    }
+                },
                 yaxis: yAxisConfig,
                 tooltip: {
                     theme: currentTheme,
-                    x: useCategoryAxis ? {} : { format: 'dddd dd/MM/yyyy' },
+                    x: {
+                        formatter: (val, { dataPointIndex }) => {
+                            const ds = dateStrings[dataPointIndex];
+                            if (!ds) return val;
+                            const [y, m, d] = ds.split('-').map(Number);
+                            const dt = new Date(y, m - 1, d);
+                            return `${fullDayNames[dt.getDay()]} ${String(d).padStart(2, '0')}/${String(m).padStart(2, '0')}/${y}`;
+                        }
+                    },
                     y: { formatter: (val) => `${formatNumber(val)} pzas.` }
                 }
             };
         } else if (type === 'bar') {
             const isOpChart = elementId === 'chart-prod-by-operator';
-            const dynamicHeight = chartData.horizontal ? Math.max(350, (chartData.data?.length || 1) * 32) : 350;
+            const dynamicHeight = chartData.horizontal ? Math.max(350, (chartData.data?.length || 1) * 34) : 350;
+            const values = (chartData.data || []).map(d => Math.round(d.value));
+            const maxBarVal = values.length > 0 ? Math.max(...values) : 0;
+
             options = {
                 ...commonOptions,
                 chart: { ...commonOptions.chart, id: elementId, type: 'bar', height: dynamicHeight },
-                series: [{ name: chartData.seriesName, data: (chartData.data || []).map(d => Math.round(d.value)) }],
-                plotOptions: { bar: { horizontal: chartData.horizontal || false, borderRadius: 4, dataLabels: { position: 'top' } } },
+                grid: {
+                    borderColor: gridBorderColor,
+                    padding: { right: chartData.horizontal ? 35 : 10, top: chartData.horizontal ? 0 : 20 }
+                },
+                series: [{ name: chartData.seriesName, data: values }],
+                plotOptions: {
+                    bar: {
+                        horizontal: chartData.horizontal || false,
+                        borderRadius: 4,
+                        dataLabels: { position: 'top' }
+                    }
+                },
                 dataLabels: {
                     enabled: true,
                     formatter: (val) => formatNumber(val),
-                    style: { fontSize: '11px' },
-                    offsetY: chartData.horizontal ? 0 : -20,
-                    dropShadow: { enabled: true, top: 1, left: 1, blur: 1, color: '#000', opacity: 0.35 }
+                    style: { fontSize: '11px', fontWeight: 700, colors: [textColor] },
+                    offsetY: chartData.horizontal ? 0 : -18,
+                    offsetX: chartData.horizontal ? 28 : 0
                 },
-                xaxis: { categories: (chartData.data || []).map(d => d.category), labels: { style: { colors: textColor, fontSize: '11px' }, trim: true, maxHeight: 100 } },
-                yaxis: { labels: { style: { colors: textColor }, formatter: (val) => typeof val === 'number' ? formatNumber(val) : val } },
+                xaxis: {
+                    categories: (chartData.data || []).map(d => d.category),
+                    max: chartData.horizontal && maxBarVal > 0 ? Math.ceil(maxBarVal * 1.18) : undefined,
+                    labels: {
+                        style: { colors: textColor, fontSize: '11px' },
+                        trim: true,
+                        maxHeight: 100,
+                        formatter: (val) => (chartData.horizontal && typeof val === 'number') ? formatNumber(val) : val
+                    }
+                },
+                yaxis: {
+                    max: !chartData.horizontal && maxBarVal > 0 ? Math.ceil(maxBarVal * 1.15) : undefined,
+                    labels: { style: { colors: textColor }, formatter: (val) => typeof val === 'number' ? formatNumber(val) : val }
+                },
                 tooltip: {
                     theme: currentTheme,
                     y: {
@@ -1202,12 +1259,6 @@ document.addEventListener('DOMContentLoaded', function () {
                     }
                 }
             };
-            if (chartData.horizontal) {
-                options.dataLabels.style.colors = ["#fff"];
-                options.dataLabels.offsetX = -10;
-            } else {
-                options.dataLabels.style.colors = [textColor];
-            }
         } else if (type === 'combo') {
             options = {
                 ...commonOptions,
