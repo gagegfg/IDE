@@ -1,74 +1,163 @@
 <!DOCTYPE html>
 <html lang="es">
+
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Dashboard Industrial v2.8</title>
+    <title>MOLDERIL - Dashboard Industrial v3.0</title>
     <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.3/dist/css/bootstrap.min.css" rel="stylesheet">
     <link rel="preconnect" href="https://fonts.googleapis.com">
     <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
     <link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700&display=swap" rel="stylesheet">
     <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/flatpickr/dist/flatpickr.min.css">
-    <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/choices.js/public/assets/styles/choices.min.css"/>
+    <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/choices.js/public/assets/styles/choices.min.css" />
     <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
     <link rel="stylesheet" href="style.css">
 </head>
+
 <body>
 
-    <nav class="sidebar">
-        <img src="logo.jpg" alt="Logo" class="mb-3" style="width: 100%; max-width: 150px; margin: 0 auto; display: block;">
-        <h4 class="mb-4">Dashboard Industrial</h4>
-        <div class="mb-3">
-            <label for="machine-group-filter" class="form-label fw-bold">Grupo de Máquinas</label>
-            <select id="machine-group-filter"></select>
-        </div>
-        <div class="filter-section">
-            <div class="mb-3">
-                <label class="form-label fw-bold">Rango de Fechas</label>
-                <input type="text" id="date-range-picker" class="form-control mb-2" placeholder="Seleccione un rango...">
-                 <div class="btn-group w-100" role="group">
-                    <button type="button" class="btn btn-sm btn-outline-secondary btn-date-filter" id="btnSemanaAnterior">Sem. Ant.</button>
-                    <button type="button" class="btn btn-sm btn-outline-secondary btn-date-filter" id="btnSemanaActual">Sem. Act.</button>
-                </div>
-                 <div class="btn-group w-100 mt-1" role="group">
-                    <button type="button" class="btn btn-sm btn-outline-secondary btn-date-filter" id="btnMesAnterior">Mes Ant.</button>
-                    <button type="button" class="btn btn-sm btn-outline-secondary btn-date-filter" id="btnMesActual">Mes Act.</button>
+    <nav class="sidebar" id="sidebar">
+        <div class="sidebar-top">
+            <div class="brand-header">
+                <img src="logo.jpg" alt="Molderil Logo" class="brand-logo">
+                <div class="brand-title-wrap">
+                    <h4 class="mb-0 fw-bold">Dashboard Industrial</h4>
+                    <span class="badge bg-purple-soft text-purple">v3.0</span>
                 </div>
             </div>
-            <div class="mb-3">
-                <label for="machine-filter" class="form-label fw-bold">Máquinas</label>
+
+            <!-- 1. FECHAS (Rango, Día Único, Días Sueltos) -->
+            <div class="filter-block">
+                <div class="d-flex justify-content-between align-items-center mb-1">
+                    <label class="form-label fw-bold mb-0"><i
+                            class="far fa-calendar-alt me-1 text-primary"></i>Fechas</label>
+                    <div class="btn-group btn-group-xs mode-switch" role="group" aria-label="Modo de fecha">
+                        <input type="radio" class="btn-check" name="dateMode" id="dateModeRange" value="range" checked>
+                        <label class="btn btn-outline-primary" for="dateModeRange"
+                            title="Seleccionar desde/hasta">Rango</label>
+
+                        <input type="radio" class="btn-check" name="dateMode" id="dateModeSingle" value="single">
+                        <label class="btn btn-outline-primary" for="dateModeSingle"
+                            title="Seleccionar un solo día con 1 clic">1 Día</label>
+
+                        <input type="radio" class="btn-check" name="dateMode" id="dateModeMultiple" value="multiple">
+                        <label class="btn btn-outline-primary" for="dateModeMultiple"
+                            title="Seleccionar varios días sueltos no consecutivos">Días Sueltos</label>
+                    </div>
+                </div>
+
+                <div class="position-relative mb-2">
+                    <input type="text" id="date-range-picker" class="form-control form-control-sm pe-4"
+                        placeholder="Seleccione fechas...">
+                    <i class="fas fa-calendar-day date-input-icon"></i>
+                </div>
+
+                <div class="quick-date-grid">
+                    <button type="button" class="btn btn-xs btn-date-quick btn-date-accent" id="btnUltimoDia"
+                        title="Último día registrado en base de datos">Últ. Día</button>
+                    <button type="button" class="btn btn-xs btn-date-quick btn-date-accent" id="btnUltimos7Dias"
+                        title="Últimos 7 días hasta la fecha más reciente">Últ. 7d</button>
+                    <button type="button" class="btn btn-xs btn-date-quick btn-date-prev" id="btnSemanaAnterior">Sem.
+                        Ant.</button>
+                    <button type="button" class="btn btn-xs btn-date-quick btn-date-curr" id="btnSemanaActual">Sem.
+                        Act.</button>
+                    <button type="button" class="btn btn-xs btn-date-quick btn-date-prev" id="btnMesAnterior">Mes
+                        Ant.</button>
+                    <button type="button" class="btn btn-xs btn-date-quick btn-date-curr" id="btnMesActual">Mes
+                        Act.</button>
+                </div>
+            </div>
+
+            <!-- 2. GRUPO DE MÁQUINAS -->
+            <div class="filter-block">
+                <div class="d-flex justify-content-between align-items-center mb-1">
+                    <label for="machine-group-filter" class="form-label fw-bold mb-0"><i
+                            class="fas fa-layer-group me-1 text-primary"></i>Grupo de Máquinas</label>
+                </div>
+                <div id="group-quick-pills" class="pill-container mb-1"></div>
+                <div class="d-none">
+                    <select id="machine-group-filter"></select>
+                </div>
+            </div>
+
+            <!-- 3. MÁQUINAS (Selección Individual 1-clic o Múltiple) -->
+            <div class="filter-block">
+                <div class="d-flex justify-content-between align-items-center mb-1">
+                    <label for="machine-filter" class="form-label fw-bold mb-0"><i
+                            class="fas fa-industry me-1 text-primary"></i>Máquinas</label>
+                    <div class="d-flex align-items-center gap-1">
+                        <div class="btn-group btn-group-xs mode-switch" role="group"
+                            aria-label="Modo de selección de máquina">
+                            <input type="radio" class="btn-check" name="machineSelectMode" id="machineModeSingle"
+                                value="single" checked>
+                            <label class="btn btn-outline-primary" for="machineModeSingle"
+                                title="1 clic selecciona una sola máquina a la vez">Individual</label>
+
+                            <input type="radio" class="btn-check" name="machineSelectMode" id="machineModeMulti"
+                                value="multiple">
+                            <label class="btn btn-outline-primary" for="machineModeMulti"
+                                title="Permite marcar varias máquinas para comparar">Múltiple</label>
+                        </div>
+                        <button type="button" id="btn-all-machines" class="btn btn-xs btn-outline-secondary"
+                            title="Ver todas las máquinas">Todas</button>
+                    </div>
+                </div>
+                <div id="machine-quick-pills" class="machine-pills-grid mb-2"></div>
                 <select id="machine-filter" multiple></select>
             </div>
-            <div class="mb-3">
-                <label for="shift-filter" class="form-label fw-bold">Turnos</label>
-                <select id="shift-filter" multiple></select>
+
+            <!-- 4. TURNOS -->
+            <div class="filter-block">
+                <div class="d-flex justify-content-between align-items-center mb-1">
+                    <label for="shift-filter" class="form-label fw-bold mb-0"><i
+                            class="far fa-clock me-1 text-primary"></i>Turnos</label>
+                    <button type="button" id="btn-all-shifts" class="btn btn-xs btn-outline-secondary">Todos</button>
+                </div>
+                <div id="shift-quick-pills" class="pill-container mb-1"></div>
+                <div class="d-none">
+                    <select id="shift-filter" multiple></select>
+                </div>
             </div>
-            <div id="operator-filter-display" class="mt-3" style="display: none;">
-                <label class="form-label fw-bold">Filtro por Operario</label>
-                <div class="d-flex align-items-center">
-                    <span id="operator-filter-name" class="badge bg-primary me-2"></span>
-                    <button id="clear-operator-filter" type="button" class="btn-close" aria-label="Close"></button>
+
+            <!-- 5. OPERARIO -->
+            <div class="filter-block">
+                <div class="d-flex justify-content-between align-items-center mb-1">
+                    <label for="operator-select" class="form-label fw-bold mb-0"><i
+                            class="fas fa-user-cog me-1 text-primary"></i>Operario</label>
+                    <button id="clear-operator-filter" type="button" class="btn btn-xs btn-outline-danger"
+                        style="display: none;">Quitar</button>
+                </div>
+                <select id="operator-select"></select>
+                <div id="operator-filter-display" class="mt-1" style="display: none;">
+                    <span id="operator-filter-name" class="badge bg-primary"></span>
                 </div>
             </div>
         </div>
-        <div>
-            <button id="reset-filters" class="btn btn-danger w-100 mt-3">Limpiar Filtros</button>
-            <div class="form-check form-switch mt-3">
-                <input class="form-check-input" type="checkbox" role="switch" id="extended-analysis-toggle">
-                <label class="form-check-label" for="extended-analysis-toggle">Análisis Extendido</label>
+
+        <div class="sidebar-bottom pt-2 border-top">
+            <button id="reset-filters" class="btn btn-danger btn-sm w-100 fw-semibold shadow-sm">
+                <i class="fas fa-undo-alt me-1"></i>Limpiar Filtros
+            </button>
+            <div class="d-flex justify-content-between align-items-center mt-3 px-1">
+                <div class="form-check form-switch mb-0">
+                    <input class="form-check-input" type="checkbox" role="switch" id="extended-analysis-toggle" checked>
+                    <label class="form-check-label small fw-medium" for="extended-analysis-toggle">Tabla Resumen</label>
+                </div>
+                <div class="form-check form-switch mb-0">
+                    <input class="form-check-input" type="checkbox" role="switch" id="theme-toggle">
+                    <label class="form-check-label small fw-medium" for="theme-toggle"><i
+                            class="fas fa-moon"></i></label>
+                </div>
             </div>
-            <div class="form-check form-switch mt-4 d-flex justify-content-center">
-                <input class="form-check-input" type="checkbox" role="switch" id="theme-toggle">
-                <label class="form-check-label ms-2" for="theme-toggle">Modo Oscuro</label>
-            </div>
-            <p id="last-updated" class="text-muted text-center mt-3 small">Actualizado: Cargando...</p>
+            <p id="last-updated" class="text-muted text-center mt-2 mb-0 extra-small">Actualizado: Cargando...</p>
         </div>
     </nav>
 
     <main class="main-content">
         <div id="loading-overlay">
             <div class="custom-spinner"></div>
-            <p class="text-white mt-3">Calculando datos...</p>
+            <p class="text-white mt-3 fw-medium">Cargando base de datos...</p>
         </div>
 
         <div id="progress-container" style="display: none;">
@@ -78,51 +167,141 @@
             </div>
             <p id="progress-status-text" class="text-white mt-3">Iniciando...</p>
         </div>
-        
-        <header class="mb-4">
-            <h1 class="h2 fw-bold">Análisis de Rendimiento de Producción</h1>
+
+        <!-- HEADER + BARRA DE FILTROS ACTIVOS -->
+        <header class="dashboard-header mb-3">
+            <div class="d-flex justify-content-between align-items-center flex-wrap gap-2">
+                <div>
+                    <h1 class="h3 fw-bold mb-1">Análisis de Rendimiento de Producción</h1>
+                    <div id="active-filters-bar" class="d-flex align-items-center flex-wrap gap-1"></div>
+                </div>
+                <div class="d-flex align-items-center gap-2">
+                    <button id="btn-reload-csv" class="btn btn-sm btn-outline-primary"
+                        title="Recargar datos del archivo CSV">
+                        <i class="fas fa-sync-alt me-1"></i>Actualizar Datos
+                    </button>
+                </div>
+            </div>
         </header>
 
-        <section class="row mb-4 g-4">
-            <div class="col"><div class="card p-3"><div class="card-body text-center"><h5 class="card-title text-muted">Producción Total</h5><p class="kpi-value" id="kpi-total-production">--</p></div></div></div>
-            <div class="col"><div class="card p-3"><div class="card-body text-center"><h5 class="card-title text-muted">Disponibilidad</h5><p class="kpi-value" id="kpi-availability">--</p></div></div></div>
-            <div class="col"><div class="card p-3"><div class="card-body text-center"><h5 class="card-title text-muted">Eficiencia (Pzas/Turno)</h5><p class="kpi-value" id="kpi-efficiency">--</p></div></div></div>
-            <div class="col"><div class="card p-3"><div class="card-body text-center"><h5 class="card-title text-muted">Horas de Parada</h5><p class="kpi-value" id="kpi-total-downtime">--</p></div></div></div>
-        </section>
-
-        <section class="row mb-4 g-4">
-            <div class="col-12">
-                <div class="card">
-                    <div class="card-header fw-bold">
-                        <i class="fas fa-info-circle me-2"></i>Resumen Gerencial
-                    </div>
+        <!-- KPI CARDS -->
+        <section class="row mb-3 g-3">
+            <div class="col-xl-3 col-sm-6">
+                <div class="card kpi-card h-100">
                     <div class="card-body">
-                        <p id="management-summary" class="mb-0">Calculando...</p>
+                        <div class="d-flex justify-content-between align-items-start">
+                            <div>
+                                <h6 class="card-title text-muted text-uppercase small fw-bold mb-1">Producción Total
+                                </h6>
+                                <p class="kpi-value mb-1" id="kpi-total-production">--</p>
+                            </div>
+                            <div class="kpi-icon bg-purple-soft text-purple"><i class="fas fa-boxes-stacked"></i></div>
+                        </div>
+                        <p class="kpi-subtext mb-0 text-muted small" id="kpi-sub-production">--</p>
+                    </div>
+                </div>
+            </div>
+            <div class="col-xl-3 col-sm-6">
+                <div class="card kpi-card h-100">
+                    <div class="card-body">
+                        <div class="d-flex justify-content-between align-items-start">
+                            <div>
+                                <h6 class="card-title text-muted text-uppercase small fw-bold mb-1">Disponibilidad
+                                    Operativa</h6>
+                                <p class="kpi-value mb-1" id="kpi-availability">--</p>
+                            </div>
+                            <div class="kpi-icon bg-success-soft text-success"><i class="fas fa-gauge-high"></i></div>
+                        </div>
+                        <p class="kpi-subtext mb-0 text-muted small" id="kpi-sub-availability">--</p>
+                    </div>
+                </div>
+            </div>
+            <div class="col-xl-3 col-sm-6">
+                <div class="card kpi-card h-100">
+                    <div class="card-body">
+                        <div class="d-flex justify-content-between align-items-start">
+                            <div>
+                                <h6 class="card-title text-muted text-uppercase small fw-bold mb-1">Eficiencia
+                                    (Pzas/Turno)</h6>
+                                <p class="kpi-value mb-1" id="kpi-efficiency">--</p>
+                            </div>
+                            <div class="kpi-icon bg-info-soft text-info"><i class="fas fa-bolt"></i></div>
+                        </div>
+                        <p class="kpi-subtext mb-0 text-muted small" id="kpi-sub-efficiency">--</p>
+                    </div>
+                </div>
+            </div>
+            <div class="col-xl-3 col-sm-6">
+                <div class="card kpi-card h-100">
+                    <div class="card-body">
+                        <div class="d-flex justify-content-between align-items-start">
+                            <div>
+                                <h6 class="card-title text-muted text-uppercase small fw-bold mb-1">Horas de Parada</h6>
+                                <p class="kpi-value mb-1" id="kpi-total-downtime">--</p>
+                            </div>
+                            <div class="kpi-icon bg-danger-soft text-danger"><i class="fas fa-triangle-exclamation"></i>
+                            </div>
+                        </div>
+                        <p class="kpi-subtext mb-0 text-muted small" id="kpi-sub-downtime">--</p>
                     </div>
                 </div>
             </div>
         </section>
-        
-        
 
-        <section class="row g-4">
-            <div class="col-lg-12 mb-4">
+        <!-- RESUMEN GERENCIAL -->
+        <section class="row mb-3 g-3">
+            <div class="col-12">
+                <div class="card summary-card">
+                    <div class="card-body py-2 px-3 d-flex align-items-center flex-wrap gap-2">
+                        <span class="badge bg-primary"><i class="fas fa-chart-line me-1"></i>Resumen Ejecutivo</span>
+                        <p id="management-summary" class="mb-0 small flex-grow-1">Calculando...</p>
+                    </div>
+                </div>
+            </div>
+        </section>
+
+        <!-- GRÁFICOS -->
+        <section class="row g-3">
+            <!-- 1. Producción Diaria -->
+            <div class="col-lg-12">
                 <div class="card">
-                    <div class="card-header d-flex justify-content-between align-items-center flex-wrap">
-                        <span>Producción Diaria</span>
-                        <div class="d-flex align-items-center flex-wrap">
-                            <div id="daily-prod-agg-options" class="btn-group btn-group-sm me-3" role="group">
-                                <input type="radio" class="btn-check" name="dailyAgg" id="aggTotal" value="total" autocomplete="off" checked>
+                    <div class="card-header d-flex justify-content-between align-items-center flex-wrap gap-2">
+                        <div class="d-flex align-items-center gap-2">
+                            <span><i class="fas fa-chart-area me-2 text-primary"></i>Producción Diaria</span>
+                            <span class="text-muted extra-small d-none d-md-inline">(Clic en un punto para ver detalle
+                                del día)</span>
+                        </div>
+                        <div class="d-flex align-items-center flex-wrap gap-2">
+                            <div id="daily-prod-chart-type" class="btn-group btn-group-sm" role="group"
+                                title="Tipo de gráfico">
+                                <input type="radio" class="btn-check" name="dailyChartType" id="dailyTypeLine"
+                                    value="line" autocomplete="off" checked>
+                                <label class="btn btn-outline-secondary" for="dailyTypeLine"><i
+                                        class="fas fa-chart-line"></i></label>
+                                <input type="radio" class="btn-check" name="dailyChartType" id="dailyTypeBar"
+                                    value="bar" autocomplete="off">
+                                <label class="btn btn-outline-secondary" for="dailyTypeBar"><i
+                                        class="fas fa-chart-column"></i></label>
+                            </div>
+                            <div id="daily-prod-agg-options" class="btn-group btn-group-sm" role="group">
+                                <input type="radio" class="btn-check" name="dailyAgg" id="aggTotal" value="total"
+                                    autocomplete="off" checked>
                                 <label class="btn btn-outline-secondary" for="aggTotal">Total</label>
-                                <input type="radio" class="btn-check" name="dailyAgg" id="aggByShift" value="byShift" autocomplete="off">
+                                <input type="radio" class="btn-check" name="dailyAgg" id="aggByShift" value="byShift"
+                                    autocomplete="off">
                                 <label class="btn btn-outline-secondary" for="aggByShift">Por Turno</label>
-                                <input type="radio" class="btn-check" name="dailyAgg" id="aggByMachine" value="byMachine" autocomplete="off">
+                                <input type="radio" class="btn-check" name="dailyAgg" id="aggByMachine"
+                                    value="byMachine" autocomplete="off">
                                 <label class="btn btn-outline-secondary" for="aggByMachine">Por Línea</label>
                             </div>
-                            <div class="d-flex align-items-center">
-                                <input type="number" id="yaxis-min" placeholder="Prod. Mín" class="form-control form-control-sm" style="width: 90px;">
-                                <input type="number" id="yaxis-max" placeholder="Prod. Máx" class="form-control form-control-sm ms-2" style="width: 90px;">
-                                <button id="apply-yaxis-scale" class="btn btn-sm btn-primary ms-2">Aplicar</button>
+                            <div class="d-flex align-items-center gap-1">
+                                <input type="number" id="yaxis-min" placeholder="Mín"
+                                    class="form-control form-control-sm" style="width: 80px;">
+                                <input type="number" id="yaxis-max" placeholder="Máx"
+                                    class="form-control form-control-sm" style="width: 80px;">
+                                <button id="apply-yaxis-scale" class="btn btn-sm btn-primary">Aplicar</button>
+                                <button id="reset-yaxis-scale" class="btn btn-sm btn-outline-secondary"
+                                    title="Escala automática">Auto</button>
                             </div>
                         </div>
                     </div>
@@ -131,16 +310,49 @@
                     </div>
                 </div>
             </div>
-            <div class="col-lg-6 mb-4"><div class="card"><div class="card-header">Producción por Máquina</div><div class="card-body"><div id="chart-prod-by-machine"></div></div></div></div>
-            <div class="col-lg-6 mb-4"><div class="card"><div class="card-header">Producción Promedio por Operario y Turno</div><div class="card-body"><div id="chart-prod-by-operator"></div></div></div></div>
-            <div class="col-lg-12 mb-4">
-                <div class="card">
+
+            <!-- 2. Producción por Máquina -->
+            <div class="col-lg-6">
+                <div class="card h-100">
                     <div class="card-header d-flex justify-content-between align-items-center">
-                        <span>Análisis de Paradas: Tiempo vs. Frecuencia</span>
-                        <div class="col-4">
-                            <select id="downtime-filter" class="form-select form-select-sm">
+                        <span><i class="fas fa-industry me-2 text-primary"></i>Producción por Máquina</span>
+                        <span class="text-muted extra-small">Clic en barra para ver tabla de turnos</span>
+                    </div>
+                    <div class="card-body">
+                        <div id="chart-prod-by-machine"></div>
+                    </div>
+                </div>
+            </div>
+
+            <!-- 3. Producción Promedio por Operario -->
+            <div class="col-lg-6">
+                <div class="card h-100">
+                    <div class="card-header d-flex justify-content-between align-items-center">
+                        <span><i class="fas fa-users me-2 text-primary"></i>Producción Promedio por Operario y
+                            Turno</span>
+                        <span class="text-muted extra-small">Clic en barra para filtrar operario</span>
+                    </div>
+                    <div class="card-body">
+                        <div id="chart-prod-by-operator"></div>
+                    </div>
+                </div>
+            </div>
+
+            <!-- 4. Análisis de Paradas -->
+            <div class="col-lg-12">
+                <div class="card">
+                    <div class="card-header d-flex justify-content-between align-items-center flex-wrap gap-2">
+                        <div>
+                            <span><i class="fas fa-stopwatch me-2 text-primary"></i>Análisis de Paradas: Tiempo vs.
+                                Frecuencia</span>
+                            <span class="text-muted extra-small ms-2 d-none d-md-inline">(Clic en una causa para ver
+                                ocurrencias)</span>
+                        </div>
+                        <div class="d-flex align-items-center gap-2">
+                            <select id="downtime-filter" class="form-select form-select-sm" style="width: auto;">
                                 <option value="all">Mostrar Todo</option>
                                 <option value="top5_time">Top 5 por Tiempo</option>
+                                <option value="top10_time">Top 10 por Tiempo</option>
                                 <option value="top5_freq">Top 5 por Frecuencia</option>
                             </select>
                         </div>
@@ -150,27 +362,71 @@
                     </div>
                 </div>
             </div>
-            <div class="col-lg-12 mb-4"><div class="card"><div class="card-header">Análisis de Tiempo de Operación por Día</div><div class="card-body"><div id="chart-daily-time-distribution"></div></div></div></div>
+
+            <!-- 5. Distribución de Tiempo Diario -->
+            <div class="col-lg-12">
+                <div class="card">
+                    <div class="card-header d-flex justify-content-between align-items-center">
+                        <span><i class="fas fa-clock-rotate-left me-2 text-primary"></i>Análisis de Tiempo de Operación
+                            por Día (Horas Netas vs. Paradas)</span>
+                    </div>
+                    <div class="card-body">
+                        <div id="chart-daily-time-distribution"></div>
+                    </div>
+                </div>
+            </div>
+
+            <!-- 6. Tabla Resumen Comparativa por Máquina (Análisis Extendido) -->
+            <div class="col-lg-12" id="extended-analysis-section">
+                <div class="card">
+                    <div class="card-header d-flex justify-content-between align-items-center flex-wrap gap-2">
+                        <span><i class="fas fa-table me-2 text-primary"></i>Resumen Comparativo por Máquina</span>
+                        <div class="d-flex align-items-center gap-2">
+                            <input type="text" id="summary-table-search" class="form-control form-control-sm"
+                                placeholder="Buscar máquina o grupo..." style="width: 210px;">
+                            <button id="export-summary-csv" class="btn btn-sm btn-success">
+                                <i class="fas fa-file-excel me-1"></i>Exportar Resumen
+                            </button>
+                        </div>
+                    </div>
+                    <div class="card-body p-0">
+                        <div class="table-responsive">
+                            <table class="table table-hover align-middle mb-0" id="machine-summary-table">
+                                <thead class="table-light">
+                                    <tr>
+                                        <th>Máquina</th>
+                                        <th>Grupo</th>
+                                        <th class="text-end">Turnos</th>
+                                        <th class="text-end">Producción Total</th>
+                                        <th class="text-end">Pzas / Turno</th>
+                                        <th class="text-end">Hs Prod.</th>
+                                        <th class="text-end">Hs Parada</th>
+                                        <th style="min-width: 140px;">Disponibilidad</th>
+                                        <th>Principal Causa de Parada</th>
+                                        <th class="text-center">Acciones</th>
+                                    </tr>
+                                </thead>
+                                <tbody id="machine-summary-tbody"></tbody>
+                            </table>
+                        </div>
+                    </div>
+                </div>
+            </div>
         </section>
     </main>
 
     <!-- Modal para Detalles -->
     <div class="modal fade" id="detailModal" tabindex="-1" aria-labelledby="detailModalLabel" aria-hidden="true">
-      <div class="modal-dialog modal-xl modal-dialog-scrollable">
-        <div class="modal-content">
-          <div class="modal-header">
-            <h5 class="modal-title" id="detailModalLabel">Detalles</h5>
-            <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Close"></button>
-          </div>
-          <div class="modal-body" id="detailModalBody">
-            <!-- El contenido detallado se insertará aquí -->
-          </div>
+        <div class="modal-dialog modal-xl modal-dialog-scrollable">
+            <div class="modal-content">
+                <div class="modal-header">
+                    <h5 class="modal-title fw-bold" id="detailModalLabel">Detalles</h5>
+                    <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Close"></button>
+                </div>
+                <div class="modal-body" id="detailModalBody"></div>
+            </div>
         </div>
-      </div>
     </div>
-
-    
-
 
     <script src="https://cdn.jsdelivr.net/npm/papaparse@5.3.2/papaparse.min.js"></script>
     <script src="https://cdn.jsdelivr.net/npm/apexcharts"></script>
@@ -183,4 +439,5 @@
 
     <script src="app.js"></script>
 </body>
+
 </html>

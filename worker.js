@@ -19,35 +19,106 @@ function parseDate(dateString) {
     return null;
 }
 
+function getLocalDateString(d) {
+    if (!d) return null;
+    const date = d instanceof Date ? d : new Date(d);
+    const year = date.getFullYear();
+    const month = String(date.getMonth() + 1).padStart(2, '0');
+    const day = String(date.getDate()).padStart(2, '0');
+    return `${year}-${month}-${day}`;
+}
+
+function inferMachineGroup(row) {
+    const existing = (row.Grupo_Maquina || '').trim();
+    if (existing) return existing;
+    const desc = (row.Descrip_Maquina || '').trim().toUpperCase();
+    if (desc.includes('BUDINERA')) return 'BUDINERA';
+    if (desc === 'PAN DULCERA 11' || desc.includes('MANUAL')) return 'PANDULCERA MANUAL';
+    if (desc.includes('PAN DULCERA') || desc.includes('PANDULCERA')) return 'PANDULCERA';
+    return '';
+}
+
 function processData(data) {
-    return data.map(row => {
-        row.Cantidad = parseInt(row.Cantidad) || 0;
-        row.Minutos = parseInt(row.Minutos) || 0;
-        row.Frecuencia = parseInt(row.Frecuencia) || 0;
+    const processed = [];
+    for (let i = 0; i < data.length; i++) {
+        const row = data[i];
+        const fecha = parseDate(row.Fecha);
+        if (!(fecha instanceof Date) || isNaN(fecha)) continue;
+
+        row.Fecha = fecha;
+        row.dateStr = getLocalDateString(fecha);
+        row.timestamp = fecha.getTime();
+        row.Descrip_Maquina = (row.Descrip_Maquina || '').trim();
+        row.Turno = (row.Turno || '').trim();
+        row.Apellido = (row.Apellido || '').trim();
+        row.descrip_incidencia = (row.descrip_incidencia || '').trim();
+        row.Grupo_Maquina = inferMachineGroup(row);
+        row.Cantidad = parseInt(row.Cantidad, 10) || 0;
+        row.Minutos = parseInt(row.Minutos, 10) || 0;
+        row.Frecuencia = parseInt(row.Frecuencia, 10) || 0;
         row.Hs_Trab = parseFloat(String(row.Hs_Trab).replace(',', '.')) || 0;
-        row.Objetivo = parseInt(row.Objetivo) || 0;
-        row.Fecha = parseDate(row.Fecha);
-        return row;
-    }).filter(row => row.Fecha instanceof Date && !isNaN(row.Fecha));
+        row.Objetivo = parseInt(row.Objetivo, 10) || 0;
+        processed.push(row);
+    }
+    return processed;
 }
 
 function getFilteredData(filters) {
-    const { dateRange, selectedMachines, selectedShifts, selectedOperator, selectedMachineGroup } = filters;
-    
+    const {
+        dateMode = 'range',
+        dateRange = [],
+        selectedDatesStr = [],
+        selectedMachines = [],
+        selectedShifts = [],
+        selectedOperator = null,
+        selectedMachineGroup = null,
+        selectedMachineGroups = []
+    } = filters;
+
+    // Pre-build Sets and timestamps for O(1) filtering per row
+    const datesSet = (dateMode === 'multiple' || dateMode === 'single') && selectedDatesStr.length > 0
+        ? new Set(selectedDatesStr)
+        : null;
+
+    let startTs = null;
+    let endTs = null;
+    if (dateMode === 'range' && dateRange && dateRange.length > 0) {
+        const d0 = new Date(dateRange[0]);
+        d0.setHours(0, 0, 0, 0);
+        startTs = d0.getTime();
+        const d1 = new Date(dateRange.length >= 2 ? dateRange[1] : dateRange[0]);
+        d1.setHours(23, 59, 59, 999);
+        endTs = d1.getTime();
+    }
+
+    const machinesSet = selectedMachines && selectedMachines.length > 0 ? new Set(selectedMachines) : null;
+    const shiftsSet = selectedShifts && selectedShifts.length > 0 ? new Set(selectedShifts) : null;
+
+    const activeGroups = selectedMachineGroups && selectedMachineGroups.length > 0
+        ? new Set(selectedMachineGroups)
+        : (selectedMachineGroup ? new Set([selectedMachineGroup]) : null);
+
     return originalData.filter(row => {
-        const rowDate = new Date(row.Fecha);
-        const startDate = dateRange[0] ? new Date(dateRange[0]) : null;
-        if(startDate) startDate.setHours(0,0,0,0);
-        const endDate = dateRange[1] ? new Date(dateRange[1]) : null;
-        if(endDate) endDate.setHours(23,59,59,999);
+        // 1. Date check
+        if (datesSet) {
+            if (!datesSet.has(row.dateStr)) return false;
+        } else if (startTs !== null && endTs !== null) {
+            if (row.timestamp < startTs || row.timestamp > endTs) return false;
+        }
 
-        const isDateInRange = dateRange.length === 2 ? rowDate >= startDate && rowDate <= endDate : true;
-        const isMachineSelected = selectedMachines.length > 0 ? selectedMachines.includes(row.Descrip_Maquina) : true;
-        const isShiftSelected = selectedShifts.length > 0 ? selectedShifts.includes(row.Turno) : true;
-        const isOperatorSelected = selectedOperator ? row.Apellido === selectedOperator : true;
-        const isMachineGroupSelected = selectedMachineGroup ? row.Grupo_Maquina === selectedMachineGroup : true;
+        // 2. Machine Group check
+        if (activeGroups && !activeGroups.has(row.Grupo_Maquina)) return false;
 
-        return isDateInRange && isMachineSelected && isShiftSelected && isOperatorSelected && isMachineGroupSelected;
+        // 3. Machine check
+        if (machinesSet && !machinesSet.has(row.Descrip_Maquina)) return false;
+
+        // 4. Shift check
+        if (shiftsSet && !shiftsSet.has(row.Turno)) return false;
+
+        // 5. Operator check
+        if (selectedOperator && row.Apellido !== selectedOperator) return false;
+
+        return true;
     });
 }
 
@@ -82,71 +153,199 @@ function setupWorkers() {
 
 function aggregateResults(results, filteredData, filters) {
     if (results.length === 0) {
-        const emptyKpi = { totalProduction: 0, totalDowntimeHours: 0, availability: 0, efficiency: 0 };
-        const emptyCharts = { dailyProdData: { series: [], categories: [] }, prodByMachineData: [], avgProdByOperatorData: [], downtimeComboData: [], dailyTimeData: { series: [], categories: [] } };
-        self.postMessage({ type: 'update_dashboard', payload: { filteredData, kpiData: emptyKpi, chartsData: emptyCharts, summaryData: { topReason: 'N/A' } } });
+        const emptyKpi = {
+            totalProduction: 0,
+            totalDowntimeHours: 0,
+            totalDowntimeFrequency: 0,
+            totalNetProductionHours: 0,
+            totalPlannedHours: 0,
+            availability: 0,
+            efficiency: 0,
+            totalRuns: 0,
+            activeDays: 0,
+            dailyAverage: 0
+        };
+        const emptyCharts = {
+            dailyProdData: { series: [], categories: [], dateStrings: [] },
+            prodByMachineData: [],
+            avgProdByOperatorData: [],
+            downtimeComboData: [],
+            dailyTimeData: { series: [], categories: [] },
+            machineSummaryData: []
+        };
+        self.postMessage({
+            type: 'update_dashboard',
+            payload: {
+                filteredData,
+                kpiData: emptyKpi,
+                chartsData: emptyCharts,
+                summaryData: { topReason: 'N/A' }
+            }
+        });
         return;
     }
 
     // --- Aggregate KPIs from partial results ---
     const totalProduction = results.reduce((sum, res) => sum + res.kpiData.totalProduction, 0);
-    const totalDowntimeHours = results.reduce((sum, res) => sum + res.kpiData.totalDowntimeHours, 0);
-    const totalPlannedMinutes = results.reduce((sum, res) => sum + res.kpiData.totalPlannedMinutes, 0);
+    const totalDowntimeMinutes = results.reduce((sum, res) => sum + res.kpiData.totalDowntimeMinutes, 0);
+    const totalDowntimeHours = totalDowntimeMinutes / 60;
+    const totalDowntimeFrequency = results.reduce((sum, res) => sum + (res.kpiData.totalDowntimeFrequency || 0), 0);
+    const totalNetProductionMinutes = results.reduce((sum, res) => sum + res.kpiData.totalNetProductionMinutes, 0);
+    const totalPlannedMinutes = totalNetProductionMinutes + totalDowntimeMinutes;
     const totalRuns = results.reduce((sum, res) => sum + res.kpiData.numberOfProductionRuns, 0);
 
-    const runTimeMinutes = totalPlannedMinutes - (totalDowntimeHours * 60);
-    const availability = totalPlannedMinutes > 0 ? Math.max(0, runTimeMinutes / totalPlannedMinutes) : 0;
+    const availability = totalPlannedMinutes > 0 ? Math.max(0, totalNetProductionMinutes / totalPlannedMinutes) : 0;
     const efficiency = totalRuns > 0 ? totalProduction / totalRuns : 0;
-    const finalKpiData = { totalProduction, totalDowntimeHours, availability, efficiency };
 
     // --- Aggregate Chart Data from partial results ---
     const downtimeMap = new Map();
     results.flatMap(r => r.downtimeData).forEach(d => {
-        if (!downtimeMap.has(d.reason)) { downtimeMap.set(d.reason, { totalMinutes: 0, totalFrequency: 0 }); }
+        if (!downtimeMap.has(d.reason)) {
+            downtimeMap.set(d.reason, { totalMinutes: 0, totalFrequency: 0 });
+        }
         const existing = downtimeMap.get(d.reason);
         existing.totalMinutes += d.totalMinutes;
         existing.totalFrequency += d.totalFrequency;
     });
     const finalDowntimeData = Array.from(downtimeMap.entries()).map(([reason, data]) => ({ reason, ...data }));
 
-    const summaryData = createSummaryData(finalKpiData, finalDowntimeData);
-
     const operatorDataMap = new Map();
     results.flatMap(r => r.avgProdByOperatorData).forEach(opData => {
-        if (!operatorDataMap.has(opData.category)) { operatorDataMap.set(opData.category, { totalProduction: 0, numberOfRuns: 0 }); }
+        if (!operatorDataMap.has(opData.category)) {
+            operatorDataMap.set(opData.category, { totalProduction: 0, numberOfRuns: 0 });
+        }
         const existing = operatorDataMap.get(opData.category);
         existing.totalProduction += opData.totalProduction;
         existing.numberOfRuns += opData.numberOfRuns;
     });
     const finalAvgProdByOperator = Array.from(operatorDataMap.entries()).map(([operator, data]) => {
         const average = data.numberOfRuns > 0 ? data.totalProduction / data.numberOfRuns : 0;
-        return { category: operator, value: average };
+        return { category: operator, value: average, runs: data.numberOfRuns, total: data.totalProduction };
     }).sort((a, b) => b.value - a.value);
 
     const machineDataMap = new Map();
     results.flatMap(r => r.prodByMachineData).forEach(mData => {
         machineDataMap.set(mData.category, (machineDataMap.get(mData.category) || 0) + mData.value);
     });
-    const finalProdByMachine = Array.from(machineDataMap.entries()).map(([category, value]) => ({ category, value })).sort((a, b) => b.value - a.value);
+    const finalProdByMachine = Array.from(machineDataMap.entries())
+        .map(([category, value]) => ({ category, value }))
+        .sort((a, b) => b.value - a.value);
+
+    // --- Aggregate Machine Summary Table Data ---
+    const machineSummaryMap = new Map();
+    results.flatMap(r => r.machineSummaryData || []).forEach(m => {
+        let entry = machineSummaryMap.get(m.machine);
+        if (!entry) {
+            entry = {
+                machine: m.machine,
+                group: m.group,
+                runs: 0,
+                production: 0,
+                netMinutes: 0,
+                downtimeMinutes: 0,
+                downtimeEvents: 0,
+                reasons: {}
+            };
+            machineSummaryMap.set(m.machine, entry);
+        }
+        entry.runs += m.runs;
+        entry.production += m.production;
+        entry.netMinutes += m.netMinutes;
+        entry.downtimeMinutes += m.downtimeMinutes;
+        entry.downtimeEvents += m.downtimeEvents;
+        for (const [rKey, rMins] of Object.entries(m.reasons)) {
+            entry.reasons[rKey] = (entry.reasons[rKey] || 0) + rMins;
+        }
+    });
+
+    const finalMachineSummary = Array.from(machineSummaryMap.values()).map(m => {
+        const planned = m.netMinutes + m.downtimeMinutes;
+        const avail = planned > 0 ? (m.netMinutes / planned) * 100 : 0;
+        const avgPerShift = m.runs > 0 ? m.production / m.runs : 0;
+        let topReason = 'Sin paradas';
+        let topReasonMins = 0;
+        for (const [rKey, rMins] of Object.entries(m.reasons)) {
+            if (rMins > topReasonMins) {
+                topReasonMins = rMins;
+                topReason = rKey;
+            }
+        }
+        return {
+            machine: m.machine,
+            group: m.group,
+            runs: m.runs,
+            production: m.production,
+            avgPerShift: Math.round(avgPerShift),
+            netHours: parseFloat((m.netMinutes / 60).toFixed(1)),
+            downtimeHours: parseFloat((m.downtimeMinutes / 60).toFixed(1)),
+            downtimeEvents: m.downtimeEvents,
+            availability: parseFloat(avail.toFixed(1)),
+            topReason,
+            topReasonHours: parseFloat((topReasonMins / 60).toFixed(1))
+        };
+    }).sort((a, b) => b.production - a.production);
 
     // --- Reduce and format daily chart data ---
-    const dailyProdData = formatDailyProduction(results.map(r => r.dailyProdAggregation), filters.dailyAggregationType, filters.dateRange);
+    const dailyProdData = formatDailyProduction(results.map(r => r.dailyProdAggregation), filters.dailyAggregationType);
     const dailyTimeData = formatDailyTimeDistribution(results.map(r => r.dailyTimeAggregation));
 
-    const finalChartsData = { dailyProdData, prodByMachineData: finalProdByMachine, avgProdByOperatorData: finalAvgProdByOperator, downtimeComboData: finalDowntimeData, dailyTimeData };
+    const activeDays = dailyProdData.dateStrings ? dailyProdData.dateStrings.length : 0;
+    const dailyAverage = activeDays > 0 ? totalProduction / activeDays : 0;
+
+    const finalKpiData = {
+        totalProduction,
+        totalDowntimeHours,
+        totalDowntimeFrequency,
+        totalNetProductionHours: totalNetProductionMinutes / 60,
+        totalPlannedHours: totalPlannedMinutes / 60,
+        availability,
+        efficiency,
+        totalRuns,
+        activeDays,
+        dailyAverage
+    };
+
+    const summaryData = createSummaryData(finalKpiData, finalDowntimeData, finalMachineSummary);
+
+    const finalChartsData = {
+        dailyProdData,
+        prodByMachineData: finalProdByMachine,
+        avgProdByOperatorData: finalAvgProdByOperator,
+        downtimeComboData: finalDowntimeData,
+        dailyTimeData,
+        machineSummaryData: finalMachineSummary
+    };
 
     self.postMessage({ type: 'progress', payload: { progress: 95, status: 'Finalizando...' } });
     self.postMessage({ type: 'update_dashboard', payload: { filteredData, kpiData: finalKpiData, chartsData: finalChartsData, summaryData } });
 }
 
-function createSummaryData(kpiData, downtimeData) {
-    if (!kpiData || downtimeData.length === 0) return { topReason: 'N/A' };
+function createSummaryData(kpiData, downtimeData, machineSummary) {
+    if (!kpiData || kpiData.totalRuns === 0) return { topReason: 'N/A' };
     const sortedDowntime = [...downtimeData].sort((a, b) => b.totalMinutes - a.totalMinutes);
-    const topReason = sortedDowntime[0]?.reason || 'N/A';
+    const topReason = sortedDowntime[0]?.reason || 'Sin paradas';
     const topReasonMins = sortedDowntime[0]?.totalMinutes || 0;
     const totalDowntimeMins = kpiData.totalDowntimeHours * 60;
     const topReasonPercentage = totalDowntimeMins > 0 ? (topReasonMins / totalDowntimeMins * 100).toFixed(0) : 0;
-    return { availabilityPercentage: (kpiData.availability * 100).toFixed(1), topReason, topReasonPercentage };
+    const topReasonHours = (topReasonMins / 60).toFixed(1);
+
+    const topMachine = machineSummary[0]?.machine || 'N/A';
+    const topMachineProd = machineSummary[0]?.production || 0;
+
+    const sortedByDowntime = [...machineSummary].sort((a, b) => b.downtimeHours - a.downtimeHours);
+    const worstDowntimeMachine = sortedByDowntime[0]?.machine || 'N/A';
+    const worstDowntimeHours = sortedByDowntime[0]?.downtimeHours || 0;
+
+    return {
+        availabilityPercentage: (kpiData.availability * 100).toFixed(1),
+        topReason,
+        topReasonPercentage,
+        topReasonHours,
+        topMachine,
+        topMachineProd,
+        worstDowntimeMachine,
+        worstDowntimeHours
+    };
 }
 
 function formatDailyProduction(partialResults, aggType) {
@@ -175,7 +374,6 @@ function formatDailyProduction(partialResults, aggType) {
     if (aggType === 'total') {
         const seriesData = sortedDates.map(date => {
             const value = finalDailyProd.get(date);
-            // Devolver null si es 0 o undefined para generar un corte en la serie.
             return value > 0 ? value : null;
         });
         series.push({ name: 'Producción Total', data: seriesData });
@@ -191,13 +389,12 @@ function formatDailyProduction(partialResults, aggType) {
             data: sortedDates.map(date => {
                 const dayMap = finalDailyProd.get(date);
                 const value = dayMap ? dayMap.get(key) : undefined;
-                // Devolver null si es 0, undefined o no hay mapa para generar un corte.
                 return value > 0 ? value : null;
             })
         }));
     }
 
-    return { series, categories };
+    return { series, categories, dateStrings: sortedDates };
 }
 
 function formatDailyTimeDistribution(partialResults) {
@@ -221,11 +418,11 @@ function formatDailyTimeDistribution(partialResults) {
     const sortedDates = Object.keys(finalDailyTime).sort();
     const sortedReasons = Array.from(allReasons).sort();
 
-    const series = [{ name: 'Producción', data: [] }];
+    const series = [{ name: 'Producción Neta', data: [] }];
     sortedReasons.forEach(reason => series.push({ name: reason, data: [] }));
 
     const reasonToIndexMap = sortedReasons.reduce((acc, reason, index) => {
-        acc[reason] = index + 1; // +1 for 'Producción' series
+        acc[reason] = index + 1;
         return acc;
     }, {});
 
@@ -241,7 +438,8 @@ function formatDailyTimeDistribution(partialResults) {
 
     return {
         series: series,
-        categories: sortedDates.map(date => new Date(`${date}T00:00:00`).getTime())
+        categories: sortedDates.map(date => new Date(`${date}T00:00:00`).getTime()),
+        dateStrings: sortedDates
     };
 }
 
@@ -249,34 +447,66 @@ function formatDailyTimeDistribution(partialResults) {
 
 setupWorkers();
 
-self.onmessage = function(e) {
+self.onmessage = function (e) {
     const { type, payload } = e.data;
 
     if (type === 'load_data') {
         self.postMessage({ type: 'progress', payload: { progress: 0, status: 'Cargando datos CSV...' } });
         Papa.parse(payload.url, {
-            download: true, header: true, delimiter: ';', skipEmptyLines: true,
+            download: true,
+            header: true,
+            delimiter: ';',
+            skipEmptyLines: true,
             transformHeader: header => header.trim().replace(/[\W]+/g, '_'),
-            complete: function(results) {
+            complete: function (results) {
                 originalData = processData(results.data);
-                const today = new Date();
-                const startOfPreviousMonth = new Date(today.getFullYear(), today.getMonth() - 1, 1);
+
+                const machineToGroupMap = {};
+                let minTs = Infinity;
+                let maxTs = -Infinity;
+                let minDateStr = null;
+                let maxDateStr = null;
+
+                for (let i = 0; i < originalData.length; i++) {
+                    const r = originalData[i];
+                    if (r.Descrip_Maquina && r.Grupo_Maquina) {
+                        machineToGroupMap[r.Descrip_Maquina] = r.Grupo_Maquina;
+                    }
+                    if (r.timestamp < minTs) {
+                        minTs = r.timestamp;
+                        minDateStr = r.dateStr;
+                    }
+                    if (r.timestamp > maxTs) {
+                        maxTs = r.timestamp;
+                        maxDateStr = r.dateStr;
+                    }
+                }
+
+                const uniqueMachines = [...new Set(originalData.map(row => row.Descrip_Maquina))].filter(Boolean).sort((a, b) => a.localeCompare(b, 'es', { numeric: true }));
+                const uniqueShifts = [...new Set(originalData.map(row => row.Turno))].filter(Boolean).sort();
+                const uniqueMachineGroups = [...new Set(originalData.map(row => row.Grupo_Maquina))].filter(Boolean).sort();
+                const uniqueOperators = [...new Set(originalData.map(row => row.Apellido))].filter(Boolean).sort((a, b) => a.localeCompare(b, 'es'));
+
                 self.postMessage({
                     type: 'data_loaded',
                     payload: {
-                        uniqueMachines: [...new Set(originalData.map(row => row.Descrip_Maquina))].filter(Boolean).sort(),
-                        uniqueShifts: [...new Set(originalData.map(row => row.Turno))].filter(Boolean).sort(),
-                        uniqueMachineGroups: [...new Set(originalData.map(row => row.Grupo_Maquina))].filter(Boolean).sort()
+                        uniqueMachines,
+                        uniqueShifts,
+                        uniqueMachineGroups,
+                        uniqueOperators,
+                        machineToGroupMap,
+                        minDateStr,
+                        maxDateStr,
+                        totalRecords: originalData.length
                     }
                 });
-                applyFiltersAndPost({ dateRange: [startOfPreviousMonth, today], selectedMachines: [], selectedShifts: [], selectedShifts: [], selectedMachineGroup: null, isExtended: false, dailyAggregationType: 'total' });
             },
             error: err => {
                 self.postMessage({ type: 'error', payload: `Error al cargar CSV: ${err.message}` });
             }
         });
     }
-    
+
     if (type === 'apply_filters') {
         applyFiltersAndPost(payload);
     }
@@ -286,40 +516,42 @@ function applyFiltersAndPost(filters) {
     self.postMessage({ type: 'progress', payload: { progress: 5, status: 'Filtrando y agrupando datos...' } });
     const filteredData = getFilteredData(filters);
 
-    // --- START: New Grouping Logic ---
+    // Group by IdProduccion so no production run is ever split across workers
     const groupedByProductionId = new Map();
-    filteredData.forEach(row => {
-        if (!row.IdProduccion) return; // Skip rows without a production ID
-        if (!groupedByProductionId.has(row.IdProduccion)) {
-            groupedByProductionId.set(row.IdProduccion, []);
+    for (let i = 0; i < filteredData.length; i++) {
+        const row = filteredData[i];
+        if (!row.IdProduccion) continue;
+        let group = groupedByProductionId.get(row.IdProduccion);
+        if (!group) {
+            group = [];
+            groupedByProductionId.set(row.IdProduccion, group);
         }
-        groupedByProductionId.get(row.IdProduccion).push(row);
-    });
+        group.push(row);
+    }
 
     const productionGroups = Array.from(groupedByProductionId.values());
-    
     const chunks = Array.from({ length: numWorkers }, () => []);
     productionGroups.forEach((group, index) => {
         chunks[index % numWorkers].push(...group);
     });
-    // --- END: New Grouping Logic ---
 
     const jobId = nextJobId++;
+    const activeChunks = chunks.filter(c => c.length > 0);
     jobs.set(jobId, {
         results: [],
         workersFinished: 0,
-        totalChunks: chunks.filter(c => c.length > 0).length, // Only count non-empty chunks
+        totalChunks: activeChunks.length,
         filters: filters,
         filteredData: filteredData
     });
 
-    if (jobs.get(jobId).totalChunks === 0) {
+    if (activeChunks.length === 0) {
         aggregateResults([], filteredData, filters);
         jobs.delete(jobId);
         return;
     }
 
-    self.postMessage({ type: 'progress', payload: { progress: 15, status: `Distribuyendo carga en ${jobs.get(jobId).totalChunks} núcleos...` } });
+    self.postMessage({ type: 'progress', payload: { progress: 15, status: `Procesando en ${activeChunks.length} núcleos...` } });
 
     chunks.forEach((chunk, index) => {
         if (chunk.length > 0 && workers[index]) {
